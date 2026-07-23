@@ -46,6 +46,8 @@ import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
 import {
+  beginCheckoutNavigation,
+  cancelCheckoutNavigation,
   createCheckoutFromBom,
   navigateToCheckout,
 } from '../../shared/shopify/checkout.js'
@@ -521,6 +523,9 @@ async function buyNow() {
     btn.textContent = '前往結帳…'
   }
 
+  // Keep user-gesture: open blank tab now so checkout is not trapped in the DIY iframe.
+  const navHandle = beginCheckoutNavigation()
+
   try {
     if (isPlaza) {
       recordPlazaPurchaseUse({ silent: true })
@@ -542,11 +547,13 @@ async function buyNow() {
     })
 
     if (!result.ok) {
+      cancelCheckoutNavigation(navHandle)
       showToast(result.error)
       return
     }
-    navigateToCheckout(result.checkoutUrl)
+    navigateToCheckout(result.checkoutUrl, navHandle)
   } catch (err) {
+    cancelCheckoutNavigation(navHandle)
     console.error('[details] buy failed', err)
     showToast(`下單失敗：${shortErr(err)}`)
   } finally {

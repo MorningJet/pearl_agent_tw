@@ -118,10 +118,14 @@ export async function createCheckoutFromBom(bom, meta) {
     .join('｜')
 
   const mutation = `
-    mutation CartCreate($input: CartInput!) {
+    mutation CartCreate($input: CartInput!) @inContext(country: TW, language: ZH_TW) {
       cartCreate(input: $input) {
-        cart { checkoutUrl }
+        cart {
+          checkoutUrl
+          totalQuantity
+        }
         userErrors { field message }
+        warnings { code message }
       }
     }
   `
@@ -132,11 +136,28 @@ export async function createCheckoutFromBom(bom, meta) {
         lines,
         attributes,
         note: clip(note, 5000),
+        // Taiwan Market — without this, Shopify may zero all lines as "sold out"
+        // even when Admin inventory looks fine (default cart context ≠ TW).
+        buyerIdentity: { countryCode: 'TW' },
       },
     })
     const payload = data?.cartCreate
     const err = payload?.userErrors?.[0]?.message
     if (err) return { ok: false, error: err }
+
+    const warning = payload?.warnings?.find(
+      (w) => w?.code === 'MERCHANDISE_OUT_OF_STOCK' || /sold out/i.test(w?.message || ''),
+    )
+    const qty = Number(payload?.cart?.totalQuantity || 0)
+    if (qty <= 0) {
+      return {
+        ok: false,
+        error:
+          warning?.message ||
+          '商品無法加入購物車（可能未對台灣市場開放庫存／銷售）。請在 Shopify Markets 檢查台灣市場與庫存位置。',
+      }
+    }
+
     const url = payload?.cart?.checkoutUrl
     if (!url) return { ok: false, error: '未取得結帳連結' }
     return { ok: true, checkoutUrl: url }
@@ -187,19 +208,82 @@ export function publicDesignImageUrl(url) {
 }
 
 /**
- * Leave the GitHub Pages / Shopify iframe and open checkout.
- * @param {string} url
+ * DIY iframe or in-app browsers where Cloudflare challenges often never finish.
  */
-export function navigateToCheckout(url) {
+function needsCheckoutBreakout() {
+  try {
+    if (window.self !== window.top) return true
+  } catch {
+    return true
+  }
+  const ua = navigator.userAgent || ''
+  return /MicroMessenger|Line\/|FBAN|FBAV|Instagram/i.test(ua)
+}
+
+/**
+ * Call synchronously inside the Buy Now click handler (before await).
+ * Reserves a top-level tab while the user gesture is still valid so
+ * Cloudflare / checkout does not run inside the DIY iframe (challenges hang there).
+ *
+ * @returns {{ popup: Window | null }}
+ */
+export function beginCheckoutNavigation() {
+  /** @type {{ popup: Window | null }} */
+  const handle = { popup: null }
+  if (!needsCheckoutBreakout()) return handle
+  try {
+    handle.popup = window.open('about:blank', '_blank')
+  } catch {
+    handle.popup = null
+  }
+  return handle
+}
+
+/** @param {{ popup: Window | null } | null | undefined} handle */
+export function cancelCheckoutNavigation(handle) {
+  const w = handle?.popup
+  if (!w || w.closed) return
+  try {
+    w.close()
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Leave the GitHub Pages / Shopify iframe and open checkout top-level.
+ * Prefer a pre-opened popup (user gesture); else break out via window.top;
+ * never keep checkout inside the embed iframe (Cloudflare stalls there).
+ *
+ * @param {string} url
+ * @param {{ popup: Window | null } | null | undefined} [handle]
+ */
+export function navigateToCheckout(url, handle = null) {
+  const target = String(url || '').trim()
+  if (!target) return
+
+  const popup = handle?.popup
+  if (popup && !popup.closed) {
+    try {
+      popup.location.href = target
+      return
+    } catch {
+      cancelCheckoutNavigation(handle)
+    }
+  }
+
   try {
     if (window.top && window.top !== window.self) {
-      window.top.location.href = url
+      cancelCheckoutNavigation(handle)
+      window.top.location.assign(target)
       return
     }
   } catch {
     /* cross-origin top — fall through */
   }
-  window.location.href = url
+
+  cancelCheckoutNavigation(handle)
+  window.location.assign(target)
 }
 
 /** Permalink helper when numeric variant ids are known. */

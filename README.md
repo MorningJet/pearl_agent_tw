@@ -43,15 +43,20 @@ git push -u origin main
 2. 倉庫 **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**。
 3. 推送 `main` 後等待 workflow **Deploy GitHub Pages** 成功。
 4. 站點網址：`https://MorningJet.github.io/pearl_agent_tw/`（倉庫名不同則改路徑）。
-5. Shopify iframe 請用用戶版（自動隱藏開發殼）：
+5. Shopify 請用**全螢幕** Page 模板嵌入（勿用 `min-height:80vh`，否則 Tab 列下方會留白；結帳也可能卡在 iframe 裡的 Cloudflare 驗證）：
+
+把 [`docs/shopify-embed-page.liquid`](docs/shopify-embed-page.liquid) 加到主題後套用到 DIY 頁面。或最小片段：
 
 ```html
 <iframe
   src="https://morningjet.github.io/pearl_agent_tw/?embed=1"
-  style="width:100%;min-height:80vh;border:0;"
+  style="display:block;width:100%;height:100dvh;border:0;background:#fff;"
+  allow="payment *"
   title="Pearl Pearl DIY"
 ></iframe>
 ```
+
+父層 Page 請關掉主題 header／footer（模板用 `{% layout none %}`），否則外殼仍會露出白邊。
 
 （嵌入 iframe 時也會自動進用戶版；桌面直接打開根網址仍是開發預覽。本機用戶版：`?embed=1`，強制開發殼：`?studio=1`。）
 

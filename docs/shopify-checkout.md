@@ -33,3 +33,28 @@ VITE_SHOPIFY_DESIGN_FEE_UNIT_VARIANT_GID=gid://shopify/ProductVariant/你的設�
 GitHub Actions Secrets 寫入同名變數後 push 即可上線。
 
 運送：**Settings → Shipping and delivery** 對齊 H5 免運門檻。
+
+## 結帳出現 Out of stock / SOLD OUT
+
+常見有兩種完全不同的原因：
+
+### A. 未帶台灣市場（本專案曾踩過）
+
+商店 Markets 有 **Taiwan / Hong Kong** 時，Storefront `cartCreate` **不帶** `buyerIdentity.countryCode: TW`（或 `@inContext(country: TW)`）會把商品加成 **quantity = 0**，Checkout 顯示整車 SOLD OUT——即使 Admin 裡「可用數量」是 100。
+
+H5 已固定以台灣市場建車。若仍售罄，再查 B。
+
+### B. 真的沒庫存／庫存位置不對
+
+DIY 接單手作建議珠款與「設計費用」開啟 **Continue selling when out of stock**，或把 Inventory 調高，並確認 **Online Store 出貨庫房** 有貨。
+
+「設計費用」若追蹤庫存，數量需 ≥ 設計費金額（例如 NT$59 → 至少 59 件）。
+
+## 嵌入與「立即購買」卡在 Cloudflare
+
+H5 若嵌在 Shopify Page 的 **iframe** 裡：
+
+1. **底部留白**：iframe 高度必須是 `100dvh`（或 fixed 铺满），且 Page 用 `{% layout none %}` 去掉主題頭尾。見 [`shopify-embed-page.liquid`](shopify-embed-page.liquid)。
+2. **驗證頁轉圈**：Cloudflare / Shopify bot check 在 iframe 內常會永遠「正在验证…」。H5 會在點擊當下預開頂層分頁，再跳轉 `checkoutUrl`；若仍卡住，請用系統 Safari／Chrome 開啟商店頁，或為商店綁定自訂網域後再試。
+
+勿再使用 README 舊版的 `min-height:80vh` 嵌入方式。

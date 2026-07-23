@@ -47,6 +47,7 @@ docs/ .cursor/rules/
 - State flows one way: shelf click → store → canvas + top bar subscribe
 - Nav: Home tabs ↔ DIY (back → Home) ↔ Design Details; tab bar hidden in studio pages
 - Page chrome: every page uses `.page-header`; never `absolute; inset:0` on page roots (breaks safe-area) — see `.cursor/rules/page-chrome.mdc`
+- **Shopify sync:** every store-facing change must be committed + pushed so GitHub Pages (Shopify iframe) updates — see `.cursor/rules/shopify-sync.mdc`
 - English UI copy for overseas market; keep labels concise
 - New SKUs: put batch xlsx + png in `new_input/` → `npm run sync:catalog` (merges into `data/commodity_idx.xlsx`)
 - UI logo/icons stay in `public/brand` and `public/icons` — never in `new_input/`

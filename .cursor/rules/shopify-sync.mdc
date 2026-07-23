@@ -1,0 +1,34 @@
+---
+description: Every store-facing change must be synced live to Shopify (Pages + Admin artifacts)
+alwaysApply: true
+---
+
+# Shopify sync (mandatory)
+
+Shopify storefront embeds this H5 from **GitHub Pages**. Edits that stay local-only are **not** live on `pearl-diy.myshopify.com`.
+
+## After any store-facing change
+
+Unless the user explicitly says **不要推送 / don't push**, finish the task by syncing:
+
+1. **Commit** the relevant files (follow the repo commit protocol / HEREDOC message).
+2. **Push** to `origin` on `main` (or the branch that deploys Pages) so `.github/workflows/deploy-pages.yml` rebuilds.
+3. Confirm deploy: GitHub Actions **Deploy GitHub Pages** succeeds. The iframe URL is typically `https://morningjet.github.io/pearl_agent_tw/?embed=1`.
+4. Tell the user what is live vs what still needs **Shopify Admin** (cannot be done by git alone).
+
+## What counts as store-facing
+
+| Change | Sync path |
+|--------|-----------|
+| H5 UI / checkout / CSS / pages (`src/`, `index.html`, `public/`) | Commit + push → Pages |
+| Checkout / Storefront env | Also ensure GitHub **Secrets/Vars** match (domain, token, design-fee GID) |
+| Product CSV (`other/shopify_products_import.csv`) | Commit CSV + remind Admin **Products → Import** (or bulk edit) |
+| Theme embed (`docs/shopify-embed-page.liquid`) | Commit + remind Admin paste into theme Page template (`{% layout none %}`) |
+| Catalog Excel / `new_input/` | `npm run sync:catalog` then commit generated assets; Shopify products still need CSV/Admin update if SKUs change |
+| Variant map | `npm run sync:shopify-variants` when tokens available; commit `variantMap.json` if updated |
+
+## Do not skip
+
+- Do **not** end a store-facing task with “deploy when ready” if the user expects Shopify to reflect the fix — push unless they forbade it.
+- Do **not** assume Admin inventory / Markets / theme liquid update themselves from this repo.
+- Checkout carts must keep **Taiwan market** context (`buyerIdentity.countryCode: TW` / `@inContext(country: TW)`).
