@@ -45,6 +45,10 @@ import { getSeedPlazaAsPublished, resolvePlazaPreviewUrl } from '../home/plazaDa
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
+import {
+  createCheckoutFromBom,
+  navigateToCheckout,
+} from '../../shared/shopify/checkout.js'
 
 /** @type {string} */
 let designImageUrl = ''
@@ -476,22 +480,92 @@ function bindActions() {
     closeDesignDetails()
   })
   document.getElementById('details-buy')?.addEventListener('click', () => {
-    if (detailsMode === 'plaza') {
-      recordPlazaPurchaseUse()
-      return
-    }
-    showToast('立即購買 — 即將推出')
+    void buyNow()
   })
   document.getElementById('details-check-wrist')?.addEventListener('click', () => {
     openWristGuide()
   })
 }
 
-/** 「立即購買」計 1 次使用，並為設計師建立收益訂單（製作中）. */
-function recordPlazaPurchaseUse() {
+/** Prevent double-submit while Storefront cart is creating. */
+let buyInFlight = false
+
+/**
+ * All three details modes: BOM = underlying beads → Shopify cart → checkout.
+ * Plaza UI may hide SKU rows, but checkout still expands the bead set.
+ */
+async function buyNow() {
+  if (buyInFlight) return
+  const beads = getResolvedBeads()
+  if (!beads.length) {
+    showToast('請先加入珠子再購買')
+    return
+  }
+
+  const bom = buildBom(beads)
+  const mm = totalCircumferenceMm(beads)
+  const isPlaza = detailsMode === 'plaza'
+  const isPlazaEdit = detailsMode === 'plaza-edit'
+  const pub = plazaViewPub
+  const designFee = isPlaza
+    ? pub?.usePriceTwd || 0
+    : isPlazaEdit
+      ? getAppliedDesignFeeTwd()
+      : 0
+
+  buyInFlight = true
+  const btn = document.getElementById('details-buy')
+  const prevLabel = btn?.textContent
+  if (btn) {
+    btn.setAttribute('disabled', 'true')
+    btn.textContent = '前往結帳…'
+  }
+
+  try {
+    if (isPlaza) {
+      recordPlazaPurchaseUse({ silent: true })
+    }
+
+    const result = await createCheckoutFromBom(bom, {
+      designName: getDesignName(),
+      wristCm: formatCm(mm),
+      detailsMode,
+      designId: getActiveDesignId() || '',
+      plazaPublishId:
+        pub?.id || getAppliedPlazaPublishId() || '',
+      designerId: isPlaza
+        ? String(pub?.designerId || '').trim()
+        : '',
+      designFeeTwd: designFee,
+      designImageUrl,
+      beadsSubtotalTwd: totalPrice(beads),
+    })
+
+    if (!result.ok) {
+      showToast(result.error)
+      return
+    }
+    navigateToCheckout(result.checkoutUrl)
+  } catch (err) {
+    console.error('[details] buy failed', err)
+    showToast(`下單失敗：${shortErr(err)}`)
+  } finally {
+    buyInFlight = false
+    if (btn) {
+      btn.removeAttribute('disabled')
+      if (prevLabel) btn.textContent = prevLabel
+    }
+  }
+}
+
+/**
+ * 「立即購買」計 1 次使用，並為設計師建立收益訂單（製作中）.
+ * @param {{ silent?: boolean }} [opts]
+ */
+function recordPlazaPurchaseUse(opts = {}) {
   const pub = plazaViewPub
   if (!pub?.id) {
-    showToast('立即購買 — 即將推出')
+    if (!opts.silent) showToast('無法記錄使用次數')
     return
   }
   const next = incrementPlazaUseCount(pub.id, pub.useCount || 0)
@@ -513,7 +587,7 @@ function recordPlazaPurchaseUse() {
   renderDetails()
   refreshPlazaPage()
   refreshHomePlaza()
-  showToast('立即購買 — 即將推出')
+  if (!opts.silent) showToast('已記錄使用')
 }
 
 /** Load plaza template onto DIY canvas; keep design-use fee. */
