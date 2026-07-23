@@ -1,0 +1,163 @@
+<div id="page-me" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <button type="button" id="me-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 class="page-header-title">我的</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+  <div id="me-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-[4.5rem] pt-3">
+    <div class="flex items-center gap-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+      <button
+        type="button"
+        id="me-avatar-btn"
+        class="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-stone-900 ring-offset-2 active:opacity-90"
+        aria-label="更換頭像"
+      >
+        <img
+          id="me-avatar-img"
+          alt=""
+          class="hidden h-full w-full object-cover"
+          width="56"
+          height="56"
+        />
+        <span
+          id="me-avatar-letter"
+          class="flex h-full w-full items-center justify-center text-lg font-semibold text-white"
+          aria-hidden="true"
+          >M</span
+        >
+      </button>
+      <input
+        id="me-avatar-input"
+        type="file"
+        accept="image/*"
+        class="sr-only"
+        tabindex="-1"
+      />
+      <div class="min-w-0 flex-1">
+        <button
+          type="button"
+          id="me-display-name-btn"
+          class="inline-flex max-w-full items-center gap-1.5 text-left active:opacity-70"
+          aria-label="修改名稱"
+        >
+          <span
+            id="me-display-name"
+            class="truncate text-base font-semibold text-stone-900"
+            >Mia</span
+          >
+          <img
+            src="/icons/pencil.svg"
+            alt=""
+            class="h-4 w-4 shrink-0 opacity-55"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          />
+        </button>
+        <p id="me-member-id" class="mt-0.5 text-xs text-stone-400">會員編號：912525</p>
+      </div>
+    </div>
+
+    <ul class="mt-3 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-100">
+      <li>
+        <button
+          type="button"
+          class="me-link flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-stone-800 active:bg-stone-50"
+          data-me-link="earnings"
+        >
+          <img src="/icons/me-earnings.svg" alt="" class="h-5 w-5 shrink-0 opacity-70" width="20" height="20" />
+          <span class="min-w-0 flex-1">我的收益</span>
+          <span class="text-stone-300" aria-hidden="true">›</span>
+        </button>
+      </li>
+      <li class="border-t border-stone-100">
+        <button
+          type="button"
+          class="me-link flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-stone-800 active:bg-stone-50"
+          data-me-link="designs"
+        >
+          <img src="/icons/me-designs.svg" alt="" class="h-5 w-5 shrink-0 opacity-70" width="20" height="20" />
+          <span class="min-w-0 flex-1">我的設計</span>
+          <span class="text-stone-300" aria-hidden="true">›</span>
+        </button>
+      </li>
+      <li class="border-t border-stone-100">
+        <button
+          type="button"
+          class="me-link flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-stone-800 active:bg-stone-50"
+          data-me-link="orders"
+        >
+          <img src="/icons/me-orders.svg" alt="" class="h-5 w-5 shrink-0 opacity-70" width="20" height="20" />
+          <span class="min-w-0 flex-1">我的訂單</span>
+          <span class="text-stone-300" aria-hidden="true">›</span>
+        </button>
+      </li>
+      <li class="border-t border-stone-100">
+        <button
+          type="button"
+          class="me-link flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-stone-800 active:bg-stone-50"
+          data-me-link="address"
+        >
+          <img src="/icons/me-address.svg" alt="" class="h-5 w-5 shrink-0 opacity-70" width="20" height="20" />
+          <span class="min-w-0 flex-1">收件地址</span>
+          <span class="text-stone-300" aria-hidden="true">›</span>
+        </button>
+      </li>
+      <li class="border-t border-stone-100">
+        <button
+          type="button"
+          class="me-link flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm text-stone-800 active:bg-stone-50"
+          data-me-link="support"
+        >
+          <img src="/icons/me-support.svg" alt="" class="h-5 w-5 shrink-0 opacity-70" width="20" height="20" />
+          <span class="min-w-0 flex-1">客服中心</span>
+          <span class="text-stone-300" aria-hidden="true">›</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div
+  id="me-name-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/35 p-5"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="me-name-modal-title"
+>
+  <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+    <h2 id="me-name-modal-title" class="text-base font-semibold text-stone-900">修改名稱</h2>
+    <form id="me-name-form" class="mt-4" novalidate>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">名稱</span>
+        <input
+          id="me-name-input"
+          name="displayName"
+          type="text"
+          maxlength="24"
+          autocomplete="nickname"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <p id="me-name-error" class="mt-2 hidden text-xs text-rose-500" role="alert"></p>
+      <div class="mt-5 flex gap-2">
+        <button
+          type="button"
+          id="me-name-cancel"
+          class="flex-1 rounded-lg border border-stone-300 py-2.5 text-sm font-medium text-stone-800"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          id="me-name-save"
+          class="flex-1 rounded-lg bg-stone-900 py-2.5 text-sm font-medium text-white"
+        >
+          儲存
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

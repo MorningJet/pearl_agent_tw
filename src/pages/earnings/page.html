@@ -1,0 +1,43 @@
+<div id="page-earnings" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <button type="button" id="earnings-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 class="page-header-title">我的收益</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+  <div id="earnings-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-3">
+    <section class="rounded-2xl bg-stone-900 px-4 py-5 text-white shadow-sm">
+      <p class="text-xs text-white/60">可提領金額（TWD）</p>
+      <p id="earnings-available" class="mt-1.5 text-2xl font-semibold tabular-nums">NT$0</p>
+      <div class="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
+        <div>
+          <p class="text-[0.65rem] text-white/50">累計收益</p>
+          <p id="earnings-total" class="mt-1 text-sm font-semibold tabular-nums">NT$0</p>
+        </div>
+        <div>
+          <p class="text-[0.65rem] text-white/50">待結算</p>
+          <p id="earnings-pending" class="mt-1 text-sm font-semibold tabular-nums">NT$0</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        id="earnings-withdraw"
+        class="mt-4 w-full rounded-full bg-white py-2.5 text-sm font-semibold text-stone-900 active:opacity-90"
+      >
+        申請提領
+      </button>
+    </section>
+
+    <section class="mt-4">
+      <h2 class="px-0.5 text-sm font-semibold text-stone-900">收益明細</h2>
+      <ul
+        id="earnings-list"
+        class="mt-2 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-100"
+      ></ul>
+      <p id="earnings-empty" class="mt-6 hidden px-2 text-center text-sm text-stone-400">
+        尚無使用設計訂單。他人購買並使用你的廣場設計後，訂單會顯示在這裡。
+      </p>
+    </section>
+  </div>
+</div>

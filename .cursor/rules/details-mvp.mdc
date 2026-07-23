@@ -1,0 +1,22 @@
+---
+description: Design Details page modules and contracts
+globs: src/pages/details/**/*.{js,html}
+alwaysApply: false
+---
+
+# Design Details modules
+
+| Piece | Responsibility | Entry |
+|-------|----------------|--------|
+| Markup | `#page-details`, lightbox, wrist guide | `pages/details/page.html` |
+| Boot / UI | Mount, rename, BOM, shares, bottom bar | `pages/details/index.js` |
+| BOM | Aggregate beads by SKU | `pages/details/bom.js` |
+
+Do not put DIY canvas/shelf code here. Navigate via `shared/nav.js` (`showDiyPage` / `showDetailsPage`).
+
+## Contracts
+
+- **Open**: from DIY Make Now with ≥1 bead; snapshot via `getDesignImage()`
+- **Continue / Back**: return to DIY; design store unchanged
+- **Make Now (footer)**: Shopify checkout stub
+- **Share / Submit / CS**: stubs until wired

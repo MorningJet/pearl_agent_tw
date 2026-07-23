@@ -1,0 +1,94 @@
+<div id="page-home" class="flex h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <span class="page-header-side" aria-hidden="true"></span>
+    <h1 class="page-header-title">Pearl Pearl</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+
+  <div id="home-scroll" class="min-h-0 flex-1 overflow-y-auto pb-[4.5rem]">
+    <!-- Banner carousel -->
+    <section class="relative mx-3 mt-3 overflow-hidden rounded-2xl" aria-label="活動宣傳">
+      <div
+        id="home-banner-track"
+        class="flex w-full touch-pan-y will-change-transform"
+      >
+        <!-- slides filled by JS -->
+      </div>
+      <div
+        id="home-banner-dots"
+        class="pointer-events-none absolute bottom-2.5 left-1/2 z-10 flex -translate-x-1/2 gap-1.5"
+        aria-hidden="true"
+      ></div>
+    </section>
+
+    <!-- Service badges — decorative labels only -->
+    <section
+      class="mx-3 mt-2.5 grid grid-cols-3 gap-1 px-1 py-1.5"
+      aria-label="服務特色"
+    >
+      <div class="flex flex-col items-center gap-0.5 px-0.5 py-0.5">
+        <img src="/icons/service-handmade.svg" alt="" class="h-4 w-4 opacity-70" width="16" height="16" />
+        <span class="text-[0.62rem] text-stone-500">訂製手作</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 px-0.5 py-0.5">
+        <img
+          src="/icons/service-delivery.svg"
+          alt=""
+          class="h-4 w-4 opacity-70"
+          width="16"
+          height="16"
+        />
+        <span class="text-[0.62rem] text-stone-500">15日送達</span>
+      </div>
+      <div class="flex flex-col items-center gap-0.5 px-0.5 py-0.5">
+        <img src="/icons/service-warranty.svg" alt="" class="h-4 w-4 opacity-70" width="16" height="16" />
+        <span class="text-[0.62rem] text-stone-500">一年質保</span>
+      </div>
+    </section>
+
+    <!-- DIY services — primary CTAs -->
+    <section class="mx-3 mt-2 grid grid-cols-2 gap-2.5" aria-label="DIY 服務">
+      <button
+        type="button"
+        id="home-cta-bracelet"
+        class="rounded-2xl bg-stone-900 px-3.5 py-4 text-left"
+      >
+        <p class="text-[0.95rem] font-semibold text-white">客製手鍊</p>
+        <p class="mt-1.5 text-[0.68rem] leading-snug text-stone-400">
+          開啟設計器，親手串出專屬手鍊
+        </p>
+      </button>
+      <button
+        type="button"
+        id="home-cta-charm"
+        class="rounded-2xl bg-stone-900 px-3.5 py-4 text-left"
+      >
+        <p class="text-[0.95rem] font-semibold text-white">客製手機吊飾</p>
+        <p class="mt-1.5 text-[0.68rem] leading-snug text-stone-400">
+          設計手機吊飾 — 即將推出
+        </p>
+      </button>
+    </section>
+
+    <!-- Design Plaza preview -->
+    <section class="mx-3 mt-5 mb-2" aria-label="設計廣場">
+      <div class="mb-2.5 flex items-center justify-between px-0.5">
+        <h2 class="text-[0.95rem] font-semibold text-stone-900">設計廣場</h2>
+        <button type="button" id="home-plaza-more" class="text-[0.75rem] text-stone-400">
+          更多 ›
+        </button>
+      </div>
+      <div id="home-plaza-grid" class="grid grid-cols-2 gap-2.5"></div>
+    </section>
+
+    <div class="mx-3 mb-6 mt-4 flex justify-center">
+      <button
+        type="button"
+        id="home-plaza-explore"
+        class="text-[0.75rem] text-stone-400"
+      >
+        探索更多設計 ›
+      </button>
+    </div>
+  </div>
+</div>

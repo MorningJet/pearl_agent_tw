@@ -1,0 +1,18 @@
+---
+description: HTML5 Canvas bracelet engine conventions
+globs: src/pages/diy/canvas/**/*.js
+alwaysApply: false
+---
+
+# Canvas conventions
+
+- Use a single `#bracelet-canvas` with DPR scaling via `ResizeObserver`
+- Split concerns: `layout.js` (math) → `render.js` (draw) → `engine.js` (input + loop)
+- Layout consumes resolved beads `{ instanceId, product }`; never fetch Shopify here
+- Bead visual radius ∝ `diameterMm` via `mmToPx`; path radius is constant
+- **Pendants (`category` 吊墜)**: track arc uses `diameterMm` (hook, typically 2mm); body hangs radially outward ~`PENDANT_BODY_MM` (8mm) — see `drawPendant` / `isPendant`
+- Track *represents* `max(sum(diameterMm), 130mm)` — ≤13cm locks to 13cm; above uses actual wrist
+- Always scale placement angles to span a full `2π` so beads spread evenly (drawn size still uses true mm)
+- Pointer events only (`pointerdown/move/up`); support touch on mobile
+- Prefer filled circles only as fallback; prefer product PNGs from `/products/`
+- Avoid requestAnimationFrame loops when idle — redraw on state/gesture/resize/image-load only

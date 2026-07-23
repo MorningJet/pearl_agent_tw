@@ -1,0 +1,57 @@
+<div id="page-orders" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <button type="button" id="orders-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 class="page-header-title">我的訂單</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+  <div id="orders-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-3">
+    <div
+      id="orders-tabs"
+      class="flex w-full gap-0.5 rounded-full bg-white p-1 shadow-sm ring-1 ring-stone-100"
+      role="tablist"
+    >
+      <button
+        type="button"
+        class="orders-tab min-w-0 flex-1 rounded-full px-1 py-2 text-center text-xs font-medium text-stone-900 bg-stone-100"
+        data-orders-filter="all"
+      >
+        全部
+      </button>
+      <button
+        type="button"
+        class="orders-tab min-w-0 flex-1 rounded-full px-1 py-2 text-center text-xs font-medium text-stone-500"
+        data-orders-filter="making"
+      >
+        製作中
+      </button>
+      <button
+        type="button"
+        class="orders-tab min-w-0 flex-1 rounded-full px-1 py-2 text-center text-xs font-medium text-stone-500"
+        data-orders-filter="shipping"
+      >
+        配送中
+      </button>
+      <button
+        type="button"
+        class="orders-tab min-w-0 flex-1 rounded-full px-1 py-2 text-center text-xs font-medium text-stone-500"
+        data-orders-filter="done"
+      >
+        已完成
+      </button>
+      <button
+        type="button"
+        class="orders-tab min-w-0 flex-1 rounded-full px-1 py-2 text-center text-xs font-medium text-stone-500"
+        data-orders-filter="cancelled"
+      >
+        已取消
+      </button>
+    </div>
+
+    <ul id="orders-list" class="mt-3 space-y-3"></ul>
+    <p id="orders-empty" class="mt-10 hidden px-4 text-center text-sm leading-relaxed text-stone-400">
+      尚無訂單。<br />在設計詳情點「立即購買」完成下單後會顯示在這裡。
+    </p>
+  </div>
+</div>

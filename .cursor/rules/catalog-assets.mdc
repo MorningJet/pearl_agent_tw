@@ -1,0 +1,34 @@
+---
+description: Catalog Excel + product image drop-zone workflow
+globs: new_input/**/*,data/**/*,src/shared/data/**/*,scripts/sync-catalog.mjs,public/products/**/*,public/brand/**/*,public/icons/**/*
+alwaysApply: false
+---
+
+# Catalog & assets
+
+| Role | Path |
+|------|------|
+| Incremental drop zone | `new_input/` — batch xlsx + product png only |
+| Drop-zone sheets | `catalog` (new rows) + `categories` (existing category1/category2 reference) |
+| Full master workbook | `data/commodity_idx.xlsx` |
+| Product images | `public/products/` |
+| UI logo / icons | `public/brand/`, `public/icons/` (never via new_input) |
+| Runtime JSON | `src/shared/data/catalog.json` (generated) |
+
+## Excel rules
+
+- `id` = unique SKU
+- One `name` ↔ one `picture` file
+- Same picture + different `size_mm` / `price_usd` = different SKUs
+- `new_input` workbook = **delta only**; sync merges into `data/`
+
+## Sync
+
+```bash
+npm run sync:catalog
+```
+
+Sync copies batch images into `public/products/`, then **normalizes** each PNG so bead content fills ~90% of a square (avoids uneven source padding). Re-run all images with `npm run normalize:products`.
+
+Do not hand-edit `catalog.json`. Do not store logo/svg in `new_input/`.
+Do not add a README under `new_input/`. After sync, xlsx stays with headers only.

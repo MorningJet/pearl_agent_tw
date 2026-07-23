@@ -1,0 +1,40 @@
+---
+description: DIY main-page modules and interaction contracts
+globs: src/pages/diy/**/*.{js,html},src/main.js
+alwaysApply: false
+---
+
+# DIY page modules
+
+| Region | Responsibility | Entry |
+|--------|-----------------|--------|
+| Markup | `#page-diy` + help modal | `pages/diy/page.html` |
+| Boot | Mount + wire canvas/UI | `pages/diy/index.js` |
+| Top | Wrist sum(diameters), price sum, help modal | `pages/diy/ui/topBar.js` |
+| Main | Fixed circular track; beads head-to-tail; drag reorder; drag-out delete | `pages/diy/canvas/*` |
+| Middle | Clear all; Recommend stub; Make Now → callback | `pages/diy/ui/middleBar.js` |
+| Shelf | L1 Beads/Accessories; L2 categories; cards | `pages/diy/ui/shelf.js` |
+
+Design Details lives separately under `src/pages/details/` — DIY must not import details internals; use `onMakeNow` + `shared/nav.js`.
+
+## Interaction contracts
+
+- **Add**: tap shelf card → `addBead(productId)` → append to string end → relayout
+- **Reorder**: pointer drag along ring → drop → `reorderBead(from, to)` by nearest angle
+- **Delete one**: drag beyond track + threshold → `removeBead(instanceId)`
+- **Clear**: middle trash → `clearBeads()`
+- **Wrist meta**: always `sum(diameterMm)`; track visual radius stays fixed even when total > one loop
+- **Recommend**: toast/stub only in MVP
+- **Make Now**: `onMakeNow()` from boot → Design Details (requires ≥1 bead)
+
+## Product card data shape
+
+```js
+{ id, type: 'bead'|'accessory', category, name, diameterMm, price, color, image }
+```
+
+- Catalog source: `new_input/commodity_idx.xlsx` → `npm run sync:catalog` → `src/shared/data/catalog.json`
+- `image` is `/products/<picture>` from the Excel `picture` column
+- Same `name`/picture may back multiple SKUs (different size/price/`id`)
+
+Keep Shopify metafield mapping in `docs/shopify-metafields.md` for later swap-in.

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f9f9f9" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" type="image/png" href="/favicon.png?v=3" />
+    <link rel="apple-touch-icon" href="/favicon.png?v=3" />
+    <title>Pearl Pearl - DIY 客製手鍊（台灣）</title>
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body class="bg-[#0a0a0a] text-stone-900 antialiased">
+    <div id="studio" class="flex h-dvh flex-col overflow-hidden">
+      <!-- Studio chrome (hidden on real phone widths) -->
+      <div
+        id="studio-toolbar"
+        class="studio-chrome flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-2.5 text-sm text-stone-300"
+      >
+        <span class="font-medium tracking-wide text-stone-100">Pearl Pearl TW</span>
+        <span class="text-stone-600">|</span>
+        <label class="flex items-center gap-2 text-xs text-stone-400">
+          裝置
+          <select
+            id="device-select"
+            class="rounded-md border border-white/15 bg-[#1a1a1a] px-2 py-1.5 text-xs text-stone-200 outline-none focus:border-white/30"
+          ></select>
+        </label>
+        <span class="ml-auto hidden text-[11px] text-stone-500 lg:inline">
+          提示：開啟 Chrome DevTools（⌥⌘I）並停靠至右側
+        </span>
+      </div>
+
+      <div class="flex min-h-0 flex-1">
+        <!-- Left: phone simulator -->
+        <div
+          id="studio-stage"
+          class="relative flex min-w-0 flex-1 items-center justify-center overflow-hidden"
+        >
+          <div id="device-shell" class="device-shell origin-center will-change-transform">
+            <div class="device-bezel">
+              <div id="device-cutout" class="device-cutout" data-top="island" aria-hidden="true"></div>
+              <div id="device-screen" class="device-screen">
+                <!-- Page markup mounted by src/main.js (Home tabs + DIY + Design Details) -->
+                <div id="app" class="relative flex h-full w-full flex-col overflow-hidden bg-white"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: DevTools docking hint (use Chrome built-in Elements) -->
+        <aside
+          id="studio-side"
+          class="studio-chrome hidden w-[min(42vw,520px)] shrink-0 flex-col border-l border-white/10 bg-[#111] text-stone-400 xl:flex"
+        >
+          <div class="border-b border-white/10 px-4 py-2.5 text-xs font-medium text-stone-300">
+            Elements · Sources
+          </div>
+          <div class="flex flex-1 flex-col items-start justify-center gap-3 px-6 py-8 text-sm leading-relaxed">
+            <p class="text-stone-300">使用 Chrome DevTools 檢視頁面原始碼。</p>
+            <ol class="list-decimal space-y-2 pl-4 text-xs text-stone-500">
+              <li>按下 <kbd class="rounded bg-white/10 px-1.5 py-0.5 text-stone-300">⌥⌘I</kbd>（Mac）或 <kbd class="rounded bg-white/10 px-1.5 py-0.5 text-stone-300">F12</kbd></li>
+              <li>將 DevTools 停靠至<strong class="font-medium text-stone-400">右側</strong></li>
+              <li>使用 Elements 面板瀏覽 HTML / CSS</li>
+            </ol>
+            <p class="mt-2 text-[11px] text-stone-600">
+              此面板為版面佔位，方便對齊手機預覽；實際 DOM 請在 Chrome 中檢視。
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div
+      id="toast"
+      class="pointer-events-none fixed bottom-24 left-1/2 z-50 hidden -translate-x-1/2 rounded-full bg-stone-900/90 px-4 py-2 text-xs text-white"
+    ></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

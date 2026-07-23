@@ -1,0 +1,43 @@
+<div id="page-plaza" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <button type="button" id="plaza-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 class="page-header-title">設計廣場</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+
+  <div id="plaza-scroll" class="min-h-0 flex-1 overflow-y-auto pb-[4.5rem]">
+    <div class="mx-3 pt-3">
+      <div class="sticky top-0 z-10 bg-[#f7f7f7] pb-2">
+        <label class="relative block">
+          <span class="sr-only">搜尋設計</span>
+          <img
+            src="/icons/search.svg"
+            alt=""
+            class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-90"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          />
+          <input
+            id="plaza-search"
+            type="search"
+            enterkeyhint="search"
+            autocomplete="off"
+            placeholder="搜尋標題或設計師"
+            class="w-full rounded-full border-0 bg-stone-200/70 py-2.5 pl-10 pr-4 text-[0.8rem] text-stone-800 outline-none ring-0 placeholder:text-stone-400 focus:bg-stone-200"
+          />
+        </label>
+      </div>
+
+      <section class="mt-1 mb-4" aria-label="熱門設計">
+        <h2 class="mb-2.5 px-0.5 text-[0.95rem] font-semibold text-stone-900">熱門設計</h2>
+        <div id="plaza-grid" class="grid grid-cols-2 gap-2.5"></div>
+        <p id="plaza-empty" class="hidden mt-10 pb-4 text-center text-xs text-stone-400">
+          找不到符合的設計
+        </p>
+      </section>
+    </div>
+  </div>
+</div>

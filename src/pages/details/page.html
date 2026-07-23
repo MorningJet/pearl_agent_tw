@@ -1,0 +1,375 @@
+<div
+  id="page-details"
+  class="relative hidden h-full w-full flex-col overflow-hidden bg-[#f3f3f3]"
+>
+  <header class="page-header">
+    <button type="button" id="details-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 id="details-page-title" class="page-header-title">設計詳情</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+
+  <div id="details-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-28 pt-3">
+    <button
+      type="button"
+      id="details-hero"
+      class="block w-full overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-stone-100"
+      aria-label="全螢幕檢視設計"
+    >
+      <img
+        id="details-hero-img"
+        src=""
+        alt="設計預覽"
+        class="aspect-square w-full object-contain"
+      />
+    </button>
+
+    <div class="mt-3 grid grid-cols-3 gap-2">
+      <button
+        type="button"
+        id="details-share-save"
+        class="rounded-xl bg-white px-2 py-3 text-center text-[0.6875rem] font-medium text-stone-800 shadow-sm ring-1 ring-stone-300"
+      >
+        儲存
+      </button>
+      <button
+        type="button"
+        id="details-share-friends"
+        class="rounded-xl bg-white px-2 py-3 text-center text-[0.6875rem] font-medium text-stone-800 shadow-sm ring-1 ring-stone-300"
+      >
+        分享
+      </button>
+      <button
+        type="button"
+        id="details-share-feed"
+        class="rounded-xl bg-white px-2 py-3 text-center text-[0.6875rem] font-medium text-stone-800 shadow-sm ring-1 ring-stone-300"
+      >
+        動態
+      </button>
+    </div>
+
+    <section class="mt-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+      <div class="flex items-center gap-1.5">
+        <span
+          id="details-name-text"
+          class="truncate text-sm font-semibold text-stone-900"
+          >我的手鍊設計</span
+        >
+        <input
+          id="details-name-input"
+          type="text"
+          maxlength="48"
+          class="hidden w-full rounded-md border border-stone-200 px-2 py-1 text-sm font-semibold text-stone-900 outline-none focus:border-stone-400"
+        />
+        <button
+          type="button"
+          id="details-name-edit"
+          class="hidden shrink-0 items-center justify-center p-1"
+          aria-label="重新命名設計"
+        >
+          <img src="/icons/pencil.svg" alt="" class="h-4 w-4" width="16" height="16" />
+        </button>
+      </div>
+      <p class="mt-2 text-sm text-stone-800">
+        價格：
+        <span id="details-price" class="font-semibold">NT$0</span>
+        <span id="details-price-ship-note" class="text-xs text-stone-400">（包郵）</span>
+      </p>
+      <div class="mt-2 flex items-center justify-between gap-2">
+        <p id="details-wrist" class="text-sm text-stone-600">腕圍 ≈ 0.0cm</p>
+        <button
+          type="button"
+          id="details-check-wrist"
+          class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800"
+        >
+          量測腕圍
+        </button>
+      </div>
+      <p id="details-likes" class="mt-3 border-t border-stone-100 pt-3 text-xs text-stone-400">
+        按讚：0
+      </p>
+      <p id="details-uses" class="mt-3 hidden border-t border-stone-100 pt-3 text-left text-xs text-stone-400">
+        已使用 0 次
+      </p>
+    </section>
+
+    <!-- Owner: publish CTA -->
+    <section
+      id="details-publish-cta"
+      class="mt-3 overflow-hidden rounded-2xl bg-stone-900 text-white shadow-sm"
+    >
+      <button
+        type="button"
+        id="details-submit"
+        class="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+      >
+        <span
+          class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10"
+        >
+          <img
+            src="/icons/community.svg"
+            alt=""
+            class="h-5 w-5 brightness-0 invert"
+            width="20"
+            height="20"
+          />
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold">發佈到設計廣場</span>
+          <span class="mt-0.5 block text-[0.6875rem] text-white/65">
+            秀出你的設計 · 累積按讚與訂單
+          </span>
+        </span>
+        <span
+          class="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-stone-900"
+          >發佈</span
+        >
+      </button>
+    </section>
+
+    <!-- Plaza visitor: designer meta -->
+    <section
+      id="details-plaza-meta"
+      class="mt-3 hidden overflow-hidden rounded-2xl bg-stone-900 text-white shadow-sm"
+    >
+      <div class="flex items-center gap-2.5 px-4 py-3">
+        <span
+          id="details-plaza-avatar"
+          class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-semibold leading-none text-white"
+          aria-hidden="true"
+          >D</span
+        >
+        <div class="min-w-0 flex-1">
+          <p
+            id="details-plaza-author"
+            class="truncate text-sm font-semibold leading-none text-white"
+          >
+            designer
+          </p>
+          <p
+            id="details-plaza-designer-id"
+            class="mt-1 truncate text-[0.65rem] leading-none text-white/55"
+          >
+            ID
+          </p>
+        </div>
+        <div class="shrink-0 text-right">
+          <p
+            id="details-plaza-fee"
+            class="text-sm font-semibold tabular-nums leading-none text-white"
+          >
+            NT$0
+          </p>
+          <p class="mt-1 text-[0.65rem] leading-none text-white/55">設計費用</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+      <h2 class="text-sm font-semibold text-stone-900">商品明細</h2>
+      <ul id="details-bom" class="mt-1 divide-y divide-stone-100"></ul>
+      <ul id="details-fee-summary" class="mt-1 hidden divide-y divide-stone-100"></ul>
+    </section>
+
+    <section class="mt-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+      <h2 class="text-sm font-semibold text-stone-900">購買須知</h2>
+      <ol class="mt-3 list-decimal space-y-2.5 pl-4 text-xs leading-relaxed text-stone-600">
+        <li>
+          出貨前可免費取消訂單；出貨後恕不接受取消。退款將於 1–3
+          個工作天內原路退回。
+        </li>
+        <li>客製商品除品質問題外，恕不接受退換貨。</li>
+        <li>
+          商品為天然礦石，細微不平整或紋理差異屬自然生長特徵，不屬於瑕疵。
+        </li>
+        <li>訂單確認後，通常於 15 個工作天內送達。</li>
+      </ol>
+    </section>
+
+    <section class="mt-3 rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+      <h2 class="text-sm font-semibold text-stone-900">商品說明</h2>
+      <p class="mt-3 text-xs leading-relaxed text-stone-600">
+        相信自己的設計 — 戴上獨一無二的作品。每條手鍊皆依你的珠子配方手工串製。
+      </p>
+      <div
+        class="mt-3 flex aspect-[4/3] w-full items-center justify-center rounded-xl bg-stone-100 text-center text-xs text-stone-400"
+      >
+        商品照片 — 即將推出
+      </div>
+      <p class="mt-3 text-xs leading-relaxed text-stone-600">
+        戴上手剛好 · 為你帶來好能量。
+      </p>
+    </section>
+  </div>
+
+  <div
+    class="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 border-t border-stone-200 bg-white px-3 py-2.5"
+  >
+    <button
+      type="button"
+      id="details-cs"
+      class="flex w-11 shrink-0 flex-col items-center gap-0.5 text-[0.625rem] text-stone-500"
+    >
+      <img src="/icons/headset.svg" alt="" class="h-5 w-5" width="20" height="20" />
+      客服
+    </button>
+    <button
+      type="button"
+      id="details-back-design"
+      class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-stone-900 bg-white py-2.5 text-sm font-medium text-stone-900"
+    >
+      返回設計
+    </button>
+    <button
+      type="button"
+      id="details-buy"
+      class="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-stone-900 py-2.5 text-sm font-medium text-white"
+    >
+      立即購買
+    </button>
+  </div>
+</div>
+
+<div
+  id="details-lightbox"
+  class="absolute inset-0 z-50 hidden items-center justify-center bg-black/92 p-4 pt-[max(1rem,var(--safe-top,env(safe-area-inset-top,0px)))]"
+  role="dialog"
+  aria-modal="true"
+  aria-label="設計全螢幕"
+>
+  <button
+    type="button"
+    id="details-lightbox-close"
+    class="absolute right-3 top-3 z-10 rounded-full bg-white/15 px-3 py-1.5 text-xs text-white"
+  >
+    關閉
+  </button>
+  <p
+    id="details-lightbox-hint"
+    class="pointer-events-none absolute inset-x-0 top-14 text-center text-xs text-white/70 transition-opacity duration-500"
+  >
+    長按即可儲存
+  </p>
+  <img
+    id="details-lightbox-img"
+    src=""
+    alt="設計全螢幕"
+    class="max-h-[85%] max-w-full object-contain select-none"
+    draggable="false"
+  />
+</div>
+
+<div
+  id="wrist-guide-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/35 p-6"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+    <h2 class="text-base font-semibold">如何量測腕圍</h2>
+    <ol class="mt-3 list-decimal space-y-2 pl-4 text-sm text-stone-600">
+      <li>用軟尺（或紙條）繞過手腕，對準手鍊佩戴的位置。</li>
+      <li>貼合但不緊繃 — 能伸進一根手指為佳。</li>
+      <li>讀取公分長度，對照設計上顯示的腕圍數值。</li>
+      <li>
+        建議範圍：珠子總周長約 13–25cm 為適中。低於 13cm 顯示過短，高於 25cm 顯示過長。
+      </li>
+    </ol>
+    <button
+      type="button"
+      id="wrist-guide-close"
+      class="mt-5 w-full rounded-lg bg-stone-900 py-2.5 text-sm font-medium text-white"
+    >
+      知道了
+    </button>
+  </div>
+</div>
+
+<div
+  id="plaza-publish-modal"
+  class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/35 p-5"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="plaza-publish-title"
+>
+  <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+    <h2 id="plaza-publish-title" class="text-base font-semibold text-stone-900">發佈到設計廣場</h2>
+    <form id="plaza-publish-form" class="mt-4 space-y-3.5" novalidate>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">
+          名稱 <span class="text-rose-500">*</span>
+        </span>
+        <input
+          id="plaza-publish-name"
+          name="designName"
+          type="text"
+          maxlength="10"
+          required
+          autocomplete="off"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">
+          發佈暱稱 <span class="text-rose-500">*</span>
+        </span>
+        <input
+          id="plaza-publish-nickname"
+          name="nickname"
+          type="text"
+          maxlength="10"
+          required
+          autocomplete="nickname"
+          placeholder="例如 mia"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">設計說明（選填，最多 15 字）</span>
+        <input
+          id="plaza-publish-blurb"
+          name="blurb"
+          type="text"
+          maxlength="15"
+          autocomplete="off"
+          placeholder="一句話介紹"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">
+          使用價格（TWD） <span class="text-rose-500">*</span>
+        </span>
+        <input
+          id="plaza-publish-price"
+          name="usePrice"
+          type="number"
+          inputmode="numeric"
+          min="0"
+          step="1"
+          required
+          placeholder="其他人使用一次需支付"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <p id="plaza-publish-error" class="hidden text-xs text-rose-500"></p>
+      <div class="flex gap-2 pt-1">
+        <button
+          type="button"
+          id="plaza-publish-cancel"
+          class="flex-1 rounded-lg border border-stone-300 py-2.5 text-sm font-medium text-stone-800"
+        >
+          取消
+        </button>
+        <button
+          type="submit"
+          id="plaza-publish-confirm"
+          class="flex-1 rounded-lg bg-stone-900 py-2.5 text-sm font-medium text-white"
+        >
+          發佈
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

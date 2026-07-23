@@ -1,0 +1,255 @@
+@import 'tailwindcss';
+
+/* Scan page templates mounted via ?raw imports */
+@source '../pages/**/*.html';
+@source '../pages/**/*.js';
+@source '../shared/**/*.js';
+@source '../../index.html';
+
+@layer components {
+  .shelf-tab-active {
+    @apply font-semibold text-stone-900 shadow-[inset_0_-2px_0_#1c1917];
+  }
+
+  .tab-btn-active {
+    @apply font-medium text-stone-900;
+  }
+
+  /* Shared page title bar — identical on every screen */
+  .page-header {
+    @apply flex shrink-0 items-center gap-2 border-b border-stone-200/80 bg-white px-2 py-1.5;
+    box-sizing: border-box;
+    min-height: calc(2.25rem + 0.75rem); /* h-9 + py-1.5×2 */
+  }
+
+  .page-header-title {
+    @apply flex-1 text-center text-sm font-semibold text-stone-900;
+  }
+
+  .page-header-side {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center;
+  }
+
+  /* Card media: taps must hit the card/button, not the <img> (iOS Safari). */
+  .plaza-card img,
+  .home-plaza-card img,
+  [data-continue-id] img,
+  [data-modify-publish-id] img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+#bracelet-canvas {
+  cursor: grab;
+}
+
+#bracelet-canvas:active {
+  cursor: grabbing;
+}
+
+/* —— Device studio (WeChat-dev-tools style) —— */
+
+.device-shell {
+  transition: transform 0.2s ease;
+}
+
+.device-bezel {
+  position: relative;
+  padding: 12px;
+  border-radius: 44px;
+  background: linear-gradient(160deg, #3a3a3a 0%, #1a1a1a 45%, #0d0d0d 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.device-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+#studio-toolbar,
+#studio-side {
+  /* Keep studio chrome at fixed size; phone UI rem scale must not shrink these. */
+  font-size: 14px;
+}
+
+#app {
+  /* Follows html rem scale from applyUiScale (14px @ Pro Max baseline). */
+  font-size: 0.875rem;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#page-diy,
+#page-details,
+#page-home,
+#page-plaza,
+#page-my-designs,
+#page-me,
+#page-earnings,
+#page-orders,
+#page-order-detail,
+#page-order-guide,
+#page-designer-rules,
+#page-address {
+  /* Same rem / scale context as #app (do not use absolute full-bleed overlays). */
+  font-size: inherit;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Flex child of #app — respects safe-area padding (never absolute inset:0). */
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Hard show/hide so page navigation works even if utility CSS fails to load. */
+#page-diy.hidden,
+#page-details.hidden,
+#page-home.hidden,
+#page-plaza.hidden,
+#page-my-designs.hidden,
+#page-me.hidden,
+#page-earnings.hidden,
+#page-orders.hidden,
+#page-order-detail.hidden,
+#page-order-guide.hidden,
+#page-designer-rules.hidden,
+#page-address.hidden,
+#app-tabbar.hidden {
+  display: none !important;
+}
+
+#page-diy.flex,
+#page-details.flex,
+#page-home.flex,
+#page-plaza.flex,
+#page-my-designs.flex,
+#page-me.flex,
+#page-earnings.flex,
+#page-orders.flex,
+#page-order-detail.flex,
+#page-order-guide.flex,
+#page-designer-rules.flex,
+#page-address.flex {
+  display: flex !important;
+}
+
+#app-tabbar .tab-btn img {
+  color: #1c1917;
+}
+
+.device-screen #app {
+  /* Desktop studio: --safe-top from device model; live phone uses env() below. */
+  padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+}
+
+.device-cutout {
+  pointer-events: none;
+  position: absolute;
+  z-index: 30;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  background: #0a0a0a;
+}
+
+.device-cutout[data-top='notch'] {
+  width: 120px;
+  height: 28px;
+  border-radius: 0 0 16px 16px;
+}
+
+.device-cutout[data-top='island'] {
+  width: 96px;
+  height: 28px;
+  border-radius: 20px;
+}
+
+/* Real phone / narrow: fullscreen app, hide studio chrome */
+@media (max-width: 900px) {
+  html,
+  body {
+    height: 100%;
+    height: 100dvh;
+    background: #f9f9f9 !important;
+  }
+
+  body {
+    /* Override studio dark canvas so no black letterboxing */
+    background-color: #f9f9f9 !important;
+  }
+
+  #studio-toolbar,
+  #studio-side {
+    display: none !important;
+  }
+
+  #studio {
+    height: 100dvh;
+    min-height: 100dvh;
+    background: #f9f9f9;
+  }
+
+  #studio-stage {
+    display: block;
+    height: 100%;
+    min-height: 100%;
+    background: #f9f9f9;
+  }
+
+  #device-shell {
+    transform: none !important;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .device-bezel {
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #f9f9f9;
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .device-cutout {
+    display: none;
+  }
+
+  #device-screen {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    background: #f9f9f9;
+  }
+
+  .device-screen #app {
+    /* Align under Dynamic Island / notch; fill home-indicator inset */
+    height: 100%;
+    min-height: 100%;
+    padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    background: #fff;
+    box-sizing: border-box;
+  }
+}

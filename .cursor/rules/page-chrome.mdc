@@ -1,0 +1,40 @@
+---
+description: Global page chrome — safe-area top inset + unified page title bar
+alwaysApply: true
+---
+
+# Page chrome (mandatory)
+
+Every screen mounted under `#app` must follow these rules. Do not invent one-off top spacing or header heights.
+
+## 1. Phone status-bar safe area
+
+- Content must never sit under the notch / Dynamic Island / status bar.
+- Safe inset is applied on `#app` via CSS (`--safe-top` in desktop studio; `env(safe-area-inset-top)` on real devices). UI scale still comes from `uiScale.js`.
+- **Do not** position page roots with `position: absolute; inset: 0` (that ignores `#app` padding and covers the safe area).
+- Page roots use normal flex flow inside `#app` (`flex flex-col`, `flex-1 min-h-0` when visible).
+- Full-screen overlays/modals that must clear the cutout use  
+  `padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px))` (or sit inside `#app` so they inherit the inset).
+
+## 2. Page title bar (`.page-header`)
+
+- **Every** page has a top title bar as the first child: `<header class="page-header">`.
+- Size, padding, border, and title typography are defined only in `src/styles/main.css` for `.page-header` — do not override min-height / padding per page.
+- Layout pattern (same on all pages):
+
+```html
+<header class="page-header">
+  <!-- back button OR empty side slot -->
+  <button type="button" class="page-header-side" …>…</button>
+  <!-- OR --><span class="page-header-side" aria-hidden="true"></span>
+  <h1 class="page-header-title">Page Name</h1>
+  <span class="page-header-side" aria-hidden="true"></span>
+</header>
+```
+
+- Title text is concise English. Side slots are always `page-header-side` so the title stays optically centered and bar height matches across Home / tabs / DIY / Details.
+
+## 3. Adaptive type & layout
+
+- Prefer `rem` / Tailwind scale tokens; do not hard-code px font sizes that fight `uiScale`.
+- New pages live under `src/pages/<name>/` and register in `src/main.js` + `src/shared/nav.js` when they are routes.

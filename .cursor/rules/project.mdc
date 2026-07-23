@@ -1,0 +1,53 @@
+# Pearl Agent — project rules
+
+## Stack (do not change without explicit user request)
+
+- **Construction**: Shopify storefront + minimal H5 embed
+- **UI**: HTML + **Tailwind CSS** (high whitespace, modern sans, minimal lines)
+- **Canvas**: **HTML5 Canvas** for bracelet rendering / gestures
+- **Logic**: **Vanilla JS** (ES modules) — no React/Vue/Svelte for MVP
+- **Commerce**: Shopify (Storefront later); MVP catalog from Excel → `catalog.json`
+
+## MVP scope (phase 1+)
+
+**In scope — Home shell + DIY + Design Details:**
+
+1. Home — banner, service icons (placeholders), DIY dual CTAs, Design Plaza preview (6), bottom tabs
+2. Tab stubs — Design Plaza, My Designs, Me
+3. Top bar — wrist circumference, price, help modal
+4. Center canvas — circular track, add / reorder / drag-out delete
+5. Middle bar — clear, recommend stub, Make Now → Design Details
+6. Bottom shelf — Beads/Accessories + category sidebar + product cards
+7. Design Details — snapshot, rename, BOM, notes; Continue / checkout stub
+
+**Out of scope until asked:** Shopify checkout, cloud save, paid recommend, Shopify live API, live share/submit, phone-charm designer.
+
+## Directory map
+
+```text
+index.html                      # Studio shell + #app mount point
+src/main.js                     # Boot + wire Home ↔ DIY ↔ Details
+src/pages/home/                 # Home page + plaza mock data
+src/pages/plaza|myDesigns|me/   # Tab stub pages
+src/pages/diy/                  # DIY page (page.html, canvas/, ui/)
+src/pages/details/              # Design Details (page.html, bom.js)
+src/shared/                     # state, domain, data, nav, studio UI, tabBar
+src/styles/main.css
+data/commodity_idx.xlsx         # canonical SKU workbook
+new_input/                      # drop zone → npm run sync:catalog
+public/brand|icons|products
+docs/ .cursor/rules/
+```
+
+## Coding norms
+
+- Keep page code under `src/pages/{home,plaza,myDesigns,me,diy,details}/` — do not mix page markup/logic
+- Shared catalog/state/pricing/nav lives in `src/shared/` only
+- Prefer small ES modules; keep Canvas logic out of DOM shelf code
+- State flows one way: shelf click → store → canvas + top bar subscribe
+- Nav: Home tabs ↔ DIY (back → Home) ↔ Design Details; tab bar hidden in studio pages
+- Page chrome: every page uses `.page-header`; never `absolute; inset:0` on page roots (breaks safe-area) — see `.cursor/rules/page-chrome.mdc`
+- English UI copy for overseas market; keep labels concise
+- New SKUs: put batch xlsx + png in `new_input/` → `npm run sync:catalog` (merges into `data/commodity_idx.xlsx`)
+- UI logo/icons stay in `public/brand` and `public/icons` — never in `new_input/`
+- Do not add frameworks, CSS-in-JS, or heavy canvas libraries unless requested

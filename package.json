@@ -1,0 +1,30 @@
+{
+  "name": "pearl-agent-tw",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:pages": "VITE_BASE=/pearl_agent_tw/ vite build",
+    "preview": "vite preview",
+    "preview:pages": "VITE_BASE=/pearl_agent_tw/ vite build && vite preview",
+    "sync:catalog": "node scripts/sync-catalog.mjs",
+    "sync:plaza": "node scripts/sync-plaza.mjs",
+    "normalize:products": "node scripts/normalize-product-image.mjs public/products"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.11",
+    "vite": "^6.3.5",
+    "xlsx": "^0.18.5"
+  },
+  "dependencies": {
+    "classic-level": "^3.0.0",
+    "level": "^10.0.0"
+  },
+  "allowScripts": {
+    "classic-level@3.0.0": true
+  }
+}
