@@ -543,7 +543,7 @@ function usePlazaDesign() {
   closeLightbox()
   refreshPlazaPage()
   refreshHomePlaza()
-  showDiyPage({ returnTab: 'plaza' })
+  showDiyPage()
   showToast(
     pub.usePriceTwd > 0
       ? `已套用設計（使用費 NT$${formatPrice(pub.usePriceTwd)}）`

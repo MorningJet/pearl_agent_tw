@@ -273,7 +273,7 @@ function renderPlazaPlaceholders() {
 
 function bindActions() {
   document.getElementById('home-cta-bracelet')?.addEventListener('click', () => {
-    showDiyPage({ returnTab: 'home' })
+    showDiyPage()
   })
 
   document.getElementById('home-cta-charm')?.addEventListener('click', () => {

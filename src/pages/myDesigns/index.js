@@ -131,7 +131,7 @@ function bindActions() {
 
   document.getElementById('my-designs-add')?.addEventListener('click', () => {
     startNewDesign()
-    showDiyPage({ returnTab: 'my-designs' })
+    showDiyPage()
   })
 
   const savedRail = document.getElementById('my-designs-rail')

@@ -26,10 +26,6 @@ const ME_SUB_PAGE_IDS = [
 /** @type {TabId} */
 let activeTab = 'home'
 
-/** Where DIY back returns (Home CTA vs My Designs). */
-/** @type {TabId} */
-let diyReturnTab = 'home'
-
 /** @type {null | ((tab: TabId) => void)} */
 let afterShowTab = null
 
@@ -150,11 +146,7 @@ export function showDesignerRulesPage() {
   showMeSubPage('page-designer-rules', 'designer-rules-scroll')
 }
 
-/**
- * @param {{ returnTab?: TabId }} [options]
- */
-export function showDiyPage(options = {}) {
-  if (options.returnTab) diyReturnTab = options.returnTab
+export function showDiyPage() {
   hideAllTabs()
   hideMeSubPages()
   hideTabBar()
@@ -166,9 +158,9 @@ export function showDiyPage(options = {}) {
   diy?.classList.add('flex')
 }
 
-/** Leave DIY studio back to the tab that opened it. */
+/** Leave DIY studio back to Home. */
 export function leaveDiyPage() {
-  showTab(diyReturnTab)
+  showHomePage()
 }
 
 export function showDetailsPage() {
