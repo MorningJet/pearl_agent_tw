@@ -47,6 +47,14 @@ export function measureViewportWidth() {
   const screenEl = document.getElementById('device-screen')
   const vv = window.visualViewport
 
+  // Desktop embed letterbox: scale from the centered phone column, not the window.
+  if (isEmbedMode() && !window.matchMedia(LIVE_PHONE_MQ).matches) {
+    if (screenEl?.clientWidth > 0) return screenEl.clientWidth
+    const h = vv?.height || window.innerHeight || 852
+    const fromHeight = (h * 393) / 852
+    return Math.max(280, Math.min(window.innerWidth || fromHeight, fromHeight, 440))
+  }
+
   if (isLivePhoneViewport()) {
     /** @type {number[]} */
     const candidates = []

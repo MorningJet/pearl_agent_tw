@@ -254,7 +254,7 @@ body {
   }
 }
 
-/* Shopify iframe / ?embed=1 — same user chrome regardless of desktop width */
+/* Shopify iframe / ?embed=1 — hide studio chrome */
 html.embed-app,
 html.embed-app body {
   height: 100%;
@@ -322,4 +322,44 @@ html.embed-app .device-screen #app {
   padding-right: env(safe-area-inset-right, 0px);
   background: #fff;
   box-sizing: border-box;
+}
+
+/*
+ * Desktop / wide embed: lock to phone aspect from viewport height,
+ * center column, black letterbox on the sides (H5 is phone-first).
+ * Reference: iPhone 15 logical 393×852.
+ */
+@media (min-width: 901px) {
+  html.embed-app,
+  html.embed-app body {
+    background: #000 !important;
+  }
+
+  html.embed-app body {
+    background-color: #000 !important;
+  }
+
+  html.embed-app #studio {
+    background: #000;
+  }
+
+  html.embed-app #studio-stage {
+    display: flex !important;
+    align-items: stretch;
+    justify-content: center;
+    background: #000;
+  }
+
+  html.embed-app #device-shell {
+    width: min(100vw, calc(100dvh * 393 / 852));
+    max-width: 440px;
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
+  }
+
+  html.embed-app .device-bezel,
+  html.embed-app #device-screen {
+    background: #f9f9f9;
+  }
 }
