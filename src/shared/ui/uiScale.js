@@ -11,8 +11,32 @@ export const UI_BASE_WIDTH = 440
 /** Narrow breakpoint — matches studio “real phone” layout. */
 export const LIVE_PHONE_MQ = '(max-width: 900px)'
 
+/**
+ * Shopify / production: hide desktop studio shell.
+ * - `?embed=1` or `?app=1` forces app chrome
+ * - iframe (Shopify Page) auto-embeds
+ * - `?studio=1` forces desktop preview even in an iframe
+ */
+export function isEmbedMode() {
+  try {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('studio') === '1') return false
+    if (q.get('embed') === '1' || q.get('app') === '1') return true
+    return window.self !== window.top
+  } catch {
+    // Cross-origin iframe access edge cases → prefer user app chrome
+    return true
+  }
+}
+
+/** Apply before first paint helpers / studio init (also mirrored in index.html). */
+export function applyEmbedClass() {
+  if (isEmbedMode()) document.documentElement.classList.add('embed-app')
+  else document.documentElement.classList.remove('embed-app')
+}
+
 export function isLivePhoneViewport() {
-  return window.matchMedia(LIVE_PHONE_MQ).matches
+  return isEmbedMode() || window.matchMedia(LIVE_PHONE_MQ).matches
 }
 
 /**

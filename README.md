@@ -43,7 +43,17 @@ git push -u origin main
 2. 倉庫 **Settings → Pages → Build and deployment → Source** 選 **GitHub Actions**。
 3. 推送 `main` 後等待 workflow **Deploy GitHub Pages** 成功。
 4. 站點網址：`https://MorningJet.github.io/pearl_agent_tw/`（倉庫名不同則改路徑）。
-5. Shopify 頁面 iframe 改為該 URL。
+5. Shopify iframe 請用用戶版（自動隱藏開發殼）：
+
+```html
+<iframe
+  src="https://morningjet.github.io/pearl_agent_tw/?embed=1"
+  style="width:100%;min-height:80vh;border:0;"
+  title="Pearl Pearl DIY"
+></iframe>
+```
+
+（嵌入 iframe 時也會自動進用戶版；桌面直接打開根網址仍是開發預覽。本機用戶版：`?embed=1`，強制開發殼：`?studio=1`。）
 
 本機預覽 Pages 路徑前綴：
 

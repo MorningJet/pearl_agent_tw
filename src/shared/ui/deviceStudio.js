@@ -1,4 +1,5 @@
 import {
+  applyEmbedClass,
   applyUiScale,
   isLivePhoneViewport,
   syncUiScaleFromScreen,
@@ -47,6 +48,8 @@ const DEFAULT_ID = 'iphone-15'
  * On a real phone, frame sizes are ignored — live viewport drives UI scale.
  */
 export function initDeviceStudio() {
+  applyEmbedClass()
+
   const screen = document.getElementById('device-screen')
   const select = document.getElementById('device-select')
   const cutout = document.getElementById('device-cutout')
