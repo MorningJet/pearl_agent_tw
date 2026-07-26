@@ -37,7 +37,6 @@ import { refreshMePage } from '../me/index.js'
  *   designerId?: string,
  *   designFeeTwd?: number,
  *   shippingTwd?: number,
- *   /** Match details page: fee summary (plaza) vs SKU BOM (normal). */
  *   bomDisplay?: 'fee' | 'sku',
  *   designImageUrl?: string,
  *   beadsSubtotalTwd?: number,
