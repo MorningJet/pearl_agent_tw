@@ -111,7 +111,12 @@ function renderDraft() {
     (draft.bomDisplay !== 'sku' && designFee > 0)
 
   if (title) title.textContent = draft.designName || '手鍊設計'
-  if (price) price.textContent = `NT$${formatPrice(beadsSubtotal)}`
+  if (price) {
+    const total =
+      Math.max(0, Math.round(Number(draft.amountTwd) || 0)) ||
+      beadsSubtotal + designFee + shippingTwd
+    price.textContent = `NT$${formatPrice(total)}`
+  }
   // Drop any leftover wrist line from older cached markup.
   document.getElementById('checkout-product-wrist')?.remove()
   if (media) {

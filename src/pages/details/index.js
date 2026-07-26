@@ -939,6 +939,12 @@ function renderDetailsUnsafe() {
   const isPlazaEdit = detailsMode === 'plaza-edit'
   const showFeeSummary = isPlaza || isPlazaEdit
   const pub = plazaViewPub
+  const designFeeTwd = isPlaza
+    ? Math.max(0, Math.round(Number(pub?.usePriceTwd) || 0))
+    : isPlazaEdit
+      ? Math.max(0, Math.round(Number(getAppliedDesignFeeTwd()) || 0))
+      : 0
+  const totalPayableTwd = price + designFeeTwd + shipping.amount
 
   const name = getDesignName()
   const nameText = document.getElementById('details-name-text')
@@ -951,7 +957,7 @@ function renderDetailsUnsafe() {
   }
 
   const priceEl = document.getElementById('details-price')
-  if (priceEl) priceEl.textContent = `NT$${formatPrice(price)}`
+  if (priceEl) priceEl.textContent = `NT$${formatPrice(totalPayableTwd)}`
 
   const shipNoteEl = document.getElementById('details-price-ship-note')
   if (shipNoteEl) shipNoteEl.textContent = shipping.priceBadge
@@ -1022,7 +1028,7 @@ function renderDetailsUnsafe() {
 
   const feeList = document.getElementById('details-fee-summary')
   if (feeList && showFeeSummary) {
-    const designFee = isPlaza ? pub?.usePriceTwd || 0 : getAppliedDesignFeeTwd()
+    const designFee = designFeeTwd
     const wristLabel = `腕圍 ${formatCm(mm)}cm`
     feeList.innerHTML =
       `
