@@ -13,10 +13,14 @@ import {
   orderStatusLabel,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
+import { syncOrdersFromServer } from '../../shared/newebpay/orderStatus.js'
 import { openOrderDetail } from '../orderDetail/index.js'
 
 /** @type {'all' | import('../../shared/state/ordersStore.js').OrderStatus} */
 let filter = 'all'
+
+/** @type {boolean} */
+let syncInFlight = false
 
 /**
  * @param {HTMLElement} host
@@ -25,6 +29,9 @@ export function initOrdersPage(host) {
   mountFragment(ordersHtml, host)
   document.getElementById('orders-back')?.addEventListener('click', () => {
     showTab('me')
+  })
+  window.addEventListener('pearl:orders-refresh', () => {
+    refreshOrdersPage()
   })
   document.getElementById('orders-tabs')?.addEventListener('click', (e) => {
     const btn = e.target instanceof Element ? e.target.closest('[data-orders-filter]') : null
@@ -64,6 +71,18 @@ export function initOrdersPage(host) {
 export function refreshOrdersPage() {
   syncFilterTabs()
   renderOrders()
+  void refreshOrdersFromServer()
+}
+
+async function refreshOrdersFromServer() {
+  if (syncInFlight) return
+  syncInFlight = true
+  try {
+    await syncOrdersFromServer()
+    renderOrders()
+  } finally {
+    syncInFlight = false
+  }
 }
 
 function syncFilterTabs() {

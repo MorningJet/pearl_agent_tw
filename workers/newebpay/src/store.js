@@ -88,6 +88,7 @@ export async function putShopifyOrderMirror(env, mirror) {
   if (mirror.merchantOrderNo) {
     await kvPut(env, shopifyMerchantKey(String(mirror.merchantOrderNo)), raw)
   }
+  await indexShopifyOrderByEmail(env, mirror)
 }
 
 /**
@@ -105,5 +106,67 @@ export async function getShopifyOrderMirror(env, q) {
     return JSON.parse(raw)
   } catch {
     return null
+  }
+}
+
+/** @param {string} email */
+function emailOrdersKey(email) {
+  return `email-orders:${String(email || '').trim().toLowerCase()}`
+}
+
+/**
+ * Index mirror under buyer email for H5「我的訂單」list-by-email.
+ * @param {any} env
+ * @param {object} mirror
+ */
+export async function indexShopifyOrderByEmail(env, mirror) {
+  const email = String(mirror?.email || '').trim().toLowerCase()
+  if (!email || !email.includes('@')) return
+  const shopifyOrderId = String(mirror.shopifyOrderId || '').trim()
+  const merchantOrderNo = String(mirror.merchantOrderNo || '').trim()
+  if (!shopifyOrderId && !merchantOrderNo) return
+
+  const key = emailOrdersKey(email)
+  const raw = await kvGet(env, key)
+  /** @type {object[]} */
+  let list = []
+  try {
+    const parsed = raw ? JSON.parse(raw) : []
+    list = Array.isArray(parsed) ? parsed : []
+  } catch {
+    list = []
+  }
+
+  const next = {
+    shopifyOrderId: shopifyOrderId || null,
+    shopifyOrderName: mirror.shopifyOrderName || null,
+    merchantOrderNo: merchantOrderNo || null,
+    updatedAt: Number(mirror.updatedAt) || Date.now(),
+  }
+  list = list.filter((row) => {
+    if (!row || typeof row !== 'object') return false
+    if (shopifyOrderId && String(row.shopifyOrderId || '') === shopifyOrderId) return false
+    if (merchantOrderNo && String(row.merchantOrderNo || '') === merchantOrderNo) return false
+    return true
+  })
+  list.unshift(next)
+  list = list.slice(0, 80)
+  await kvPut(env, key, JSON.stringify(list))
+}
+
+/**
+ * @param {any} env
+ * @param {string} email
+ * @returns {Promise<object[]>}
+ */
+export async function listShopifyOrderIndexByEmail(env, email) {
+  const key = emailOrdersKey(email)
+  const raw = await kvGet(env, key)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
   }
 }

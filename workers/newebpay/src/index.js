@@ -21,6 +21,7 @@
  *   POST /api/webhooks/shopify
  *   GET  /api/h5/order-status
  *   POST /api/h5/order-status/batch
+ *   GET  /api/h5/orders?email=
  */
 
 import { getOrder, putOrder } from './store.js'
@@ -33,7 +34,9 @@ import {
 import {
   handleH5OrderStatus,
   handleH5OrderStatusBatch,
+  handleH5OrdersByEmail,
   handleShopifyWebhook,
+  mirrorFromCheckoutRecord,
 } from './shopifyWebhook.js'
 
 const GATEWAYS = {
@@ -89,6 +92,10 @@ export default {
 
       if (url.pathname === '/api/h5/order-status' && request.method === 'GET') {
         return await handleH5OrderStatus(url, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/orders' && request.method === 'GET') {
+        return await handleH5OrdersByEmail(url, env, cors)
       }
 
       if (url.pathname === '/api/h5/order-status/batch' && request.method === 'POST') {
@@ -240,6 +247,11 @@ async function handleCheckout(request, env, cors) {
   }
 
   await putOrder(env, merchantOrderNo, record)
+  try {
+    await mirrorFromCheckoutRecord(env, record, 'checkout/unpaid')
+  } catch (e) {
+    console.warn('[shopify] mirror unpaid failed', e instanceof Error ? e.message : e)
+  }
 
   // ② 再組藍新 MPG；失敗不影響已建立的未付款單。
   /** @type {string | null} */
@@ -528,6 +540,11 @@ async function syncShopifyFromRecord(env, record, pay) {
       record.status = 'shopify_synced'
       record.syncedAt = Date.now()
       await putOrder(env, record.merchantOrderNo, record)
+      try {
+        await mirrorFromCheckoutRecord(env, record, 'newebpay/paid')
+      } catch (e) {
+        console.warn('[shopify] mirror paid failed', e instanceof Error ? e.message : e)
+      }
       console.log('[shopify] order marked paid → scheduling', updated)
     } else {
       const created = await createPaidShopifyOrder(env, record, pay)
@@ -539,6 +556,11 @@ async function syncShopifyFromRecord(env, record, pay) {
       record.status = 'shopify_synced'
       record.syncedAt = Date.now()
       await putOrder(env, record.merchantOrderNo, record)
+      try {
+        await mirrorFromCheckoutRecord(env, record, 'newebpay/paid-create')
+      } catch (e) {
+        console.warn('[shopify] mirror paid-create failed', e instanceof Error ? e.message : e)
+      }
       console.log('[shopify] paid order created (fallback)', created)
     }
   } catch (e) {

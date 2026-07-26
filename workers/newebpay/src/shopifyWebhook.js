@@ -8,7 +8,8 @@
  * Secret:   SHOPIFY_WEBHOOK_SECRET (= webhook signing secret)
  */
 
-import { getOrder, putOrder, getShopifyOrderMirror, putShopifyOrderMirror } from './store.js'
+import { getOrder, putOrder, getShopifyOrderMirror, putShopifyOrderMirror, listShopifyOrderIndexByEmail } from './store.js'
+import { isShopifyAuthConfigured, listShopifyOrdersByEmail } from './shopify.js'
 
 /** @typedef {'unpaid'|'scheduling'|'designing'|'shipping'|'pickup'|'done'|'closed'} H5OrderStatus */
 
@@ -177,6 +178,105 @@ export async function handleH5OrderStatusBatch(request, env, cors) {
 }
 
 /**
+ * List H5 order status mirrors for a member email.
+ * Prefers KV index; backfills from Shopify Admin when configured.
+ * GET /api/h5/orders?email=
+ * @param {URL} url
+ * @param {any} env
+ * @param {Record<string, string>} cors
+ */
+export async function handleH5OrdersByEmail(url, env, cors) {
+  const email = String(url.searchParams.get('email') || '')
+    .trim()
+    .toLowerCase()
+  if (!email || !email.includes('@')) {
+    return json({ ok: false, error: '需要 email' }, 400, cors)
+  }
+
+  /** @type {Map<string, object>} */
+  const byId = new Map()
+
+  const index = await listShopifyOrderIndexByEmail(env, email)
+  for (const row of index) {
+    const id = String(row?.shopifyOrderId || '').trim()
+    const mno = String(row?.merchantOrderNo || '').trim()
+    let mirror = null
+    if (id) mirror = await getShopifyOrderMirror(env, { shopifyOrderId: id })
+    if (!mirror && mno) mirror = await getShopifyOrderMirror(env, { merchantOrderNo: mno })
+    if (!mirror && mno) {
+      const record = await getOrder(env, mno)
+      if (record) {
+        byId.set(mno, {
+          merchantOrderNo: record.merchantOrderNo,
+          shopifyOrderId: record.shopifyOrderId || null,
+          shopifyOrderName: record.shopifyOrderName || null,
+          h5Status: record.h5Status || mapNewebpayRecordStatus(record),
+          trackingNo: record.trackingNo || '',
+          title: record.designName || '',
+          amountTwd: record.amountTwd,
+          email,
+          updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
+          imageUrl: record.designImageUrl || '',
+        })
+      }
+      continue
+    }
+    if (mirror) {
+      const key = String(mirror.shopifyOrderId || mirror.merchantOrderNo || '')
+      if (key) byId.set(key, publicMirror(mirror))
+    }
+  }
+
+  if (isShopifyAuthConfigured(env)) {
+    try {
+      const adminOrders = await listShopifyOrdersByEmail(env, email, { limit: 50 })
+      for (const order of adminOrders) {
+        const mirror = buildMirror(order, 'admin/list')
+        await putShopifyOrderMirror(env, mirror)
+        const key = String(mirror.shopifyOrderId || mirror.merchantOrderNo || '')
+        if (key) byId.set(key, publicMirror(mirror))
+      }
+    } catch (e) {
+      console.warn('[h5-orders] admin list failed', e instanceof Error ? e.message : e)
+    }
+  }
+
+  const orders = [...byId.values()].sort(
+    (a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0),
+  )
+  return json({ ok: true, orders }, 200, cors)
+}
+
+/**
+ * Build + store mirror from a NewebPay checkout record (after Shopify create / paid).
+ * @param {any} env
+ * @param {object} record
+ * @param {string} [topic]
+ */
+export async function mirrorFromCheckoutRecord(env, record, topic = 'checkout') {
+  if (!record?.shopifyOrderId) return null
+  const mirror = {
+    shopifyOrderId: String(record.shopifyOrderId),
+    shopifyOrderName: String(record.shopifyOrderName || ''),
+    merchantOrderNo: String(record.merchantOrderNo || ''),
+    h5Status: record.h5Status || 'unpaid',
+    financialStatus: record.h5Status === 'scheduling' ? 'paid' : 'pending',
+    fulfillmentStatus: null,
+    tags: '',
+    trackingNo: record.trackingNo || '',
+    title: record.designName || '',
+    amountTwd: Number(record.amountTwd) || 0,
+    email: String(record.email || ''),
+    imageUrl: String(record.designImageUrl || ''),
+    topic,
+    updatedAt: Date.now(),
+    shopifyUpdatedAt: null,
+  }
+  await putShopifyOrderMirror(env, mirror)
+  return mirror
+}
+
+/**
  * Map Shopify order JSON → H5 status.
  * Explicit tag `pearl:designing` etc. wins over auto rules (except cancel/refund).
  *
@@ -242,7 +342,8 @@ function buildMirror(order, topic) {
     trackingNo,
     title,
     amountTwd,
-    email: String(order.email || ''),
+    email: String(order.email || readNoteAttr(order, 'pearl_member_email') || ''),
+    imageUrl: String(readNoteAttr(order, 'pearl_design_image_url') || ''),
     topic,
     updatedAt: Date.now(),
     shopifyUpdatedAt: order.updated_at || null,
@@ -261,6 +362,8 @@ function publicMirror(mirror) {
     trackingNo: mirror.trackingNo || '',
     title: mirror.title || '',
     amountTwd: mirror.amountTwd,
+    email: mirror.email || '',
+    imageUrl: mirror.imageUrl || '',
     updatedAt: mirror.updatedAt,
   }
 }

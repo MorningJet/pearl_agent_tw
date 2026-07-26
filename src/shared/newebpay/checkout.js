@@ -118,6 +118,7 @@ export async function createNewebpayCheckout(bom, meta) {
       amountTwd,
       shopifyOrderId: data.shopifyOrderId ?? null,
       shopifyOrderName: data.shopifyOrderName || null,
+      h5Status: data.h5Status || 'unpaid',
     }
 
     // Shopify 未付款單已建立；藍新參數齊全才導向付款頁。

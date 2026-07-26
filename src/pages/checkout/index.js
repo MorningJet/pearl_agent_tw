@@ -9,6 +9,7 @@ import {
   isNewebpayConfigured,
   submitNewebpayForm,
 } from '../../shared/newebpay/checkout.js'
+import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
 import {
   getMemberId,
   isEmailMemberId,
@@ -206,6 +207,25 @@ async function submitCheckout() {
 
     setMemberIdFromEmail(parsed.email)
     refreshMePage()
+
+    persistCheckoutOrder(
+      result,
+      {
+        designName: draft.designName,
+        designImageUrl: draft.designImageUrl || '',
+        wristCmNum: draft.wristCmNum,
+        wristCm: draft.wristCm,
+        beadsSubtotalTwd: draft.beadsSubtotalTwd,
+        designFeeTwd: draft.designFeeTwd,
+        email: parsed.email,
+        shippingAddress: parsed.shippingAddress,
+      },
+      {
+        beadsSubtotal: draft.beadsSubtotalTwd,
+        designFee: draft.designFeeTwd,
+        shipping: draft.shippingTwd,
+      },
+    )
 
     if (result.paymentReady) {
       if (btn) btn.textContent = '前往付款…'

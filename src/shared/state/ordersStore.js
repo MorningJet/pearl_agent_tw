@@ -1,5 +1,5 @@
 /**
- * Orders (local persistence). Demo seeds illustrate the 7 status flow.
+ * Orders (local persistence + Shopify / Worker status sync).
  */
 
 /**
@@ -32,11 +32,16 @@
  *   recipientAddress?: string,
  *   trackingNo?: string,
  *   cancelReason?: string,
+ *   shopifyOrderId?: string,
+ *   shopifyOrderName?: string,
+ *   merchantOrderNo?: string,
+ *   email?: string,
  * }} Order
  */
 
-/** v3: 7-status model + demo seeds */
-const STORAGE_KEY = 'pearl-tw.orders.v3'
+/** v4: real Shopify/NewebPay orders only (no demo seeds). */
+const STORAGE_KEY = 'pearl-tw.orders.v4'
+const LEGACY_STORAGE_KEY = 'pearl-tw.orders.v3'
 
 /** @type {Order[] | null} */
 let cache = null
@@ -73,14 +78,29 @@ export const ORDER_STATUS_FILTERS = /** @type {const} */ ([
 function readAll() {
   if (cache) return cache
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    let raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+      if (legacy) {
+        const parsed = JSON.parse(legacy)
+        const list = (Array.isArray(parsed) ? parsed : [])
+          .map(normalizeOrder)
+          .filter((o) => o && !isDemoOrderId(o.id))
+        cache = list
+        writeAll(list)
+        try {
+          localStorage.removeItem(LEGACY_STORAGE_KEY)
+        } catch {
+          /* ignore */
+        }
+        return cache
+      }
       cache = []
       return cache
     }
     const parsed = JSON.parse(raw)
     const list = Array.isArray(parsed) ? parsed : []
-    cache = list.map(normalizeOrder).filter(Boolean)
+    cache = list.map(normalizeOrder).filter((o) => o && !isDemoOrderId(o.id))
   } catch {
     cache = []
   }
@@ -97,6 +117,11 @@ function writeAll(list) {
   }
 }
 
+/** @param {string} id */
+function isDemoOrderId(id) {
+  return String(id || '').startsWith('ord-demo-')
+}
+
 /**
  * @param {unknown} raw
  * @returns {Order | null}
@@ -105,7 +130,7 @@ function normalizeOrder(raw) {
   if (!raw || typeof raw !== 'object') return null
   const o = /** @type {Record<string, unknown>} */ (raw)
   const id = String(o.id || '')
-  if (!id) return null
+  if (!id || isDemoOrderId(id)) return null
   return {
     id,
     title: String(o.title || '手鍊設計'),
@@ -124,6 +149,10 @@ function normalizeOrder(raw) {
     recipientAddress: String(o.recipientAddress || ''),
     trackingNo: String(o.trackingNo || ''),
     cancelReason: String(o.cancelReason || ''),
+    shopifyOrderId: o.shopifyOrderId != null ? String(o.shopifyOrderId) : '',
+    shopifyOrderName: String(o.shopifyOrderName || ''),
+    merchantOrderNo: String(o.merchantOrderNo || ''),
+    email: String(o.email || ''),
   }
 }
 
@@ -155,13 +184,11 @@ export function normalizeStatus(status) {
   }
 }
 
-/** Newest first. Includes in-memory demo seeds (overridden by same-id persisted rows). */
+/** Newest first. */
 export function listOrders() {
-  /** @type {Map<string, Order>} */
-  const map = new Map()
-  for (const o of buildDemoOrders()) map.set(o.id, o)
-  for (const o of readAll()) map.set(o.id, o)
-  return [...map.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+  return readAll()
+    .slice()
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
 }
 
 /** @param {string} id */
@@ -170,12 +197,34 @@ export function getOrder(id) {
 }
 
 /**
+ * Stable local id from Shopify / NewebPay keys.
+ * @param {{ shopifyOrderId?: string | number | null, merchantOrderNo?: string | null, id?: string }} keys
+ */
+export function orderIdFromKeys(keys) {
+  const sid = String(keys.shopifyOrderId || '').trim()
+  if (sid) return `shopify-${sid}`
+  const mno = String(keys.merchantOrderNo || '').trim()
+  if (mno) return `np-${mno}`
+  if (keys.id) return String(keys.id)
+  return newOrderId()
+}
+
+/**
  * @param {Omit<Order, 'id' | 'createdAt'> & { id?: string, createdAt?: number }} input
  */
 export function upsertOrder(input) {
   const list = readAll().slice()
-  const id = input.id || newOrderId()
-  const idx = list.findIndex((o) => o.id === id)
+  const id =
+    input.id ||
+    orderIdFromKeys({
+      shopifyOrderId: input.shopifyOrderId,
+      merchantOrderNo: input.merchantOrderNo,
+    })
+  const idx = findOrderIndex(list, {
+    id,
+    shopifyOrderId: input.shopifyOrderId,
+    merchantOrderNo: input.merchantOrderNo,
+  })
   /** @type {Order} */
   const next = {
     id,
@@ -194,11 +243,93 @@ export function upsertOrder(input) {
     recipientAddress: input.recipientAddress || '',
     trackingNo: input.trackingNo || '',
     cancelReason: input.cancelReason || '',
+    shopifyOrderId: input.shopifyOrderId != null ? String(input.shopifyOrderId) : '',
+    shopifyOrderName: input.shopifyOrderName || '',
+    merchantOrderNo: input.merchantOrderNo || '',
+    email: input.email || '',
   }
-  if (idx >= 0) list[idx] = { ...list[idx], ...next }
-  else list.unshift(next)
+  if (idx >= 0) {
+    const prev = list[idx]
+    list[idx] = {
+      ...prev,
+      ...next,
+      id: prev.id,
+      createdAt: prev.createdAt || next.createdAt,
+      imageUrl: next.imageUrl || prev.imageUrl || '',
+      recipientName: next.recipientName || prev.recipientName || '',
+      recipientPhone: next.recipientPhone || prev.recipientPhone || '',
+      recipientAddress: next.recipientAddress || prev.recipientAddress || '',
+      wristCm: next.wristCm ?? prev.wristCm,
+      beadsSubtotalTwd: next.beadsSubtotalTwd ?? prev.beadsSubtotalTwd,
+      designFeeTwd: next.designFeeTwd ?? prev.designFeeTwd,
+      shippingTwd: next.shippingTwd ?? prev.shippingTwd,
+      email: next.email || prev.email || '',
+      shopifyOrderId: next.shopifyOrderId || prev.shopifyOrderId || '',
+      shopifyOrderName: next.shopifyOrderName || prev.shopifyOrderName || '',
+      merchantOrderNo: next.merchantOrderNo || prev.merchantOrderNo || '',
+    }
+    writeAll(list)
+    return list[idx]
+  }
+  list.unshift(next)
   writeAll(list)
   return next
+}
+
+/**
+ * Apply remote status fields onto a local order.
+ * @param {string} id
+ * @param {{ status?: string, trackingNo?: string, shopifyOrderId?: string, shopifyOrderName?: string, merchantOrderNo?: string, title?: string, amountTwd?: number }} patch
+ */
+export function patchOrderFromRemote(id, patch) {
+  const list = readAll().slice()
+  const idx = list.findIndex((o) => o.id === id)
+  if (idx < 0) return null
+  const prev = list[idx]
+  list[idx] = {
+    ...prev,
+    status: patch.status != null ? normalizeStatus(patch.status) : prev.status,
+    trackingNo:
+      patch.trackingNo != null && String(patch.trackingNo)
+        ? String(patch.trackingNo)
+        : prev.trackingNo,
+    shopifyOrderId: patch.shopifyOrderId
+      ? String(patch.shopifyOrderId)
+      : prev.shopifyOrderId,
+    shopifyOrderName: patch.shopifyOrderName
+      ? String(patch.shopifyOrderName)
+      : prev.shopifyOrderName,
+    merchantOrderNo: patch.merchantOrderNo
+      ? String(patch.merchantOrderNo)
+      : prev.merchantOrderNo,
+    title: patch.title ? String(patch.title) : prev.title,
+    amountTwd:
+      patch.amountTwd != null && Number(patch.amountTwd) > 0
+        ? Number(patch.amountTwd)
+        : prev.amountTwd,
+  }
+  writeAll(list)
+  return list[idx]
+}
+
+/**
+ * @param {Order[]} list
+ * @param {{ id: string, shopifyOrderId?: string | number | null, merchantOrderNo?: string | null }} keys
+ */
+function findOrderIndex(list, keys) {
+  const byId = list.findIndex((o) => o.id === keys.id)
+  if (byId >= 0) return byId
+  const sid = String(keys.shopifyOrderId || '').trim()
+  if (sid) {
+    const i = list.findIndex((o) => String(o.shopifyOrderId || '') === sid)
+    if (i >= 0) return i
+  }
+  const mno = String(keys.merchantOrderNo || '').trim()
+  if (mno) {
+    const i = list.findIndex((o) => String(o.merchantOrderNo || '') === mno)
+    if (i >= 0) return i
+  }
+  return -1
 }
 
 /** @param {string} status */
@@ -242,118 +373,4 @@ export function showsCustomGoodsNote(status) {
 function newOrderId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return `ord-${crypto.randomUUID()}`
   return `ord-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-/** @returns {Order[]} */
-function buildDemoOrders() {
-  const now = Date.now()
-  const day = 24 * 60 * 60 * 1000
-  const addr = {
-    recipientName: '王小明',
-    recipientPhone: '0912-345-678',
-    recipientAddress: '台北市大安區忠孝東路四段 100 號 5 樓',
-  }
-  return [
-    {
-      id: 'ord-demo-unpaid',
-      title: '星光粉晶',
-      status: /** @type {OrderStatus} */ ('unpaid'),
-      amountTwd: 1280,
-      createdAt: now - day * 0.2,
-      imageUrl: '/plaza/pub-dca45881-9c67-4dd0-b6f7-c1fcfbe3bcf4.png',
-      wristCm: 15.2,
-      beadsSubtotalTwd: 1230,
-      designFeeTwd: 0,
-      shippingTwd: 50,
-      ...addr,
-    },
-    {
-      id: 'ord-demo-scheduling',
-      title: '捕夢網',
-      status: /** @type {OrderStatus} */ ('scheduling'),
-      amountTwd: 1025,
-      createdAt: now - day * 0.8,
-      paidAt: now - day * 0.8,
-      imageUrl: '/plaza/pub-e08d746d-a3c1-4af2-b999-affff7c64ac5.png',
-      wristCm: 15.5,
-      beadsSubtotalTwd: 926,
-      designFeeTwd: 99,
-      shippingTwd: 0,
-      ...addr,
-    },
-    {
-      id: 'ord-demo-designing',
-      title: '漸變',
-      status: /** @type {OrderStatus} */ ('designing'),
-      amountTwd: 1656,
-      createdAt: now - day * 2,
-      paidAt: now - day * 2,
-      imageUrl: '/plaza/pub-029d61e7-facb-4963-9d7b-440fe70b8343.png',
-      wristCm: 14.4,
-      beadsSubtotalTwd: 1617,
-      designFeeTwd: 39,
-      shippingTwd: 0,
-      ...addr,
-    },
-    {
-      id: 'ord-demo-shipping',
-      title: '金色琉璃',
-      status: /** @type {OrderStatus} */ ('shipping'),
-      amountTwd: 968,
-      createdAt: now - day * 4,
-      paidAt: now - day * 4,
-      imageUrl: '/plaza/pub-a81f6111-a00b-4f28-8b16-8eb95c21fd44.png',
-      wristCm: 16.0,
-      beadsSubtotalTwd: 879,
-      designFeeTwd: 89,
-      shippingTwd: 0,
-      trackingNo: 'TW1234567890',
-      ...addr,
-    },
-    {
-      id: 'ord-demo-pickup',
-      title: '彩虹',
-      status: /** @type {OrderStatus} */ ('pickup'),
-      amountTwd: 1695,
-      createdAt: now - day * 6,
-      paidAt: now - day * 6,
-      imageUrl: '/plaza/pub-283e7097-b146-47db-82be-84a7b0ab7d3e.png',
-      wristCm: 14.8,
-      beadsSubtotalTwd: 1656,
-      designFeeTwd: 39,
-      shippingTwd: 0,
-      trackingNo: 'TW5556667778',
-      ...addr,
-    },
-    {
-      id: 'ord-demo-done',
-      title: '月光石串',
-      status: /** @type {OrderStatus} */ ('done'),
-      amountTwd: 1137,
-      createdAt: now - day * 12,
-      paidAt: now - day * 12,
-      imageUrl: '/plaza/pub-bf77b5cd-cf3b-489e-9e91-e777c28c1d4c.png',
-      wristCm: 15.0,
-      beadsSubtotalTwd: 1118,
-      designFeeTwd: 19,
-      shippingTwd: 0,
-      trackingNo: 'TW9876543210',
-      ...addr,
-    },
-    {
-      id: 'ord-demo-closed',
-      title: '紫金砂',
-      status: /** @type {OrderStatus} */ ('closed'),
-      amountTwd: 860,
-      createdAt: now - day * 5,
-      paidAt: now - day * 5,
-      imageUrl: '/plaza/pub-dd0a48cc-474f-4cfe-99bf-33b84fa8558d.png',
-      wristCm: 15.2,
-      beadsSubtotalTwd: 771,
-      designFeeTwd: 39,
-      shippingTwd: 50,
-      cancelReason: '買家申請退款',
-      ...addr,
-    },
-  ]
 }

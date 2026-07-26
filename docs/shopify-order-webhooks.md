@@ -11,6 +11,7 @@
 | `GET` | `/api/h5/order-status?merchantOrderNo=` | 用藍新單號查 |
 | `GET` | `/api/h5/order-status?shopifyOrderName=` | 用 `#1001` 這類名稱查 |
 | `POST` | `/api/h5/order-status/batch` | 批量：`{ shopifyOrderIds, merchantOrderNos }` |
+| `GET` | `/api/h5/orders?email=` | 依會員 email 列出訂單（Admin 回填 + KV） |
 
 Webhook 成功回應示例：
 
@@ -92,6 +93,12 @@ Webhook 收到後會：
 1. 寫入 KV 鏡像 `shopify-order:{id}`  
 2. 若找得到對應藍新 pending/paid 記錄，一併更新 `h5Status` / 物流單號  
 
-## 建議後續（H5）
+## 與 H5「我的訂單」
 
-「我的訂單」改為：本地示意單 + `GET /api/h5/order-status` 輪詢／進頁刷新真實單狀態（本 PR 只提供服務端接收與查詢；列表 UI 接線可下一步做）。
+進「我的訂單」時會：
+
+1. 用會員 email 呼叫 `GET /api/h5/orders`（必要時向 Shopify Admin 回填）  
+2. 再對本地已存單號呼叫 `POST /api/h5/order-status/batch` 刷新狀態  
+
+後台改 tag／發貨／取消後，Webhook 更新 KV；H5 下次進頁即同步。  
+結帳建立未付款單時也會寫入本地訂單與 Worker 鏡像。

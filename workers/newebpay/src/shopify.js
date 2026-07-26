@@ -349,6 +349,47 @@ export function isShopifyAuthConfigured(env) {
 }
 
 /**
+ * List Shopify orders for a buyer email (Admin API).
+ * @param {any} env
+ * @param {string} email
+ * @param {{ limit?: number }} [opts]
+ * @returns {Promise<object[]>}
+ */
+export async function listShopifyOrdersByEmail(env, email, opts = {}) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized || !normalized.includes('@')) return []
+  if (!isShopifyAuthConfigured(env)) return []
+
+  const domain = shopDomain(env)
+  const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim() || '2025-01'
+  const token = await getAdminAccessToken(env)
+  const limit = Math.min(50, Math.max(1, Number(opts.limit) || 50))
+  const url = new URL(`https://${domain}/admin/api/${version}/orders.json`)
+  url.searchParams.set('email', normalized)
+  url.searchParams.set('status', 'any')
+  url.searchParams.set('limit', String(limit))
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: adminHeaders(token),
+  })
+  const text = await res.text()
+  /** @type {any} */
+  let json
+  try {
+    json = JSON.parse(text)
+  } catch {
+    console.warn('[shopify] list by email non-JSON', res.status, text.slice(0, 200))
+    return []
+  }
+  if (!res.ok) {
+    console.warn('[shopify] list by email failed', res.status, json?.errors || text.slice(0, 200))
+    return []
+  }
+  return Array.isArray(json?.orders) ? json.orders : []
+}
+
+/**
  * H5 BOM → real Shopify catalog lines + shipping_lines (not a shipping product).
  * - Beads/accessories: variant_id by SKU (= productId) so Admin shows product images
  * - Design fee:「設計費用」variant × quantity(= fee TWD), NT$1 unit

@@ -13,6 +13,7 @@ import {
   orderStatusLabel,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
+import { syncOneOrderFromServer } from '../../shared/newebpay/orderStatus.js'
 
 /** @type {string} */
 let currentOrderId = ''
@@ -24,6 +25,7 @@ export function initOrderDetailPage(host) {
   mountFragment(orderDetailHtml, host)
   document.getElementById('order-detail-back')?.addEventListener('click', () => {
     showOrdersPage()
+    window.dispatchEvent(new CustomEvent('pearl:orders-refresh'))
   })
   document.getElementById('order-detail-body')?.addEventListener('click', (e) => {
     const payBtn =
@@ -52,6 +54,9 @@ export function initOrderDetailPage(host) {
 export function openOrderDetail(orderId) {
   currentOrderId = String(orderId || '')
   refreshOrderDetailPage()
+  void syncOneOrderFromServer(currentOrderId).then((updated) => {
+    if (updated && currentOrderId === updated.id) refreshOrderDetailPage()
+  })
 }
 
 export function refreshOrderDetailPage() {
