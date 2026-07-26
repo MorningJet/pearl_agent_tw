@@ -21,9 +21,23 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import OpenCC from 'opencc-js'
 import sharp from 'sharp'
 import XLSX from 'xlsx'
 import { normalizeProductImage } from './normalize-product-image.mjs'
+
+/** Simplified → Taiwan Traditional (with phrase table). */
+const toTw = OpenCC.Converter({ from: 'cn', to: 'twp' })
+
+/**
+ * @param {unknown} text
+ * @returns {string}
+ */
+function toTraditionalTw(text) {
+  const s = String(text ?? '').trim()
+  if (!s) return s
+  return toTw(s)
+}
 
 const COLUMNS = ['id', 'category1', 'category2', 'name', 'size_mm', 'price_twd', 'picture']
 const CATEGORY_COLUMNS = ['category1', 'category2']
@@ -108,8 +122,8 @@ function normalizeRows(rows) {
     byId.set(id, {
       id,
       category1: normalizeCategory1(row.category1),
-      category2: String(row.category2 ?? '').trim(),
-      name: String(row.name ?? id).trim(),
+      category2: toTraditionalTw(row.category2),
+      name: toTraditionalTw(row.name ?? id),
       size_mm: Number(row.size_mm) || 0,
       price_twd: Number(row.price_twd ?? row.price_usd) || 0,
       picture: String(row.picture ?? '').trim(),
