@@ -4,7 +4,8 @@
  * H5 → Shopify field mapping (Admin 訂單列表):
  *   備註 note     → 藍新訂單號、手圍、商品編碼（順時針編號，每顆一行）
  *   客戶 email    → 會員 email
- *   總計          → 與藍新一致的支付總價（單一 line item）
+ *   總計          → 與藍新一致（BOM 珠款 + 設計費 + 運費）
+ *   商品 line_items → H5 BOM 對應後台產品（SKU=productId → variant_id）；另含設計費/運費
  *   支付狀態      → pending（待付款）→ 藍新成功後 paid
  *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
  *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
@@ -165,7 +166,7 @@ async function createShopifyOrder(env, record, opts) {
   const amt = Math.round(Number(pay.amt || record.amountTwd) || 0)
   if (amt < 1) throw new Error('訂單金額無效')
 
-  const lineItems = buildLineItems(record, amt)
+  const lineItems = await buildLineItems(env, record, amt)
   if (!lineItems.length) throw new Error('沒有可寫入的商品列')
 
   const noteParts = buildNoteParts(record, pay)
@@ -309,22 +310,205 @@ export function isShopifyAuthConfigured(env) {
 }
 
 /**
- * Single custom line = 藍新支付總價（不逐顆展開商品明細）.
+ * H5 BOM → Shopify line items（與後台產品嚴格對應）.
+ * Prefer variant_id resolved by catalog SKU (= H5 productId); fall back to custom line with same SKU.
+ * @param {any} env
  * @param {object} record
- * @param {number} amt
+ * @param {number} amt — NewebPay total (sanity-check)
  */
-function buildLineItems(record, amt) {
-  const title = clip(String(record.designName || '手鍊設計').trim() || '手鍊設計', 255)
-  return [
-    {
-      title,
-      price: Math.max(0, Math.round(amt)).toFixed(2),
+async function buildLineItems(env, record, amt) {
+  /** @type {Array<Record<string, unknown>>} */
+  const lines = []
+  const bom = Array.isArray(record.bom) ? record.bom : []
+
+  /** @type {string[]} */
+  const skus = []
+  for (const row of bom) {
+    const sku = String(row.productId || '').trim()
+    if (sku) skus.push(sku)
+  }
+
+  const fee = Math.max(0, Math.round(Number(record.designFee) || 0))
+  const shipping = Math.max(0, Math.round(Number(record.shipping) || 0))
+
+  const variantBySku = await resolveVariantIdsBySkus(env, skus)
+  const designFeeVariantId = fee > 0 ? await resolveDesignFeeVariantId(env) : null
+
+  for (const row of bom) {
+    const qty = Math.max(1, Math.round(Number(row.qty) || 1))
+    let unit = Number(row.unitPrice)
+    if (!Number.isFinite(unit) && Number.isFinite(row.lineTotal)) {
+      unit = Number(row.lineTotal) / qty
+    }
+    unit = Math.max(0, Math.round(unit || 0))
+    const sku = clip(String(row.productId || ''), 64)
+    const name = String(row.name || sku || '珠款').trim()
+    const mm = row.diameterMm != null ? ` ${row.diameterMm}mm` : ''
+    const variantId = sku ? variantBySku.get(sku) : null
+
+    if (variantId) {
+      lines.push({
+        variant_id: Number(variantId),
+        quantity: qty,
+        price: unit.toFixed(2),
+        requires_shipping: true,
+        taxable: false,
+      })
+    } else {
+      lines.push({
+        title: clip(`${name}${mm}`, 255),
+        price: unit.toFixed(2),
+        quantity: qty,
+        sku: sku || undefined,
+        requires_shipping: true,
+        taxable: false,
+      })
+      if (sku) {
+        console.warn('[shopify] no variant for SKU, using custom line', sku)
+      }
+    }
+  }
+
+  if (fee > 0) {
+    if (designFeeVariantId) {
+      lines.push({
+        variant_id: Number(designFeeVariantId),
+        quantity: 1,
+        price: fee.toFixed(2),
+        requires_shipping: false,
+        taxable: false,
+      })
+    } else {
+      lines.push({
+        title: '設計費用',
+        price: fee.toFixed(2),
+        quantity: 1,
+        sku: 'design_fee',
+        requires_shipping: false,
+        taxable: false,
+      })
+    }
+  }
+
+  if (shipping > 0) {
+    lines.push({
+      title: '運費',
+      price: shipping.toFixed(2),
       quantity: 1,
-      sku: 'pearl-diy',
-      requires_shipping: true,
+      sku: 'shipping',
+      requires_shipping: false,
       taxable: false,
-    },
+    })
+  }
+
+  const sum = lines.reduce(
+    (s, li) => s + Math.round(Number(li.price) * Number(li.quantity || 1)),
+    0,
+  )
+  if (amt > 0 && sum > 0 && Math.abs(sum - amt) > 1) {
+    console.warn('[shopify] line sum vs NewebPay amt', { sum, amt })
+  }
+
+  return lines
+}
+
+/**
+ * Admin GraphQL: SKU → legacy variant id.
+ * @param {any} env
+ * @param {string[]} skus
+ * @returns {Promise<Map<string, string>>}
+ */
+async function resolveVariantIdsBySkus(env, skus) {
+  /** @type {Map<string, string>} */
+  const out = new Map()
+  const unique = [...new Set(skus.map((s) => String(s || '').trim()).filter(Boolean))]
+  if (!unique.length) return out
+
+  const domain = shopDomain(env)
+  const token = await getAdminAccessToken(env)
+  const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
+  const endpoint = `https://${domain}/admin/api/${version}/graphql.json`
+
+  const chunkSize = 20
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize)
+    const parts = chunk.map((sku, idx) => {
+      const alias = `v${idx}`
+      const q = JSON.stringify(`sku:${sku}`)
+      return `${alias}: productVariants(first: 1, query: ${q}) { edges { node { legacyResourceId sku } } }`
+    })
+    const query = `query { ${parts.join('\n')} }`
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': token,
+        },
+        body: JSON.stringify({ query }),
+      })
+      const json = await res.json()
+      if (!res.ok || json?.errors?.length) {
+        console.warn('[shopify] variant lookup errors', json?.errors || res.status)
+        continue
+      }
+      for (let idx = 0; idx < chunk.length; idx++) {
+        const sku = chunk[idx]
+        const edges = json?.data?.[`v${idx}`]?.edges || []
+        const id = edges[0]?.node?.legacyResourceId
+        if (id) out.set(sku, String(id))
+      }
+    } catch (e) {
+      console.warn('[shopify] variant lookup failed', e)
+    }
+  }
+  return out
+}
+
+/**
+ * Resolve「設計費用」variant (by env id, SKU, or product title).
+ * @param {any} env
+ * @returns {Promise<string|null>}
+ */
+async function resolveDesignFeeVariantId(env) {
+  const configured = String(env.SHOPIFY_DESIGN_FEE_VARIANT_ID || '').trim()
+  if (configured) return configured.replace(/\D/g, '') || null
+
+  const domain = shopDomain(env)
+  const token = await getAdminAccessToken(env)
+  const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
+  const endpoint = `https://${domain}/admin/api/${version}/graphql.json`
+
+  const queries = [
+    'sku:design_fee',
+    'product_title:設計費用',
+    'product_title:设计费用',
   ]
+  for (const q of queries) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': token,
+        },
+        body: JSON.stringify({
+          query: `query($q: String!) {
+            productVariants(first: 1, query: $q) {
+              edges { node { legacyResourceId sku } }
+            }
+          }`,
+          variables: { q },
+        }),
+      })
+      const json = await res.json()
+      const id = json?.data?.productVariants?.edges?.[0]?.node?.legacyResourceId
+      if (id) return String(id)
+    } catch {
+      /* try next */
+    }
+  }
+  return null
 }
 
 /**

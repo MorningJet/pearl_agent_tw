@@ -27,7 +27,8 @@ H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在
 |------------|---------|
 | 訂單 / 日期 / 發貨期限 / 渠道 / 商品件數顯示 / 配送狀態 / 配送方式 | Shopify 自動，不特別寫入 |
 | 客戶 | `order.email` |
-| 總計 | 單一 line item，金額 = 藍新支付總價 |
+| 總計 | BOM 珠款 + 設計費 + 運費（= 藍新支付總價） |
+| 商品 | H5 設計 BOM：每種珠子/配件 SKU×數量對應後台變體；有設計費則另列「設計費用」 |
 | 支付狀態 | 初值 `pending`（待付款）；藍新成功後 `paid` |
 | 發貨狀態 | 初值未發貨；後台上傳物流單號後變更 |
 | 標記 | H5 狀態中文：起初「未付款」；付款成功改「排單中」（其餘狀態後台手動加） |
@@ -43,6 +44,7 @@ H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在
 2. 應用 **Versions / 版本** → 建立版本，Admin API scopes 勾選：
    - `write_orders`
    - `read_orders`
+   - `read_products`（建單時依 SKU 對應變體，建議勾選）
 3. **Release / 發布** 該版本
 4. **Install / 安裝到** `pearl-diy` 商店（必須安裝，否則換 token 會失敗）
 5. **Settings / 設置** 複製：
