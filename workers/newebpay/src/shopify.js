@@ -871,18 +871,25 @@ function shopDomain(env) {
  * @param {Record<string, string>} addr
  */
 function mapAddress(addr) {
+  const lastName = clip(addr.last_name || '', 40)
+  const firstName = clip(addr.first_name || '', 40)
+  const fullName = clip(addr.name || `${lastName}${firstName}` || 'Customer', 40)
+  const province = clip(addr.province || addr.city_county || '', 40)
+  const city = clip(addr.city || addr.district || '', 40)
   const address1 = clip(
     addr.address1 ||
-      [addr.city, addr.district, addr.detail].filter(Boolean).join('') ||
+      addr.detail ||
+      [province, city, addr.district, addr.detail].filter(Boolean).join('') ||
       '',
     120,
   )
   return {
-    first_name: clip(addr.name || addr.first_name || 'Customer', 40),
+    last_name: lastName || undefined,
+    first_name: firstName || fullName,
     phone: clip(addr.phone || '', 20) || undefined,
     address1,
-    city: clip(addr.city || '', 40) || undefined,
-    province: clip(addr.province || addr.city || '', 40) || undefined,
+    city: city || undefined,
+    province: province || city || undefined,
     country: 'Taiwan',
     country_code: clip(addr.country_code || 'TW', 2) || 'TW',
     zip: clip(addr.zip || '', 12) || undefined,

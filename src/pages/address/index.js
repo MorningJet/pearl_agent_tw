@@ -3,6 +3,12 @@ import { mountFragment } from '../../shared/mount.js'
 import { showTab } from '../../shared/nav.js'
 import { showToast } from '../../shared/ui/toast.js'
 import {
+  listTwCities,
+  listTwDistricts,
+  lookupTwZip,
+  normalizeTwCityName,
+} from '../../shared/domain/twAddress.js'
+import {
   deleteAddress,
   getAddress,
   listAddresses,
@@ -31,6 +37,12 @@ export function initAddressPage(host) {
     e.preventDefault()
     submitAddressForm()
   })
+  document.getElementById('address-form-city')?.addEventListener('change', () => {
+    fillDistrictOptions()
+  })
+  document.getElementById('address-form-district')?.addEventListener('change', () => {
+    syncAddressZip()
+  })
   document.getElementById('address-list')?.addEventListener('click', (e) => {
     const target = e.target instanceof Element ? e.target : null
     if (!target) return
@@ -57,10 +69,68 @@ export function initAddressPage(host) {
       showToast('已刪除地址')
     }
   })
+  fillCityOptions()
 }
 
 export function refreshAddressPage() {
   renderAddresses()
+}
+
+function fillCityOptions() {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('address-form-city')
+  )
+  if (!cityEl) return
+  const current = cityEl.value
+  cityEl.innerHTML =
+    `<option value="">請選擇縣市</option>` +
+    listTwCities()
+      .map((name) => `<option value="${escapeAttr(name)}">${escapeHtml(name)}</option>`)
+      .join('')
+  if (current && listTwCities().includes(normalizeTwCityName(current))) {
+    cityEl.value = normalizeTwCityName(current)
+  }
+}
+
+/** @param {string} [preferredDistrict] */
+function fillDistrictOptions(preferredDistrict = '') {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('address-form-city')
+  )
+  const districtEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('address-form-district')
+  )
+  if (!cityEl || !districtEl) return
+  const districts = listTwDistricts(cityEl.value)
+  districtEl.disabled = !districts.length
+  districtEl.innerHTML = districts.length
+    ? `<option value="">請選擇鄉鎮市區</option>` +
+      districts
+        .map(
+          (d) =>
+            `<option value="${escapeAttr(d.name)}">${escapeHtml(d.name)}</option>`,
+        )
+        .join('')
+    : `<option value="">請先選擇縣市</option>`
+  if (preferredDistrict) {
+    const match = districts.find((d) => d.name === preferredDistrict)
+    if (match) districtEl.value = match.name
+  }
+  syncAddressZip()
+}
+
+function syncAddressZip() {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('address-form-city')
+  )
+  const districtEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('address-form-district')
+  )
+  const zipEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-zip')
+  )
+  if (!zipEl) return
+  zipEl.value = lookupTwZip(cityEl?.value || '', districtEl?.value || '')
 }
 
 function renderAddresses() {
@@ -84,6 +154,7 @@ function addressCardHtml(a) {
   const badge = a.isDefault
     ? `<span class="rounded-full bg-stone-900 px-2 py-0.5 text-[0.65rem] font-medium text-white">預設</span>`
     : ''
+  const zip = a.zip ? `${escapeHtml(a.zip)} ` : ''
   return `
   <li class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-stone-100">
     <div class="flex items-start justify-between gap-2">
@@ -94,7 +165,7 @@ function addressCardHtml(a) {
           ${badge}
         </div>
         <p class="mt-2 text-sm leading-relaxed text-stone-600">
-          ${escapeHtml(a.city)}${escapeHtml(a.district)}${escapeHtml(a.detail)}
+          ${zip}${escapeHtml(a.city)}${escapeHtml(a.district)}${escapeHtml(a.detail)}
         </p>
       </div>
     </div>
@@ -117,17 +188,17 @@ function openAddressForm(id) {
   const idInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-id')
   )
-  const nameInput = /** @type {HTMLInputElement | null} */ (
-    document.getElementById('address-form-name')
+  const lastInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-last-name')
+  )
+  const firstInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-first-name')
   )
   const phoneInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-phone')
   )
-  const cityInput = /** @type {HTMLInputElement | null} */ (
+  const cityInput = /** @type {HTMLSelectElement | null} */ (
     document.getElementById('address-form-city')
-  )
-  const districtInput = /** @type {HTMLInputElement | null} */ (
-    document.getElementById('address-form-district')
   )
   const detailInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-detail')
@@ -137,23 +208,42 @@ function openAddressForm(id) {
   )
   const errorEl = document.getElementById('address-form-error')
 
+  fillCityOptions()
+
   const existing = id ? getAddress(id) : null
   if (title) title.textContent = existing ? '編輯地址' : '新增地址'
   if (idInput) idInput.value = existing?.id || ''
-  if (nameInput) nameInput.value = existing?.name || ''
+
+  const last =
+    existing?.lastName ||
+    (existing?.name ? existing.name.slice(0, 1) : '')
+  const first =
+    existing?.firstName ||
+    (existing?.name && existing.name.length > 1 ? existing.name.slice(1) : '')
+  if (lastInput) lastInput.value = last
+  if (firstInput) firstInput.value = first
   if (phoneInput) phoneInput.value = existing?.phone || ''
-  if (cityInput) cityInput.value = existing?.city || ''
-  if (districtInput) districtInput.value = existing?.district || ''
   if (detailInput) detailInput.value = existing?.detail || ''
-  if (defaultInput) defaultInput.checked = existing ? existing.isDefault : listAddresses().length === 0
+  if (defaultInput) {
+    defaultInput.checked = existing ? existing.isDefault : listAddresses().length === 0
+  }
   if (errorEl) {
     errorEl.textContent = ''
     errorEl.classList.add('hidden')
   }
 
+  const city = normalizeTwCityName(existing?.city || '')
+  if (cityInput && city && listTwCities().includes(city)) {
+    cityInput.value = city
+    fillDistrictOptions(existing?.district || '')
+  } else if (cityInput) {
+    cityInput.value = ''
+    fillDistrictOptions()
+  }
+
   modal?.classList.remove('hidden')
   modal?.classList.add('flex')
-  queueMicrotask(() => nameInput?.focus())
+  queueMicrotask(() => lastInput?.focus())
 }
 
 function closeAddressForm() {
@@ -166,17 +256,23 @@ function submitAddressForm() {
   const idInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-id')
   )
-  const nameInput = /** @type {HTMLInputElement | null} */ (
-    document.getElementById('address-form-name')
+  const lastInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-last-name')
+  )
+  const firstInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-first-name')
   )
   const phoneInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-phone')
   )
-  const cityInput = /** @type {HTMLInputElement | null} */ (
+  const cityInput = /** @type {HTMLSelectElement | null} */ (
     document.getElementById('address-form-city')
   )
-  const districtInput = /** @type {HTMLInputElement | null} */ (
+  const districtInput = /** @type {HTMLSelectElement | null} */ (
     document.getElementById('address-form-district')
+  )
+  const zipInput = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('address-form-zip')
   )
   const detailInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('address-form-detail')
@@ -186,12 +282,18 @@ function submitAddressForm() {
   )
   const errorEl = document.getElementById('address-form-error')
 
+  const city = normalizeTwCityName(cityInput?.value || '')
+  const district = String(districtInput?.value || '').trim()
+  const zip = lookupTwZip(city, district) || String(zipInput?.value || '').trim()
+
   const result = upsertAddress({
     id: idInput?.value || undefined,
-    name: nameInput?.value || '',
+    lastName: lastInput?.value || '',
+    firstName: firstInput?.value || '',
     phone: phoneInput?.value || '',
-    city: cityInput?.value || '',
-    district: districtInput?.value || '',
+    city,
+    district,
+    zip,
     detail: detailInput?.value || '',
     isDefault: Boolean(defaultInput?.checked),
   })

@@ -9,7 +9,7 @@
   <div id="address-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-24 pt-3">
     <ul id="address-list" class="space-y-3"></ul>
     <p id="address-empty" class="mt-10 hidden px-4 text-center text-sm leading-relaxed text-stone-400">
-      尚無收件地址。<br />新增後可在下單時快速選擇。
+      尚無收件地址。<br />新增後可在下單時快速帶入。
     </p>
   </div>
   <div class="absolute inset-x-0 bottom-0 z-10 border-t border-stone-200 bg-white px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]">
@@ -34,60 +34,82 @@
     <h2 id="address-form-title" class="text-base font-semibold text-stone-900">新增地址</h2>
     <form id="address-form" class="mt-4 space-y-3" novalidate>
       <input type="hidden" id="address-form-id" value="" />
-      <label class="block">
-        <span class="text-xs font-medium text-stone-600">收件人 <span class="text-rose-500">*</span></span>
-        <input
-          id="address-form-name"
-          type="text"
-          maxlength="24"
-          autocomplete="name"
-          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
-        />
-      </label>
-      <label class="block">
-        <span class="text-xs font-medium text-stone-600">手機號碼 <span class="text-rose-500">*</span></span>
-        <input
-          id="address-form-phone"
-          type="tel"
-          maxlength="12"
-          inputmode="tel"
-          autocomplete="tel"
-          placeholder="09xxxxxxxx"
-          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
-        />
-      </label>
       <div class="grid grid-cols-2 gap-2">
         <label class="block">
-          <span class="text-xs font-medium text-stone-600">縣市 <span class="text-rose-500">*</span></span>
+          <span class="text-xs font-medium text-stone-600">姓氏 <span class="text-rose-500">*</span></span>
           <input
-            id="address-form-city"
+            id="address-form-last-name"
             type="text"
             maxlength="20"
-            autocomplete="address-level1"
-            placeholder="例如 台北市"
+            autocomplete="family-name"
+            placeholder="如：黃"
             class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
           />
         </label>
         <label class="block">
-          <span class="text-xs font-medium text-stone-600">鄉鎮市區 <span class="text-rose-500">*</span></span>
+          <span class="text-xs font-medium text-stone-600">名字 <span class="text-rose-500">*</span></span>
           <input
-            id="address-form-district"
+            id="address-form-first-name"
             type="text"
-            maxlength="20"
-            autocomplete="address-level2"
-            placeholder="例如 大安區"
+            maxlength="40"
+            autocomplete="given-name"
+            placeholder="如：小明"
             class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
           />
         </label>
       </div>
       <label class="block">
-        <span class="text-xs font-medium text-stone-600">詳細地址 <span class="text-rose-500">*</span></span>
+        <span class="text-xs font-medium text-stone-600">手機號碼 <span class="text-rose-500">*</span></span>
+        <input
+          id="address-form-phone"
+          type="tel"
+          maxlength="10"
+          inputmode="numeric"
+          autocomplete="tel"
+          placeholder="09xxxxxxxx"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">縣市 <span class="text-rose-500">*</span></span>
+        <select
+          id="address-form-city"
+          autocomplete="address-level1"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+        >
+          <option value="">請選擇縣市</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">鄉鎮市區 <span class="text-rose-500">*</span></span>
+        <select
+          id="address-form-district"
+          autocomplete="address-level2"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+          disabled
+        >
+          <option value="">請先選擇縣市</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">郵遞區號</span>
+        <input
+          id="address-form-zip"
+          type="text"
+          maxlength="3"
+          readonly
+          tabindex="-1"
+          class="mt-1.5 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm tabular-nums text-stone-700 outline-none"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-stone-600">地址 <span class="text-rose-500">*</span></span>
         <input
           id="address-form-detail"
           type="text"
-          maxlength="80"
+          maxlength="120"
           autocomplete="street-address"
-          placeholder="街道路段門牌"
+          placeholder="如：忠孝東路四段100號2樓之12"
           class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
         />
       </label>

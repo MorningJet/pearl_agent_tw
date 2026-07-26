@@ -3,6 +3,12 @@ import { mountFragment } from '../../shared/mount.js'
 import { showDetailsPage } from '../../shared/nav.js'
 import { showToast } from '../../shared/ui/toast.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
+import {
+  listTwCities,
+  listTwDistricts,
+  lookupTwZip,
+  normalizeTwCityName,
+} from '../../shared/domain/twAddress.js'
 import { withBase } from '../../shared/assetUrl.js'
 import {
   createNewebpayCheckout,
@@ -52,12 +58,16 @@ let draft = null
 /** @type {boolean} */
 let submitInFlight = false
 
+/** @type {boolean} */
+let regionBound = false
+
 /**
  * @param {HTMLElement} host
  */
 export function initCheckoutPage(host) {
   // Replace any prior mount (HMR / double-init) so getElementById hits fresh markup.
   document.getElementById('page-checkout')?.remove()
+  regionBound = false
   mountFragment(checkoutHtml, host)
   document.getElementById('checkout-back')?.addEventListener('click', () => {
     showDetailsPage()
@@ -65,6 +75,8 @@ export function initCheckoutPage(host) {
   document.getElementById('checkout-submit')?.addEventListener('click', () => {
     void submitCheckout()
   })
+  bindRegionSelects()
+  fillCityOptions()
 }
 
 /**
@@ -81,15 +93,93 @@ export function refreshCheckoutPage() {
   if (draft) renderDraft()
 }
 
+function bindRegionSelects() {
+  if (regionBound) return
+  regionBound = true
+  document.getElementById('checkout-city')?.addEventListener('change', () => {
+    onCityChange()
+  })
+  document.getElementById('checkout-district')?.addEventListener('change', () => {
+    syncZipFromSelection()
+  })
+}
+
+function fillCityOptions() {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-city')
+  )
+  if (!cityEl) return
+  const current = cityEl.value
+  cityEl.innerHTML =
+    `<option value="">請選擇縣市</option>` +
+    listTwCities()
+      .map((name) => `<option value="${escapeAttr(name)}">${escapeHtml(name)}</option>`)
+      .join('')
+  if (current && listTwCities().includes(normalizeTwCityName(current))) {
+    cityEl.value = normalizeTwCityName(current)
+  }
+}
+
+/** @param {string} [preferredDistrict] */
+function onCityChange(preferredDistrict = '') {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-city')
+  )
+  const districtEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-district')
+  )
+  if (!cityEl || !districtEl) return
+
+  const city = cityEl.value
+  const districts = listTwDistricts(city)
+  districtEl.disabled = !districts.length
+  districtEl.innerHTML = districts.length
+    ? `<option value="">請選擇鄉鎮市區</option>` +
+      districts
+        .map(
+          (d) =>
+            `<option value="${escapeAttr(d.name)}">${escapeHtml(d.name)}</option>`,
+        )
+        .join('')
+    : `<option value="">請先選擇縣市</option>`
+
+  if (preferredDistrict) {
+    const match = districts.find((d) => d.name === preferredDistrict)
+    if (match) districtEl.value = match.name
+  }
+  syncZipFromSelection()
+}
+
+function syncZipFromSelection() {
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-city')
+  )
+  const districtEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-district')
+  )
+  const zipEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-zip')
+  )
+  if (!zipEl) return
+  zipEl.value = lookupTwZip(cityEl?.value || '', districtEl?.value || '')
+}
+
 function renderDraft() {
   if (!draft) return
   const title = document.getElementById('checkout-product-title')
   const price = document.getElementById('checkout-product-price')
   const media = document.getElementById('checkout-product-media')
   const submitBtn = document.getElementById('checkout-submit')
+  const countryEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-country')
+  )
 
   // Always force current CTA copy (survives stale cached markup).
   if (submitBtn) submitBtn.textContent = '立即付款'
+  if (countryEl) {
+    countryEl.value = '台灣'
+    countryEl.readOnly = true
+  }
 
   const beadsSubtotal = Math.max(0, Math.round(Number(draft.beadsSubtotalTwd) || 0))
   const designFee = Math.max(0, Math.round(Number(draft.designFeeTwd) || 0))
@@ -127,20 +217,23 @@ function prefillsFromProfile() {
   const countryEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-country')
   )
-  const nameEl = /** @type {HTMLInputElement | null} */ (
-    document.getElementById('checkout-name')
+  const lastEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-last-name')
   )
-  const addressEl = /** @type {HTMLTextAreaElement | null} */ (
+  const firstEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-first-name')
+  )
+  const addressEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-address')
-  )
-  const zipEl = /** @type {HTMLInputElement | null} */ (
-    document.getElementById('checkout-zip')
   )
   const phoneEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-phone')
   )
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-city')
+  )
 
-  if (countryEl && !countryEl.value.trim()) countryEl.value = '台灣'
+  if (countryEl) countryEl.value = '台灣'
 
   const memberId = getMemberId()
   if (emailEl && !emailEl.value.trim() && isEmailMemberId(memberId)) {
@@ -148,12 +241,41 @@ function prefillsFromProfile() {
   }
 
   const addr = getDefaultAddress()
-  if (!addr) return
-  if (nameEl && !nameEl.value.trim()) nameEl.value = addr.name || ''
-  if (phoneEl && !phoneEl.value.trim()) phoneEl.value = addr.phone || ''
-  if (addressEl && !addressEl.value.trim()) {
-    addressEl.value = [addr.city, addr.district, addr.detail].filter(Boolean).join('')
+  if (!addr) {
+    fillCityOptions()
+    onCityChange()
+    return
   }
+
+  const split = splitRecipientName(addr.lastName, addr.firstName, addr.name)
+  if (lastEl && !lastEl.value.trim()) lastEl.value = split.lastName
+  if (firstEl && !firstEl.value.trim()) firstEl.value = split.firstName
+  if (phoneEl && !phoneEl.value.trim()) phoneEl.value = addr.phone || ''
+  if (addressEl && !addressEl.value.trim()) addressEl.value = addr.detail || ''
+
+  fillCityOptions()
+  const city = normalizeTwCityName(addr.city || '')
+  if (cityEl && city && listTwCities().includes(city)) {
+    cityEl.value = city
+    onCityChange(addr.district || '')
+  } else {
+    onCityChange()
+  }
+}
+
+/**
+ * @param {string} [lastName]
+ * @param {string} [firstName]
+ * @param {string} [fullName]
+ */
+function splitRecipientName(lastName, firstName, fullName) {
+  const last = String(lastName || '').trim()
+  const first = String(firstName || '').trim()
+  if (last || first) return { lastName: last, firstName: first }
+  const full = String(fullName || '').trim()
+  if (!full) return { lastName: '', firstName: '' }
+  if (full.length === 1) return { lastName: full, firstName: '' }
+  return { lastName: full.slice(0, 1), firstName: full.slice(1) }
 }
 
 async function submitCheckout() {
@@ -269,44 +391,68 @@ function readForm() {
   )
     .trim()
     .toLowerCase()
-  const country = String(
-    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-country'))
-      ?.value || '',
-  ).trim() || '台灣'
-  const name = String(
-    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-name'))
+  const lastName = String(
+    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-last-name'))
       ?.value || '',
   ).trim()
-  const address1 = String(
-    /** @type {HTMLTextAreaElement | null} */ (document.getElementById('checkout-address'))
-      ?.value || '',
-  ).trim()
-  const zip = String(
-    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-zip'))
+  const firstName = String(
+    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-first-name'))
       ?.value || '',
   ).trim()
   const phone = String(
     /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-phone'))
+      ?.value || '',
+  )
+    .trim()
+    .replace(/[\s-]/g, '')
+  const country = '台灣'
+  const city = normalizeTwCityName(
+    String(
+      /** @type {HTMLSelectElement | null} */ (document.getElementById('checkout-city'))
+        ?.value || '',
+    ).trim(),
+  )
+  const district = String(
+    /** @type {HTMLSelectElement | null} */ (document.getElementById('checkout-district'))
+      ?.value || '',
+  ).trim()
+  const zip = lookupTwZip(city, district) ||
+    String(
+      /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-zip'))
+        ?.value || '',
+    ).trim()
+  const address1 = String(
+    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-address'))
       ?.value || '',
   ).trim()
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: '請輸入有效的電子信箱' }
   }
-  if (!name) return { ok: false, error: '請填寫收貨姓名' }
-  if (!address1) return { ok: false, error: '請填寫收貨地址' }
-  if (!zip) return { ok: false, error: '請填寫郵政編碼' }
+  if (!lastName) return { ok: false, error: '請填寫姓氏' }
+  if (!firstName) return { ok: false, error: '請填寫名字' }
   if (!phone) return { ok: false, error: '請填寫手機號碼' }
-  if (!/^09\d{8}$/.test(phone) && !/^0\d{8,9}$/.test(phone)) {
-    return { ok: false, error: '請輸入有效的台灣手機或市話' }
+  if (!/^09\d{8}$/.test(phone)) {
+    return { ok: false, error: '請輸入台灣手機門號（09 開頭共 10 碼）' }
   }
+  if (!city) return { ok: false, error: '請選擇縣市' }
+  if (!district) return { ok: false, error: '請選擇鄉鎮市區' }
+  if (!/^\d{3}$/.test(zip)) return { ok: false, error: '郵遞區號異常，請重新選擇縣市與鄉鎮市區' }
+  if (!address1) return { ok: false, error: '請填寫地址' }
+
+  const fullName = `${lastName}${firstName}`
 
   return {
     ok: true,
     email,
     shippingAddress: {
-      name,
+      last_name: lastName,
+      first_name: firstName,
+      name: fullName,
       phone,
+      province: city,
+      city: district,
+      district,
       address1,
       zip,
       country,

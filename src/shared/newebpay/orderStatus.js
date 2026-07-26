@@ -111,7 +111,9 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
     designFeeTwd:
       breakdown.designFee != null ? Number(breakdown.designFee) : meta.designFeeTwd,
     shippingTwd: shipping,
-    recipientName: String(addr.name || addr.recipientName || ''),
+    recipientName: String(
+      addr.name || `${addr.last_name || ''}${addr.first_name || ''}` || addr.recipientName || '',
+    ),
     recipientPhone: String(addr.phone || addr.recipientPhone || ''),
     recipientAddress: formatAddress(addr),
     shopifyOrderId,
@@ -128,12 +130,19 @@ function formatAddress(addr) {
   const parts = [
     addr.country,
     addr.zip || addr.postal_code,
-    addr.address1 || addr.address,
-    addr.address2,
+    addr.province,
+    addr.city,
+    addr.district,
+    addr.address1 || addr.address || addr.detail,
   ]
     .map((p) => String(p || '').trim())
     .filter(Boolean)
-  return parts.join(' ')
+  // Deduplicate if city === district naming overlap
+  const uniq = []
+  for (const p of parts) {
+    if (uniq[uniq.length - 1] !== p) uniq.push(p)
+  }
+  return uniq.join(' ')
 }
 
 /**

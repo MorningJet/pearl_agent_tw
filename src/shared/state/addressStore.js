@@ -6,9 +6,12 @@
  * @typedef {{
  *   id: string,
  *   name: string,
+ *   lastName?: string,
+ *   firstName?: string,
  *   phone: string,
  *   city: string,
  *   district: string,
+ *   zip?: string,
  *   detail: string,
  *   isDefault: boolean,
  *   updatedAt: number,
@@ -29,7 +32,7 @@ function readAll() {
       return cache
     }
     const parsed = JSON.parse(raw)
-    cache = Array.isArray(parsed) ? parsed : []
+    cache = Array.isArray(parsed) ? parsed.map(normalizeAddress).filter(Boolean) : []
   } catch {
     cache = []
   }
@@ -43,6 +46,36 @@ function writeAll(list) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {ShippingAddress | null}
+ */
+function normalizeAddress(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const a = /** @type {Record<string, unknown>} */ (raw)
+  const id = String(a.id || '')
+  if (!id) return null
+  const lastName = String(a.lastName || '').trim()
+  const firstName = String(a.firstName || '').trim()
+  const name =
+    String(a.name || '').trim() ||
+    `${lastName}${firstName}` ||
+    ''
+  return {
+    id,
+    name,
+    lastName,
+    firstName,
+    phone: String(a.phone || '').trim(),
+    city: String(a.city || '').trim(),
+    district: String(a.district || '').trim(),
+    zip: String(a.zip || '').trim(),
+    detail: String(a.detail || '').trim(),
+    isDefault: Boolean(a.isDefault),
+    updatedAt: Number(a.updatedAt) || Date.now(),
   }
 }
 
@@ -72,19 +105,28 @@ export function getDefaultAddress() {
  * @returns {{ ok: true, address: ShippingAddress } | { ok: false, error: string }}
  */
 export function upsertAddress(input) {
-  const name = String(input.name || '').trim()
-  const phone = String(input.phone || '').trim()
+  const lastName = String(input.lastName || '').trim()
+  const firstName = String(input.firstName || '').trim()
+  const name =
+    String(input.name || '').trim() ||
+    `${lastName}${firstName}`
+  const phone = String(input.phone || '')
+    .trim()
+    .replace(/[\s-]/g, '')
   const city = String(input.city || '').trim()
   const district = String(input.district || '').trim()
+  const zip = String(input.zip || '').trim()
   const detail = String(input.detail || '').trim()
-  if (!name) return { ok: false, error: '請填寫收件人' }
+
+  if (!lastName && !name) return { ok: false, error: '請填寫姓氏' }
+  if (!firstName && !name) return { ok: false, error: '請填寫名字' }
   if (!phone) return { ok: false, error: '請填寫手機號碼' }
-  if (!/^09\d{8}$/.test(phone) && !/^0\d{8,9}$/.test(phone)) {
-    return { ok: false, error: '請輸入有效的台灣手機或市話' }
+  if (!/^09\d{8}$/.test(phone)) {
+    return { ok: false, error: '請輸入台灣手機門號（09 開頭共 10 碼）' }
   }
-  if (!city) return { ok: false, error: '請填寫縣市' }
-  if (!district) return { ok: false, error: '請填寫鄉鎮市區' }
-  if (!detail) return { ok: false, error: '請填寫詳細地址' }
+  if (!city) return { ok: false, error: '請選擇縣市' }
+  if (!district) return { ok: false, error: '請選擇鄉鎮市區' }
+  if (!detail) return { ok: false, error: '請填寫地址' }
 
   const list = readAll().slice()
   const now = Date.now()
@@ -94,10 +136,13 @@ export function upsertAddress(input) {
   /** @type {ShippingAddress} */
   const next = {
     id,
-    name,
+    name: name || `${lastName}${firstName}`,
+    lastName: lastName || (name ? name.slice(0, 1) : ''),
+    firstName: firstName || (name.length > 1 ? name.slice(1) : ''),
     phone,
     city,
     district,
+    zip,
     detail,
     isDefault: makeDefault,
     updatedAt: now,
