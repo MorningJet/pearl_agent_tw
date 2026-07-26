@@ -112,6 +112,8 @@ function renderDraft() {
 
   if (title) title.textContent = draft.designName || '手鍊設計'
   if (price) price.textContent = `NT$${formatPrice(beadsSubtotal)}`
+  // Drop any leftover wrist line from older cached markup.
+  document.getElementById('checkout-product-wrist')?.remove()
   if (media) {
     const imgUrl = draft.designImageUrl ? withBase(draft.designImageUrl) : ''
     media.innerHTML = imgUrl
