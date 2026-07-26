@@ -20,6 +20,10 @@ import {
  *   trackingNo?: string,
  *   title?: string,
  *   amountTwd?: number,
+ *   beadsSubtotalTwd?: number | null,
+ *   designFeeTwd?: number | null,
+ *   shippingTwd?: number | null,
+ *   wristCm?: number | null,
  *   email?: string,
  *   imageUrl?: string,
  *   updatedAt?: number,
@@ -232,6 +236,11 @@ function applyRemoteOrder(remote) {
       merchantOrderNo,
       title: remote.title,
       amountTwd: remote.amountTwd,
+      beadsSubtotalTwd: remote.beadsSubtotalTwd,
+      designFeeTwd: remote.designFeeTwd,
+      shippingTwd: remote.shippingTwd,
+      wristCm: remote.wristCm,
+      imageUrl: remote.imageUrl,
     })
     return
   }
@@ -244,6 +253,11 @@ function applyRemoteOrder(remote) {
     createdAt: Number(remote.updatedAt) || Date.now(),
     imageUrl: String(remote.imageUrl || ''),
     trackingNo: String(remote.trackingNo || ''),
+    beadsSubtotalTwd:
+      remote.beadsSubtotalTwd != null ? Number(remote.beadsSubtotalTwd) : undefined,
+    designFeeTwd: remote.designFeeTwd != null ? Number(remote.designFeeTwd) : undefined,
+    shippingTwd: remote.shippingTwd != null ? Number(remote.shippingTwd) : undefined,
+    wristCm: remote.wristCm != null ? Number(remote.wristCm) : undefined,
     shopifyOrderId,
     shopifyOrderName: String(remote.shopifyOrderName || ''),
     merchantOrderNo,

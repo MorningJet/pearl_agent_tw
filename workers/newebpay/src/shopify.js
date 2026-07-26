@@ -842,6 +842,9 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
     { name: 'pearl_designer_id', value: String(record.designerId || '') },
     { name: 'pearl_amount_twd', value: String(record.amountTwd || 0) },
+    { name: 'pearl_beads_subtotal_twd', value: String(record.beadsSubtotal ?? '') },
+    { name: 'pearl_design_fee_twd', value: String(record.designFee ?? '') },
+    { name: 'pearl_shipping_twd', value: String(record.shipping ?? '') },
     { name: 'pearl_member_email', value: String(record.email || '') },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
   ].filter((a) => a.value)

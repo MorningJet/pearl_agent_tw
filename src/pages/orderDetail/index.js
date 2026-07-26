@@ -84,14 +84,16 @@ function detailHtml(o) {
     ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400">設計圖</div>`
 
-  const beads = Math.max(0, Math.round(Number(o.beadsSubtotalTwd) || 0))
-  const fee = Math.max(0, Math.round(Number(o.designFeeTwd) || 0))
-  const ship = Math.max(0, Math.round(Number(o.shippingTwd) || 0))
-  const total = Math.max(0, Math.round(Number(o.amountTwd) || 0))
+  const fees = resolveOrderFees(o)
   const wrist =
-    typeof o.wristCm === 'number' && Number.isFinite(o.wristCm)
-      ? `手圍 ≈ ${o.wristCm.toFixed(1)}cm`
+    typeof fees.wristCm === 'number' && Number.isFinite(fees.wristCm)
+      ? `手圍 ≈ ${fees.wristCm.toFixed(1)}cm`
       : ''
+  const wristLabel =
+    typeof fees.wristCm === 'number' && Number.isFinite(fees.wristCm)
+      ? `手圍 ${fees.wristCm.toFixed(1)}cm`
+      : ''
+  const shipNote = fees.ship === 0 ? '滿1000包郵' : '標準配送'
 
   const tracking =
     o.trackingNo && (status === 'shipping' || status === 'pickup' || status === 'done')
@@ -200,34 +202,62 @@ function detailHtml(o) {
               : ''
           }
           <p class="mt-2 text-sm font-semibold tabular-nums text-stone-900">NT$${formatPrice(
-            total,
+            fees.total,
           )}</p>
         </div>
       </div>
     </section>
 
     <section class="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-stone-100">
-      <p class="text-xs font-medium text-stone-400">費用明細</p>
+      <p class="text-sm font-semibold text-stone-900">商品明細</p>
       <ul class="mt-1 divide-y divide-stone-100 text-sm">
-        <li class="flex items-center justify-between gap-3 py-2.5">
-          <span class="text-stone-600">手鍊材料</span>
-          <span class="tabular-nums text-stone-900">NT$${formatPrice(beads)}</span>
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">${escapeHtml(o.title || '手鍊設計')}</p>
+            ${
+              wristLabel
+                ? `<p class="mt-0.5 text-xs text-stone-400">${escapeHtml(wristLabel)}</p>`
+                : ''
+            }
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              fees.beads,
+            )}</p>
+          </div>
         </li>
-        <li class="flex items-center justify-between gap-3 py-2.5">
-          <span class="text-stone-600">設計費用</span>
-          <span class="tabular-nums text-stone-900">${
-            fee > 0 ? `NT$${formatPrice(fee)}` : '免費'
-          }</span>
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0 pr-2">
+            <p class="font-medium text-stone-800">設計費用</p>
+            <p class="mt-0.5 text-xs text-stone-400">由設計師收取，平台不抽成</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">${
+              fees.fee > 0 ? `NT$${formatPrice(fees.fee)}` : '免費'
+            }</p>
+          </div>
         </li>
-        <li class="flex items-center justify-between gap-3 py-2.5">
-          <span class="text-stone-600">運費${ship === 0 ? '（包郵）' : ''}</span>
-          <span class="tabular-nums text-stone-900">NT$${formatPrice(ship)}</span>
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">運費</p>
+            <p class="mt-0.5 text-xs text-stone-400">${escapeHtml(shipNote)}</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              fees.ship,
+            )}</p>
+          </div>
         </li>
         <li class="flex items-center justify-between gap-3 py-2.5">
           <span class="font-medium text-stone-900">${
             status === 'unpaid' ? '應付金額' : '實付金額'
           }</span>
-          <span class="font-semibold tabular-nums text-stone-900">NT$${formatPrice(total)}</span>
+          <span class="font-semibold tabular-nums text-stone-900">NT$${formatPrice(
+            fees.total,
+          )}</span>
         </li>
       </ul>
     </section>
@@ -237,7 +267,9 @@ function detailHtml(o) {
       <ul class="mt-1 space-y-2.5 pt-1 text-sm">
         <li class="flex items-start justify-between gap-3">
           <span class="shrink-0 text-stone-500">訂單編號</span>
-          <span class="break-all text-right tabular-nums text-stone-800">${escapeHtml(o.id)}</span>
+          <span class="break-all text-right tabular-nums text-stone-800">${escapeHtml(
+            o.shopifyOrderName || o.id,
+          )}</span>
         </li>
         <li class="flex items-start justify-between gap-3">
           <span class="shrink-0 text-stone-500">${escapeHtml(paidLabel)}</span>
@@ -252,6 +284,41 @@ function detailHtml(o) {
       </ul>
     </section>
   `
+}
+
+const FREE_SHIPPING_MIN_TWD = 1000
+const STANDARD_SHIPPING_TWD = 50
+
+/**
+ * Align with details page fee math (beads + design fee + shipping).
+ * @param {import('../../shared/state/ordersStore.js').Order} o
+ */
+function resolveOrderFees(o) {
+  const total = Math.max(0, Math.round(Number(o.amountTwd) || 0))
+  let fee = Math.max(0, Math.round(Number(o.designFeeTwd) || 0))
+  let beads = Math.max(0, Math.round(Number(o.beadsSubtotalTwd) || 0))
+  let ship =
+    o.shippingTwd != null && Number.isFinite(Number(o.shippingTwd))
+      ? Math.max(0, Math.round(Number(o.shippingTwd)))
+      : null
+
+  if (ship == null) {
+    const base = beads > 0 ? beads : Math.max(0, total - fee)
+    ship = base >= FREE_SHIPPING_MIN_TWD ? 0 : STANDARD_SHIPPING_TWD
+  }
+
+  if (beads <= 0 && total > 0) {
+    beads = Math.max(0, total - fee - ship)
+  }
+
+  // Prefer stored total; if parts exceed it, keep parts and recompute display total.
+  const partsSum = beads + fee + ship
+  const displayTotal = total > 0 ? total : partsSum
+
+  const wristCm =
+    typeof o.wristCm === 'number' && Number.isFinite(o.wristCm) ? o.wristCm : null
+
+  return { beads, fee, ship, total: displayTotal, wristCm }
 }
 
 /**

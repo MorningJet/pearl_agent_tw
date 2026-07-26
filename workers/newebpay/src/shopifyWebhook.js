@@ -109,7 +109,12 @@ export async function handleH5OrderStatus(url, env, cors) {
               h5Status: record.h5Status || mapNewebpayRecordStatus(record),
               trackingNo: record.trackingNo || '',
               amountTwd: record.amountTwd,
+              beadsSubtotalTwd: record.beadsSubtotal ?? null,
+              designFeeTwd: record.designFee ?? null,
+              shippingTwd: record.shipping ?? null,
+              wristCm: record.wristCmNum ?? null,
               title: record.designName || '',
+              imageUrl: record.designImageUrl || '',
               updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
             },
           },
@@ -165,7 +170,12 @@ export async function handleH5OrderStatusBatch(request, env, cors) {
           h5Status: record.h5Status || mapNewebpayRecordStatus(record),
           trackingNo: record.trackingNo || '',
           amountTwd: record.amountTwd,
+          beadsSubtotalTwd: record.beadsSubtotal ?? null,
+          designFeeTwd: record.designFee ?? null,
+          shippingTwd: record.shipping ?? null,
+          wristCm: record.wristCmNum ?? null,
           title: record.designName || '',
+          imageUrl: record.designImageUrl || '',
           updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
         })
       }
@@ -214,6 +224,10 @@ export async function handleH5OrdersByEmail(url, env, cors) {
           trackingNo: record.trackingNo || '',
           title: record.designName || '',
           amountTwd: record.amountTwd,
+          beadsSubtotalTwd: record.beadsSubtotal ?? null,
+          designFeeTwd: record.designFee ?? null,
+          shippingTwd: record.shipping ?? null,
+          wristCm: record.wristCmNum ?? null,
           email,
           updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
           imageUrl: record.designImageUrl || '',
@@ -266,6 +280,14 @@ export async function mirrorFromCheckoutRecord(env, record, topic = 'checkout') 
     trackingNo: record.trackingNo || '',
     title: record.designName || '',
     amountTwd: Number(record.amountTwd) || 0,
+    beadsSubtotalTwd:
+      record.beadsSubtotal != null ? Number(record.beadsSubtotal) : null,
+    designFeeTwd: record.designFee != null ? Number(record.designFee) : null,
+    shippingTwd: record.shipping != null ? Number(record.shipping) : null,
+    wristCm:
+      record.wristCmNum != null && Number.isFinite(Number(record.wristCmNum))
+        ? Number(record.wristCmNum)
+        : null,
     email: String(record.email || ''),
     imageUrl: String(record.designImageUrl || ''),
     topic,
@@ -330,6 +352,12 @@ function buildMirror(order, topic) {
     shopifyOrderName ||
     '手鍊設計'
   const amountTwd = Math.round(Number(order.total_price || order.current_total_price || 0))
+  const beadsSubtotalTwd = Number(
+    readNoteAttr(order, 'pearl_beads_subtotal_twd') || '',
+  )
+  const designFeeTwd = Number(readNoteAttr(order, 'pearl_design_fee_twd') || '')
+  const shippingTwd = Number(readNoteAttr(order, 'pearl_shipping_twd') || '')
+  const wristCm = Number(readNoteAttr(order, 'pearl_wrist_cm') || '')
 
   return {
     shopifyOrderId,
@@ -342,6 +370,10 @@ function buildMirror(order, topic) {
     trackingNo,
     title,
     amountTwd,
+    beadsSubtotalTwd: Number.isFinite(beadsSubtotalTwd) ? beadsSubtotalTwd : null,
+    designFeeTwd: Number.isFinite(designFeeTwd) ? designFeeTwd : null,
+    shippingTwd: Number.isFinite(shippingTwd) ? shippingTwd : null,
+    wristCm: Number.isFinite(wristCm) ? wristCm : null,
     email: String(order.email || readNoteAttr(order, 'pearl_member_email') || ''),
     imageUrl: String(readNoteAttr(order, 'pearl_design_image_url') || ''),
     topic,
@@ -362,6 +394,10 @@ function publicMirror(mirror) {
     trackingNo: mirror.trackingNo || '',
     title: mirror.title || '',
     amountTwd: mirror.amountTwd,
+    beadsSubtotalTwd: mirror.beadsSubtotalTwd ?? null,
+    designFeeTwd: mirror.designFeeTwd ?? null,
+    shippingTwd: mirror.shippingTwd ?? null,
+    wristCm: mirror.wristCm ?? null,
     email: mirror.email || '',
     imageUrl: mirror.imageUrl || '',
     updatedAt: mirror.updatedAt,

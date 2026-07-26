@@ -279,7 +279,20 @@ export function upsertOrder(input) {
 /**
  * Apply remote status fields onto a local order.
  * @param {string} id
- * @param {{ status?: string, trackingNo?: string, shopifyOrderId?: string, shopifyOrderName?: string, merchantOrderNo?: string, title?: string, amountTwd?: number }} patch
+ * @param {{
+ *   status?: string,
+ *   trackingNo?: string,
+ *   shopifyOrderId?: string,
+ *   shopifyOrderName?: string,
+ *   merchantOrderNo?: string,
+ *   title?: string,
+ *   amountTwd?: number,
+ *   beadsSubtotalTwd?: number | null,
+ *   designFeeTwd?: number | null,
+ *   shippingTwd?: number | null,
+ *   wristCm?: number | null,
+ *   imageUrl?: string,
+ * }} patch
  */
 export function patchOrderFromRemote(id, patch) {
   const list = readAll().slice()
@@ -307,6 +320,23 @@ export function patchOrderFromRemote(id, patch) {
       patch.amountTwd != null && Number(patch.amountTwd) > 0
         ? Number(patch.amountTwd)
         : prev.amountTwd,
+    beadsSubtotalTwd:
+      patch.beadsSubtotalTwd != null && Number.isFinite(Number(patch.beadsSubtotalTwd))
+        ? Number(patch.beadsSubtotalTwd)
+        : prev.beadsSubtotalTwd,
+    designFeeTwd:
+      patch.designFeeTwd != null && Number.isFinite(Number(patch.designFeeTwd))
+        ? Number(patch.designFeeTwd)
+        : prev.designFeeTwd,
+    shippingTwd:
+      patch.shippingTwd != null && Number.isFinite(Number(patch.shippingTwd))
+        ? Number(patch.shippingTwd)
+        : prev.shippingTwd,
+    wristCm:
+      patch.wristCm != null && Number.isFinite(Number(patch.wristCm))
+        ? Number(patch.wristCm)
+        : prev.wristCm,
+    imageUrl: patch.imageUrl ? String(patch.imageUrl) : prev.imageUrl,
   }
   writeAll(list)
   return list[idx]
