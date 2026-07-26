@@ -2,10 +2,19 @@ import ordersHtml from './page.html?raw'
 import { mountFragment } from '../../shared/mount.js'
 import { showOrderDetailPage, showTab } from '../../shared/nav.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
-import { listOrders, orderStatusLabel } from '../../shared/state/ordersStore.js'
+import { withBase } from '../../shared/assetUrl.js'
+import { showToast } from '../../shared/ui/toast.js'
+import {
+  CUSTOM_GOODS_NOTE,
+  canRequestRefund,
+  listOrders,
+  normalizeStatus,
+  orderStatusLabel,
+  showsCustomGoodsNote,
+} from '../../shared/state/ordersStore.js'
 import { openOrderDetail } from '../orderDetail/index.js'
 
-/** @type {'all' | 'making' | 'shipping' | 'done' | 'cancelled'} */
+/** @type {'all' | import('../../shared/state/ordersStore.js').OrderStatus} */
 let filter = 'all'
 
 /**
@@ -26,6 +35,14 @@ export function initOrdersPage(host) {
     renderOrders()
   })
   document.getElementById('orders-list')?.addEventListener('click', (e) => {
+    const refundBtn =
+      e.target instanceof Element ? e.target.closest('[data-refund-id]') : null
+    if (refundBtn instanceof HTMLElement) {
+      e.preventDefault()
+      e.stopPropagation()
+      showToast('已送出退款申請，客服將儘快處理')
+      return
+    }
     const btn = e.target instanceof Element ? e.target.closest('[data-order-id]') : null
     if (!(btn instanceof HTMLElement)) return
     const id = btn.dataset.orderId
@@ -57,14 +74,8 @@ function renderOrders() {
   if (!list || !empty) return
 
   let orders = listOrders()
-  if (filter === 'making') {
-    orders = orders.filter((o) => o.status === 'making' || o.status === 'pending' || o.status === 'paid')
-  } else if (filter === 'shipping') {
-    orders = orders.filter((o) => o.status === 'shipping')
-  } else if (filter === 'done') {
-    orders = orders.filter((o) => o.status === 'done')
-  } else if (filter === 'cancelled') {
-    orders = orders.filter((o) => o.status === 'cancelled')
+  if (filter !== 'all') {
+    orders = orders.filter((o) => normalizeStatus(o.status) === filter)
   }
 
   if (!orders.length) {
@@ -80,29 +91,55 @@ function renderOrders() {
  * @param {import('../../shared/state/ordersStore.js').Order} o
  */
 function orderCardHtml(o) {
-  const media = o.imageUrl
-    ? `<img src="${escapeAttr(o.imageUrl)}" alt="" class="h-full w-full object-cover" />`
+  const status = normalizeStatus(o.status)
+  const img = o.imageUrl ? withBase(o.imageUrl) : ''
+  const media = img
+    ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400">設計圖</div>`
+
+  const refund = canRequestRefund(status)
+    ? `<button
+        type="button"
+        data-refund-id="${escapeAttr(o.id)}"
+        class="mt-2 rounded-full border border-stone-300 px-3 py-1 text-[0.7rem] font-medium text-stone-800 active:bg-stone-50"
+      >申請退款</button>`
+    : ''
+
+  const note = showsCustomGoodsNote(status)
+    ? `<p class="mt-2 text-[0.65rem] leading-relaxed text-stone-400">${escapeHtml(
+        CUSTOM_GOODS_NOTE,
+      )}</p>`
+    : ''
 
   return `
   <li>
-    <button
-      type="button"
-      class="flex w-full gap-3 rounded-2xl bg-white p-3 text-left shadow-sm ring-1 ring-stone-100 active:bg-stone-50"
-      data-order-id="${escapeAttr(o.id)}"
-    >
-      <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-stone-50">${media}</div>
-      <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
-        <div class="flex items-start justify-between gap-2">
-          <p class="truncate text-sm font-medium text-stone-900">${escapeHtml(o.title)}</p>
-          <span class="shrink-0 text-[0.65rem] font-medium text-stone-500">${escapeHtml(orderStatusLabel(o.status))}</span>
+    <div class="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-stone-100">
+      <button
+        type="button"
+        class="flex w-full gap-3 text-left active:opacity-90"
+        data-order-id="${escapeAttr(o.id)}"
+      >
+        <div class="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-stone-50">${media}</div>
+        <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
+          <div class="flex items-start justify-between gap-2">
+            <p class="truncate text-sm font-medium text-stone-900">${escapeHtml(o.title)}</p>
+            <span class="shrink-0 text-[0.65rem] font-medium text-stone-500">${escapeHtml(
+              orderStatusLabel(status),
+            )}</span>
+          </div>
+          <div class="flex items-end justify-between gap-2">
+            <p class="text-sm font-semibold tabular-nums text-stone-900">NT$${formatPrice(
+              o.amountTwd,
+            )}</p>
+            <p class="shrink-0 text-xs tabular-nums text-stone-400">${escapeHtml(
+              formatTime(o.createdAt),
+            )}</p>
+          </div>
         </div>
-        <div class="flex items-end justify-between gap-2">
-          <p class="text-sm font-semibold tabular-nums text-stone-900">NT$${formatPrice(o.amountTwd)}</p>
-          <p class="shrink-0 text-xs tabular-nums text-stone-400">${escapeHtml(formatTime(o.createdAt))}</p>
-        </div>
-      </div>
-    </button>
+      </button>
+      ${note}
+      ${refund ? `<div class="mt-1 flex justify-end">${refund}</div>` : ''}
+    </div>
   </li>`
 }
 

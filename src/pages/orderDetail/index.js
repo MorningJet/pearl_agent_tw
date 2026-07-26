@@ -3,7 +3,15 @@ import { mountFragment } from '../../shared/mount.js'
 import { showOrdersPage } from '../../shared/nav.js'
 import { showToast } from '../../shared/ui/toast.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
-import { getOrder, orderStatusLabel } from '../../shared/state/ordersStore.js'
+import { withBase } from '../../shared/assetUrl.js'
+import {
+  CUSTOM_GOODS_NOTE,
+  canRequestRefund,
+  getOrder,
+  normalizeStatus,
+  orderStatusLabel,
+  showsCustomGoodsNote,
+} from '../../shared/state/ordersStore.js'
 
 /** @type {string} */
 let currentOrderId = ''
@@ -17,6 +25,12 @@ export function initOrderDetailPage(host) {
     showOrdersPage()
   })
   document.getElementById('order-detail-body')?.addEventListener('click', (e) => {
+    const refundBtn =
+      e.target instanceof Element ? e.target.closest('[data-refund-order]') : null
+    if (refundBtn instanceof HTMLElement) {
+      showToast('已送出退款申請，客服將儘快處理')
+      return
+    }
     const btn = e.target instanceof Element ? e.target.closest('[data-copy-tracking]') : null
     if (!(btn instanceof HTMLElement)) return
     const no = btn.dataset.copyTracking || ''
@@ -53,8 +67,9 @@ export function refreshOrderDetailPage() {
  */
 function detailHtml(o) {
   const status = normalizeStatus(o.status)
-  const media = o.imageUrl
-    ? `<img src="${escapeAttr(o.imageUrl)}" alt="" class="h-full w-full object-cover" />`
+  const img = o.imageUrl ? withBase(o.imageUrl) : ''
+  const media = img
+    ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400">設計圖</div>`
 
   const beads = Math.max(0, Math.round(Number(o.beadsSubtotalTwd) || 0))
@@ -67,7 +82,7 @@ function detailHtml(o) {
       : ''
 
   const tracking =
-    o.trackingNo && (status === 'shipping' || status === 'done')
+    o.trackingNo && (status === 'shipping' || status === 'pickup' || status === 'done')
       ? `<div class="mt-3 flex items-center justify-between gap-2 border-t border-stone-100 pt-3">
           <div class="min-w-0">
             <p class="text-xs text-stone-400">物流單號</p>
@@ -85,24 +100,49 @@ function detailHtml(o) {
         </div>`
       : ''
 
-  const cancelNote =
-    status === 'cancelled'
-      ? `<p class="mt-2 text-xs text-stone-400">取消原因：${escapeHtml(
-          o.cancelReason || '訂單已取消',
+  const closedNote =
+    status === 'closed'
+      ? `<p class="mt-2 text-xs text-stone-400">關閉原因：${escapeHtml(
+          o.cancelReason || '訂單已關閉',
         )}</p>`
       : ''
 
+  const customNote = showsCustomGoodsNote(status)
+    ? `<p class="mt-3 text-[0.65rem] leading-relaxed text-stone-400">${escapeHtml(
+        CUSTOM_GOODS_NOTE,
+      )}</p>`
+    : ''
+
+  const refund = canRequestRefund(status)
+    ? `<div class="mt-3 flex justify-end">
+        <button
+          type="button"
+          data-refund-order="${escapeAttr(o.id)}"
+          class="rounded-full border border-stone-300 px-4 py-1.5 text-xs font-medium text-stone-800 active:bg-stone-50"
+        >申請退款</button>
+      </div>`
+    : ''
+
   const hasAddress = o.recipientName || o.recipientPhone || o.recipientAddress
+  const paidLabel = status === 'unpaid' ? '建立時間' : '付款時間'
+  const paidValue =
+    status === 'unpaid'
+      ? formatTime(o.createdAt)
+      : formatTime(o.paidAt || o.createdAt)
 
   return `
     <section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
       <div class="flex items-center justify-between gap-2">
-        <p class="text-base font-semibold text-stone-900">${escapeHtml(orderStatusLabel(o.status))}</p>
-        <p class="text-xs tabular-nums text-stone-400">${escapeHtml(formatTime(o.paidAt || o.createdAt))}</p>
+        <p class="text-base font-semibold text-stone-900">${escapeHtml(orderStatusLabel(status))}</p>
+        <p class="text-xs tabular-nums text-stone-400">${escapeHtml(
+          formatTime(o.paidAt || o.createdAt),
+        )}</p>
       </div>
       ${statusProgressHtml(status)}
-      ${cancelNote}
+      ${closedNote}
+      ${customNote}
       ${tracking}
+      ${refund}
     </section>
 
     ${
@@ -157,7 +197,9 @@ function detailHtml(o) {
           <span class="tabular-nums text-stone-900">NT$${formatPrice(ship)}</span>
         </li>
         <li class="flex items-center justify-between gap-3 py-2.5">
-          <span class="font-medium text-stone-900">實付金額</span>
+          <span class="font-medium text-stone-900">${
+            status === 'unpaid' ? '應付金額' : '實付金額'
+          }</span>
           <span class="font-semibold tabular-nums text-stone-900">NT$${formatPrice(total)}</span>
         </li>
       </ul>
@@ -171,14 +213,14 @@ function detailHtml(o) {
           <span class="break-all text-right tabular-nums text-stone-800">${escapeHtml(o.id)}</span>
         </li>
         <li class="flex items-start justify-between gap-3">
-          <span class="shrink-0 text-stone-500">付款時間</span>
-          <span class="text-right tabular-nums text-stone-800">${escapeHtml(
-            formatTime(o.paidAt || o.createdAt),
-          )}</span>
+          <span class="shrink-0 text-stone-500">${escapeHtml(paidLabel)}</span>
+          <span class="text-right tabular-nums text-stone-800">${escapeHtml(paidValue)}</span>
         </li>
         <li class="flex items-start justify-between gap-3">
           <span class="shrink-0 text-stone-500">付款方式</span>
-          <span class="text-right text-stone-800">線上付款</span>
+          <span class="text-right text-stone-800">${
+            status === 'unpaid' ? '待付款' : '線上付款'
+          }</span>
         </li>
       </ul>
     </section>
@@ -186,23 +228,34 @@ function detailHtml(o) {
 }
 
 /**
- * @param {'making' | 'shipping' | 'done' | 'cancelled'} status
+ * @param {import('../../shared/state/ordersStore.js').OrderStatus} status
  */
 function statusProgressHtml(status) {
-  if (status === 'cancelled') {
-    return `<p class="mt-3 text-sm text-stone-500">此訂單已取消，款項將依原支付方式退回。</p>`
+  if (status === 'closed') {
+    return `<p class="mt-3 text-sm text-stone-500">此訂單已關閉。</p>`
   }
+  if (status === 'unpaid') {
+    return `<p class="mt-3 text-sm text-stone-500">請完成付款後開始排單製作。</p>`
+  }
+
   const steps = [
-    { key: 'paid', label: '已付款' },
-    { key: 'making', label: '製作中' },
-    { key: 'shipping', label: '配送中' },
+    { key: 'scheduling', label: '排單中' },
+    { key: 'designing', label: '設計中' },
+    { key: 'shipping', label: '運送中' },
+    { key: 'pickup', label: '待提貨' },
     { key: 'done', label: '已完成' },
   ]
-  const activeIndex =
-    status === 'making' ? 1 : status === 'shipping' ? 2 : status === 'done' ? 3 : 1
+  const indexByStatus = {
+    scheduling: 0,
+    designing: 1,
+    shipping: 2,
+    pickup: 3,
+    done: 4,
+  }
+  const activeIndex = indexByStatus[status] ?? 0
 
   return `
-    <ol class="mt-4 flex items-start justify-between gap-1">
+    <ol class="mt-4 flex items-start justify-between gap-0.5">
       ${steps
         .map((step, i) => {
           const done = i <= activeIndex
@@ -212,22 +265,13 @@ function statusProgressHtml(status) {
           <span class="flex h-2.5 w-2.5 rounded-full ${
             done ? 'bg-stone-900' : 'bg-stone-200'
           } ${current ? 'ring-4 ring-stone-900/15' : ''}"></span>
-          <span class="mt-2 text-[0.65rem] leading-tight ${
+          <span class="mt-2 text-[0.6rem] leading-tight ${
             current ? 'font-semibold text-stone-900' : done ? 'text-stone-600' : 'text-stone-300'
           }">${escapeHtml(step.label)}</span>
         </li>`
         })
         .join('')}
     </ol>`
-}
-
-/** @param {string} status */
-function normalizeStatus(status) {
-  if (status === 'pending' || status === 'paid') return 'making'
-  if (status === 'shipping' || status === 'done' || status === 'cancelled' || status === 'making') {
-    return status
-  }
-  return 'making'
 }
 
 /** @param {number} ts */
