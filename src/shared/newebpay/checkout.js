@@ -3,7 +3,7 @@
  * HashKey / HashIV live only on the Cloudflare Worker — never in this H5 bundle.
  */
 
-import { normalizeAssetUrl } from '../assetUrl.js'
+import { normalizeAssetUrl, withBase } from '../assetUrl.js'
 
 const FREE_SHIPPING_MIN_TWD = 1000
 const STANDARD_SHIPPING_TWD = 50
@@ -199,6 +199,19 @@ function newebpayApiBase() {
 }
 
 /**
+ * Same-origin handoff page (GitHub Pages). Opening workers.dev directly from a
+ * Shopify iframe popup often leaves a stuck `about:blank` tab.
+ * @returns {string}
+ */
+function payBridgeUrl() {
+  try {
+    return new URL(withBase('pay-bridge.html'), window.location.href).href
+  } catch {
+    return withBase('pay-bridge.html')
+  }
+}
+
+/**
  * @param {string} actionUrl
  * @param {Record<string, unknown>} payload
  * @param {string} target
@@ -228,13 +241,13 @@ function postCheckoutForm(actionUrl, payload, target) {
 }
 
 /**
- * Keep posting payload until the workers.dev bridge page acknowledges
- * (bridge may load only after the user finishes a Cloudflare challenge).
+ * Hand payload to same-origin pay-bridge.html until it acknowledges.
  * @param {Window} win
- * @param {string} apiOrigin
+ * @param {string} checkoutAction
  * @param {Record<string, unknown>} payload
  */
-function beginBridgeHandshake(win, apiOrigin, payload) {
+function beginSameOriginHandoff(win, checkoutAction, payload) {
+  const pageOrigin = window.location.origin
   let done = false
   /** @type {ReturnType<typeof window.setInterval> | null} */
   let timer = null
@@ -255,7 +268,14 @@ function beginBridgeHandshake(win, apiOrigin, payload) {
         cleanup()
         return
       }
-      win.postMessage({ type: 'pearl-checkout-payload', payload }, apiOrigin)
+      win.postMessage(
+        {
+          type: 'pearl-checkout-payload',
+          checkoutAction,
+          payload,
+        },
+        pageOrigin,
+      )
     } catch {
       /* ignore */
     }
@@ -263,7 +283,7 @@ function beginBridgeHandshake(win, apiOrigin, payload) {
 
   /** @param {MessageEvent} e */
   const onMsg = (e) => {
-    if (e.origin !== apiOrigin) return
+    if (e.origin !== pageOrigin) return
     const type = /** @type {{ type?: string }} */ (e.data || {}).type
     if (type === 'pearl-checkout-bridge-ready') {
       send()
@@ -283,9 +303,9 @@ function beginBridgeHandshake(win, apiOrigin, payload) {
 /**
  * Start NewebPay checkout in a top-level browsing context.
  *
- * Inside Shopify iframe: open workers.dev `/api/checkout-bridge` (so Cloudflare
- * challenges can render), then postMessage the order payload. Never leave the
- * user on a blank about:blank placeholder that never navigates.
+ * Inside Shopify iframe: open same-origin `pay-bridge.html` (avoids stuck
+ * about:blank when cross-origin window.open is blocked), postMessage the
+ * order, then that page top-level POSTs to the Worker so Cloudflare can render.
  *
  * @param {Array<{ productId: string, name: string, diameterMm: number, qty: number, unitPrice?: number, lineTotal?: number }>} bom
  * @param {CheckoutMeta} meta
@@ -307,9 +327,9 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
     }
   }
 
-  let apiOrigin = ''
   try {
-    apiOrigin = new URL(base).origin
+    // Validate absolute API URL early.
+    void new URL(base)
   } catch {
     return { ok: false, error: '結帳服務網址無效' }
   }
@@ -342,19 +362,31 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
   }
 
   const checkoutAction = `${base}/api/checkout-browser`
-  const bridgeUrl = `${base}/api/checkout-bridge`
+  const handoffUrl = payBridgeUrl()
 
   if (needsCheckoutBreakout()) {
     /** @type {Window | null} */
     let checkoutWindow = null
     try {
-      checkoutWindow = window.open(bridgeUrl, CHECKOUT_WINDOW_NAME)
+      // Same-origin first: cross-origin open from Shopify iframe often stays about:blank.
+      checkoutWindow = window.open(handoffUrl, CHECKOUT_WINDOW_NAME)
     } catch {
       checkoutWindow = null
     }
 
+    // Some WebViews return a Window but never navigate — force location once.
     if (checkoutWindow && !checkoutWindow.closed) {
-      beginBridgeHandshake(checkoutWindow, apiOrigin, payload)
+      try {
+        if (
+          !checkoutWindow.location.href ||
+          checkoutWindow.location.href === 'about:blank'
+        ) {
+          checkoutWindow.location.href = handoffUrl
+        }
+      } catch {
+        /* cross-origin after navigate — fine */
+      }
+      beginSameOriginHandoff(checkoutWindow, checkoutAction, payload)
       try {
         checkoutWindow.focus()
       } catch {

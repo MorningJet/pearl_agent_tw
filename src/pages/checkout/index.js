@@ -463,7 +463,7 @@ async function submitCheckout() {
     if (nav.mode === 'popup') {
       showPayBreakoutOverlay({
         title: '請在新視窗完成付款',
-        body: '已開啟付款視窗。請先在該視窗完成人機驗證（若有），驗證通過後會自動前往藍新金流。',
+        body: '已開啟付款視窗。請先在該視窗完成人機驗證（若有），驗證通過後會自動前往藍新金流。若新分頁是空白頁，請允許彈出視窗後點「重新開啟付款」。',
       })
       // Keep CTA usable if the popup was closed or blocked mid-flight.
       submitRecoverTimer = window.setTimeout(() => {

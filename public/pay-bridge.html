@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>前往付款</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f7f7f7;
+        color: #292524;
+        padding: 1.25rem;
+        text-align: center;
+      }
+      .card {
+        max-width: 22rem;
+      }
+      p {
+        margin: 0.45rem 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      .muted {
+        color: #78716c;
+        font-size: 0.8rem;
+      }
+      a,
+      button {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.65rem 1.2rem;
+        border-radius: 999px;
+        border: 0;
+        background: #292524;
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      a.secondary {
+        background: #fff;
+        color: #292524;
+        border: 1px solid #d6d3d1;
+      }
+      #actions {
+        display: none;
+        margin-top: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <p id="title">正在準備付款…</p>
+      <p class="muted" id="hint">請稍候，不要關閉此視窗</p>
+      <div id="actions">
+        <button type="button" id="retry" hidden>重試送出</button>
+        <a class="secondary" id="back" href="./">返回商店</a>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var received = false
+        var lastAction = ''
+        var lastPayload = null
+        var title = document.getElementById('title')
+        var hint = document.getElementById('hint')
+        var actions = document.getElementById('actions')
+        var retryBtn = document.getElementById('retry')
+
+        function submitCheckout(action, payload) {
+          if (!action || payload == null) return
+          received = true
+          lastAction = String(action)
+          lastPayload = payload
+          title.textContent = '正在前往付款服務…'
+          hint.textContent = '若出現人機驗證，請在本視窗完成後繼續'
+          var form = document.createElement('form')
+          form.method = 'POST'
+          form.action = lastAction
+          form.acceptCharset = 'UTF-8'
+          var input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = 'payload'
+          input.value =
+            typeof lastPayload === 'string'
+              ? lastPayload
+              : JSON.stringify(lastPayload)
+          form.appendChild(input)
+          document.body.appendChild(form)
+          form.submit()
+        }
+
+        function onPayload(data, source, origin) {
+          if (!data || data.type !== 'pearl-checkout-payload') return
+          if (data.payload == null || !data.checkoutAction) return
+          try {
+            if (source)
+              source.postMessage({ type: 'pearl-checkout-received' }, origin || '*')
+          } catch (e) {}
+          submitCheckout(data.checkoutAction, data.payload)
+        }
+
+        window.addEventListener('message', function (e) {
+          if (received) return
+          // Prefer opener / same-origin H5.
+          if (window.opener && e.source && e.source !== window.opener) return
+          onPayload(e.data, e.source, e.origin)
+        })
+
+        function announceReady() {
+          if (received) return
+          try {
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage(
+                { type: 'pearl-checkout-bridge-ready' },
+                '*',
+              )
+            }
+          } catch (e) {}
+        }
+
+        announceReady()
+        setInterval(announceReady, 400)
+
+        setTimeout(function () {
+          if (received) return
+          title.textContent = '尚未收到訂單資料'
+          hint.textContent =
+            '請回到上一頁再次點擊「立即付款」，並允許彈出視窗。'
+          actions.style.display = 'block'
+          if (lastAction && lastPayload != null) {
+            retryBtn.hidden = false
+          }
+        }, 8000)
+
+        retryBtn.addEventListener('click', function () {
+          if (lastAction && lastPayload != null) {
+            received = false
+            submitCheckout(lastAction, lastPayload)
+          }
+        })
+
+        // Manual recovery: stay useful if opener never messages.
+        setTimeout(function () {
+          if (received) return
+          actions.style.display = 'block'
+        }, 2500)
+      })()
+    </script>
+  </body>
+</html>
