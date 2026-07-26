@@ -79,16 +79,25 @@
 
           <label class="block">
             <span class="text-xs font-medium text-stone-600">手機號碼 <span class="text-rose-500">*</span></span>
-            <input
-              id="checkout-phone"
-              type="tel"
-              inputmode="numeric"
-              maxlength="10"
-              autocomplete="tel"
-              placeholder="09xxxxxxxx"
-              class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
-            />
-            <span class="mt-1 block text-[0.65rem] text-stone-400">須為台灣門號，09 開頭共 10 碼</span>
+            <div
+              class="mt-1.5 flex w-full overflow-hidden rounded-lg border border-stone-200 focus-within:border-stone-400"
+            >
+              <span
+                class="inline-flex shrink-0 items-center border-r border-stone-200 bg-stone-50 px-3 text-sm font-medium tabular-nums text-stone-700"
+                aria-hidden="true"
+                >09</span
+              >
+              <input
+                id="checkout-phone"
+                type="tel"
+                inputmode="numeric"
+                maxlength="8"
+                autocomplete="tel-national"
+                placeholder="12345678"
+                aria-label="手機號碼後八碼"
+                class="min-w-0 flex-1 border-0 bg-white px-3 py-2 text-sm tabular-nums text-stone-900 outline-none"
+              />
+            </div>
           </label>
 
           <label class="block">

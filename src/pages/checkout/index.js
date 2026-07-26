@@ -75,6 +75,49 @@ export function initCheckoutPage(host) {
     void submitCheckout()
   })
   bindTwAddressSelects()
+  bindPhoneInput()
+}
+
+/**
+ * Fixed「09」prefix + 8-digit local part.
+ */
+function bindPhoneInput() {
+  const phoneEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-phone')
+  )
+  if (!phoneEl) return
+  phoneEl.addEventListener('input', () => {
+    phoneEl.value = phoneEl.value.replace(/\D/g, '').slice(0, 8)
+  })
+}
+
+/**
+ * @param {string} fullPhone
+ */
+function setPhoneLocalPart(fullPhone) {
+  const phoneEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-phone')
+  )
+  if (!phoneEl) return
+  const digits = String(fullPhone || '').replace(/\D/g, '')
+  if (digits.startsWith('09') && digits.length >= 2) {
+    phoneEl.value = digits.slice(2, 10)
+  } else if (digits.length === 8) {
+    phoneEl.value = digits
+  } else if (digits.length === 10 && digits.startsWith('09')) {
+    phoneEl.value = digits.slice(2)
+  } else {
+    phoneEl.value = digits.slice(0, 8)
+  }
+}
+
+/** @returns {string} full 10-digit 09xxxxxxxx or partial */
+function readPhoneFull() {
+  const local = String(
+    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-phone'))
+      ?.value || '',
+  ).replace(/\D/g, '')
+  return local ? `09${local}` : ''
 }
 
 /**
@@ -238,7 +281,7 @@ function prefillsFromProfile() {
     lastNameEl.value = parts.lastName
     firstNameEl.value = parts.firstName
   }
-  if (phoneEl && !phoneEl.value.trim()) phoneEl.value = addr.phone || ''
+  if (phoneEl && !phoneEl.value.trim()) setPhoneLocalPart(addr.phone || '')
   if (addressEl && !addressEl.value.trim()) addressEl.value = addr.detail || ''
 
   if (cityEl && !cityEl.value) {
@@ -375,10 +418,7 @@ function readForm() {
     /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-first-name'))
       ?.value || '',
   ).trim()
-  const phone = String(
-    /** @type {HTMLInputElement | null} */ (document.getElementById('checkout-phone'))
-      ?.value || '',
-  ).trim()
+  const phone = readPhoneFull()
   const country = '台灣'
   const city = String(
     /** @type {HTMLSelectElement | null} */ (document.getElementById('checkout-city'))
@@ -402,9 +442,9 @@ function readForm() {
   }
   if (!lastName) return { ok: false, error: '請填寫姓氏' }
   if (!firstName) return { ok: false, error: '請填寫名字' }
-  if (!phone) return { ok: false, error: '請填寫手機號碼' }
+  if (!phone || phone.length !== 10) return { ok: false, error: '請填寫完整手機號碼（09 後 8 碼）' }
   if (!isTwMobilePhone(phone)) {
-    return { ok: false, error: '手機號碼須為台灣門號（09 開頭共 10 碼）' }
+    return { ok: false, error: '請輸入有效的台灣手機號碼' }
   }
   if (!city) return { ok: false, error: '請選擇縣市' }
   if (!district) return { ok: false, error: '請選擇鄉鎮市區' }
