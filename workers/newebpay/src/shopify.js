@@ -16,7 +16,7 @@
  * Auth: SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET 或 SHOPIFY_ADMIN_TOKEN
  */
 
-import staticVariantMap from './variantMap.json'
+import staticVariantMap from './variantMap.data.js'
 
 /** @type {{ token: string, expiresAt: number } | null} */
 let cachedToken = null
@@ -40,15 +40,23 @@ function getStaticSkuMap() {
   if (staticSkuMap) return staticSkuMap
   /** @type {Map<string, string>} */
   const map = new Map()
-  const raw = staticVariantMap && typeof staticVariantMap === 'object' ? staticVariantMap : {}
+  const rawRoot =
+    staticVariantMap && typeof staticVariantMap === 'object'
+      ? /** @type {any} */ (staticVariantMap).default || staticVariantMap
+      : {}
+  const raw = rawRoot && typeof rawRoot === 'object' ? rawRoot : {}
   for (const [sku, row] of Object.entries(raw)) {
-    const id =
-      (row && typeof row === 'object' && (row.variantId || row.legacyResourceId)) ||
-      (typeof row === 'string' ? row : '')
-    const numeric = String(id || '').replace(/\D/g, '')
+    let id = ''
+    if (row && typeof row === 'object') {
+      id = String(row.variantId || row.legacyResourceId || row.id || '')
+    } else if (typeof row === 'string' || typeof row === 'number') {
+      id = String(row)
+    }
+    const numeric = id.replace(/\D/g, '')
     if (sku && numeric) map.set(String(sku).trim(), numeric)
   }
   staticSkuMap = map
+  console.log('[shopify] bundled variantMap size', map.size)
   return map
 }
 
@@ -390,7 +398,7 @@ async function buildOrderMerchandise(env, record, amt) {
 
     if (!variantId) {
       throw new Error(
-        `Shopify 找不到對應變體 SKU「${sku || name}」。請確認產品已匯入且應用有 read_products 權限。`,
+        `Shopify 找不到對應變體 SKU「${sku || name}」。請執行 npm run sync:shopify-variants 後重新 deploy Worker。`,
       )
     }
     lineItems.push({
