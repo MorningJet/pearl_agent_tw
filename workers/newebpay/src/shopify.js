@@ -3,13 +3,13 @@
  *
  * H5 → Shopify field mapping (Admin 訂單列表):
  *   備註 note     → 藍新訂單號、手圍、商品編碼（順時針編號，每顆一行）
- *   客戶 email    → 會員 email（寫入客戶列顯示名，避免重名混淆）
+ *   客戶          → email = 會員信箱；姓名 = 收貨姓氏／名字（與收貨地址一致）
  *   總計          → 與藍新一致（BOM 珠款 + 設計費 + 運費）
  *   商品 line_items → H5 BOM 對應後台產品（SKU=productId → variant_id）；另含設計費/運費
  *   支付狀態      → pending（待付款）→ 藍新成功後 paid
  *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
  *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
- *   收貨地址姓名  → 姓氏／名字（物流用；與客戶列 email 分開）
+ *   收貨地址姓名  → 姓氏／名字（物流用）
  *
  * Variant IDs come from bundled variantMap.json (Storefront sync). Admin
  * read_products is optional; app may only have write_orders.
@@ -225,21 +225,20 @@ async function createShopifyOrder(env, record, opts) {
     line_items: lineItems,
   }
 
-  // Customer row: use email as display identity so same Chinese names don't collide.
-  // Shipping address still carries 姓氏／名字 for logistics.
+  // Customer row: email for identity; display name = 收貨姓氏／名字 (not email).
   // Shopify Admin rejects blank last_name (422), so never send "".
   const memberEmail = String(record.email || '').trim().toLowerCase()
+  const ship =
+    record.shippingAddress && typeof record.shippingAddress === 'object'
+      ? /** @type {Record<string, unknown>} */ (record.shippingAddress)
+      : {}
+  const shipLast = clip(String(ship.last_name || ''), 40)
+  const shipFirst = clip(String(ship.first_name || ''), 40)
   if (memberEmail) {
-    const ship =
-      record.shippingAddress && typeof record.shippingAddress === 'object'
-        ? /** @type {Record<string, unknown>} */ (record.shippingAddress)
-        : {}
-    const shipLast = clip(String(ship.last_name || ''), 40)
-    const shipFirst = clip(String(ship.first_name || ''), 40)
     order.email = memberEmail
     order.customer = {
       email: memberEmail,
-      first_name: shipFirst || memberEmail,
+      first_name: shipFirst || '顧客',
       last_name: shipLast || '-',
     }
   }
@@ -295,17 +294,19 @@ async function createShopifyOrder(env, record, opts) {
   const created = json?.order
   if (!created?.id) throw new Error('Shopify 未回傳 order.id')
 
-  if (memberEmail) {
-    const task = ensureCustomerEmailIdentity(
+  // Align existing customer profile name with this order's shipping name when possible.
+  if (memberEmail && (shipFirst || shipLast)) {
+    const task = ensureCustomerShippingName(
       env,
       token,
       domain,
       version,
       created,
       memberEmail,
+      shipFirst,
+      shipLast,
     )
     if (typeof opts.waitUntil === 'function') {
-      // Don't block checkout redirect on customer name polish.
       opts.waitUntil(task)
     } else {
       await task
@@ -320,18 +321,30 @@ async function createShopifyOrder(env, record, opts) {
 }
 
 /**
- * Force Admin「客户」row to show email (unique), not shipping 姓氏名字.
- * Soft-fail if app lacks write_customers.
+ * Keep Admin「客户」display name = 收貨姓名 (not email). Soft-fail without write_customers.
  * @param {any} env
  * @param {string} token
  * @param {string} domain
  * @param {string} version
  * @param {any} order
  * @param {string} email
+ * @param {string} firstName
+ * @param {string} lastName
  */
-async function ensureCustomerEmailIdentity(env, token, domain, version, order, email) {
+async function ensureCustomerShippingName(
+  env,
+  token,
+  domain,
+  version,
+  order,
+  email,
+  firstName,
+  lastName,
+) {
   const customerId = order?.customer?.id || order?.customer_id
   if (!customerId || !email) return
+  const first_name = clip(firstName || '顧客', 40)
+  const last_name = clip(lastName || '-', 40)
   try {
     const res = await fetch(
       `https://${domain}/admin/api/${version}/customers/${customerId}.json`,
@@ -342,8 +355,8 @@ async function ensureCustomerEmailIdentity(env, token, domain, version, order, e
           customer: {
             id: customerId,
             email,
-            first_name: email,
-            last_name: '-',
+            first_name,
+            last_name,
           },
         }),
       },
@@ -351,14 +364,14 @@ async function ensureCustomerEmailIdentity(env, token, domain, version, order, e
     if (!res.ok) {
       const text = await res.text()
       console.warn(
-        '[shopify] customer email-identity update failed',
+        '[shopify] customer shipping-name update failed',
         res.status,
         clip(text, 200),
       )
     }
   } catch (e) {
     console.warn(
-      '[shopify] customer email-identity update error',
+      '[shopify] customer shipping-name update error',
       e instanceof Error ? e.message : e,
     )
   }
