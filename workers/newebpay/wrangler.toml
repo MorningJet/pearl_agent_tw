@@ -1,0 +1,17 @@
+name = "pearl-newebpay"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+# Local: copy .dev.vars.example → .dev.vars (gitignored)
+# Production secrets:
+#   npx wrangler secret put NEWEBPAY_MERCHANT_ID
+#   npx wrangler secret put NEWEBPAY_HASH_KEY
+#   npx wrangler secret put NEWEBPAY_HASH_IV
+
+[vars]
+NEWEBPAY_ENV = "sandbox"
+# After first deploy, set PUBLIC_API_BASE to your workers.dev URL and redeploy
+PUBLIC_API_BASE = ""
+H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"
+CORS_ORIGINS = "*"

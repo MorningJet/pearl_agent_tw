@@ -46,11 +46,10 @@ import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
 import {
-  beginCheckoutNavigation,
-  cancelCheckoutNavigation,
-  createCheckoutFromBom,
-  navigateToCheckout,
-} from '../../shared/shopify/checkout.js'
+  createNewebpayCheckout,
+  isNewebpayConfigured,
+  submitNewebpayForm,
+} from '../../shared/newebpay/checkout.js'
 
 /** @type {string} */
 let designImageUrl = ''
@@ -489,11 +488,11 @@ function bindActions() {
   })
 }
 
-/** Prevent double-submit while Storefront cart is creating. */
+/** Prevent double-submit while NewebPay checkout is creating. */
 let buyInFlight = false
 
 /**
- * All three details modes: BOM = underlying beads → Shopify cart → checkout.
+ * All three details modes: BOM = underlying beads → NewebPay MPG (not Shopify Checkout).
  * Plaza UI may hide SKU rows, but checkout still expands the bead set.
  */
 async function buyNow() {
@@ -501,6 +500,10 @@ async function buyNow() {
   const beads = getResolvedBeads()
   if (!beads.length) {
     showToast('請先加入珠子再購買')
+    return
+  }
+  if (!isNewebpayConfigured()) {
+    showToast('尚未設定藍新付款服務（VITE_NEWEBPAY_API_BASE）')
     return
   }
 
@@ -520,40 +523,33 @@ async function buyNow() {
   const prevLabel = btn?.textContent
   if (btn) {
     btn.setAttribute('disabled', 'true')
-    btn.textContent = '前往結帳…'
+    btn.textContent = '前往付款…'
   }
-
-  // Keep user-gesture: open blank tab now so checkout is not trapped in the DIY iframe.
-  const navHandle = beginCheckoutNavigation()
 
   try {
     if (isPlaza) {
       recordPlazaPurchaseUse({ silent: true })
     }
 
-    const result = await createCheckoutFromBom(bom, {
+    const result = await createNewebpayCheckout(bom, {
       designName: getDesignName(),
       wristCm: formatCm(mm),
       detailsMode,
       designId: getActiveDesignId() || '',
-      plazaPublishId:
-        pub?.id || getAppliedPlazaPublishId() || '',
-      designerId: isPlaza
-        ? String(pub?.designerId || '').trim()
-        : '',
+      plazaPublishId: pub?.id || getAppliedPlazaPublishId() || '',
+      designerId: isPlaza ? String(pub?.designerId || '').trim() : '',
       designFeeTwd: designFee,
       designImageUrl,
       beadsSubtotalTwd: totalPrice(beads),
     })
 
     if (!result.ok) {
-      cancelCheckoutNavigation(navHandle)
       showToast(result.error)
       return
     }
-    navigateToCheckout(result.checkoutUrl, navHandle)
+    // Form target=_top leaves the Shopify iframe.
+    submitNewebpayForm(result)
   } catch (err) {
-    cancelCheckoutNavigation(navHandle)
     console.error('[details] buy failed', err)
     showToast(`下單失敗：${shortErr(err)}`)
   } finally {

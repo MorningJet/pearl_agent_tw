@@ -60,7 +60,7 @@ git push -u origin main
 
 （嵌入 iframe 時也會自動進用戶版；桌面直接打開根網址仍是開發預覽。本機用戶版：`?embed=1`，強制開發殼：`?studio=1`。）
 
-立即購買需設定 Storefront Token，見 [docs/shopify-checkout.md](docs/shopify-checkout.md)。
+立即購買需設定藍新 Worker，見 [docs/newebpay-checkout.md](docs/newebpay-checkout.md)。（Shopify Storefront 仍可用於商品對照；結帳已改藍新 MPG。）
 
 本機預覽 Pages 路徑前綴：
 

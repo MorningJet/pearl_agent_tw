@@ -11,6 +11,14 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Local NewebPay worker: npm run newebpay:dev → http://127.0.0.1:8787
+    proxy: {
+      '/newebpay-api': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/newebpay-api/, ''),
+      },
+    },
     // Plaza sync rewrites these files; ignoring prevents full reload → jump to Home.
     watch: {
       ignored: [

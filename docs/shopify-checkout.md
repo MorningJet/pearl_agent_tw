@@ -1,6 +1,9 @@
-# Shopify 結帳（簡化方案）
+# Shopify 結帳（舊方案／商品對照）
 
-三種詳情（普通 / 廣場 / 廣場修改後）點 **立即購買** 時邏輯相同：
+> **立即購買已改走藍新 MPG**，見 [`newebpay-checkout.md`](newebpay-checkout.md)。  
+> 下文保留 Storefront 購物車說明，供商品 SKU／設計費變體對照；付款不再使用 Shopify Checkout。
+
+三種詳情（普通 / 廣場 / 廣場修改後）點 **立即購買** 時邏輯相同（金額仍依 BOM）：
 
 | 項目 | 做法 |
 |------|------|
