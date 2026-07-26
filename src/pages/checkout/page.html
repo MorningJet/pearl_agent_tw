@@ -8,7 +8,34 @@
   </header>
 
   <div id="checkout-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-28 pt-3">
-    <form id="checkout-form" class="space-y-3" novalidate>
+    <section class="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-stone-100">
+      <div class="flex gap-3" style="display:flex;gap:0.75rem;align-items:flex-start">
+        <div
+          id="checkout-product-media"
+          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-50"
+          style="flex-shrink:0;width:5rem;height:5rem;overflow:hidden;border-radius:0.75rem"
+        ></div>
+        <div
+          id="checkout-product-meta"
+          style="flex:1;min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem"
+        >
+          <p
+            id="checkout-product-title"
+            class="text-sm font-medium text-stone-900"
+            style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.875rem;font-weight:500"
+          >
+            手鍊設計
+          </p>
+          <p
+            id="checkout-product-price"
+            class="text-sm font-semibold tabular-nums text-stone-900"
+            style="margin:0;flex-shrink:0;font-size:0.875rem;font-weight:600;white-space:nowrap"
+          ></p>
+        </div>
+      </div>
+    </section>
+
+    <form id="checkout-form" class="mt-3 space-y-3" novalidate>
       <section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
         <p class="text-sm font-semibold text-stone-900">收件資料</p>
         <div class="mt-3 space-y-3">
@@ -84,38 +111,6 @@
         </div>
       </section>
     </form>
-
-    <section class="mt-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-stone-100">
-      <div class="flex gap-3" style="display:flex;gap:0.75rem;align-items:flex-start">
-        <div
-          id="checkout-product-media"
-          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-50"
-          style="flex-shrink:0;width:5rem;height:5rem;overflow:hidden;border-radius:0.75rem"
-        ></div>
-        <div
-          id="checkout-product-meta"
-          style="flex:1;min-width:0;display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem"
-        >
-          <p
-            id="checkout-product-title"
-            class="text-sm font-medium text-stone-900"
-            style="margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.875rem;font-weight:500"
-          >
-            手鍊設計
-          </p>
-          <p
-            id="checkout-product-price"
-            class="text-sm font-semibold tabular-nums text-stone-900"
-            style="margin:0;flex-shrink:0;font-size:0.875rem;font-weight:600;white-space:nowrap"
-          ></p>
-        </div>
-      </div>
-    </section>
-
-    <section class="mt-3 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-stone-100">
-      <h2 class="text-sm font-semibold text-stone-900">商品明細</h2>
-      <ul id="checkout-bom" class="mt-1 divide-y divide-stone-100"></ul>
-    </section>
   </div>
 
   <div

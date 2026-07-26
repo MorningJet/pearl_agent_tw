@@ -85,7 +85,6 @@ function renderDraft() {
   const title = document.getElementById('checkout-product-title')
   const price = document.getElementById('checkout-product-price')
   const media = document.getElementById('checkout-product-media')
-  const bomEl = document.getElementById('checkout-bom')
   const submitBtn = document.getElementById('checkout-submit')
 
   // Always force current CTA copy (survives stale cached markup).
@@ -101,14 +100,6 @@ function renderDraft() {
         : Math.max(0, Math.round(Number(draft.amountTwd) || 0) - beadsSubtotal - designFee),
     ),
   )
-  const mode = String(draft.detailsMode || 'normal')
-  // Prefer explicit flag from details; also treat plaza publish / design fee as fee layout.
-  const showFeeSummary =
-    draft.bomDisplay === 'fee' ||
-    mode === 'plaza' ||
-    mode === 'plaza-edit' ||
-    Boolean(String(draft.plazaPublishId || '').trim()) ||
-    (draft.bomDisplay !== 'sku' && designFee > 0)
 
   if (title) title.textContent = draft.designName || '手鍊設計'
   if (price) {
@@ -117,110 +108,15 @@ function renderDraft() {
       beadsSubtotal + designFee + shippingTwd
     price.textContent = `NT$${formatPrice(total)}`
   }
-  // Drop any leftover wrist line from older cached markup.
+  // Drop leftovers from older cached markup.
   document.getElementById('checkout-product-wrist')?.remove()
+  document.getElementById('checkout-bom')?.closest('section')?.remove()
   if (media) {
     const imgUrl = draft.designImageUrl ? withBase(draft.designImageUrl) : ''
     media.innerHTML = imgUrl
       ? `<img src="${escapeAttr(imgUrl)}" alt="" class="h-full w-full object-cover" />`
       : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400">設計圖</div>`
   }
-  if (bomEl) {
-    bomEl.innerHTML = showFeeSummary
-      ? feeSummaryHtml({
-          designName: draft.designName || '手鍊設計',
-          wristCm: draft.wristCm || '',
-          beadsSubtotal,
-          designFee,
-          shippingTwd,
-        })
-      : skuBomHtml(draft.bom || [], shippingTwd)
-  }
-}
-
-/**
- * Plaza / plaza-edit — same rows as details fee summary.
- * @param {{
- *   designName: string,
- *   wristCm: string,
- *   beadsSubtotal: number,
- *   designFee: number,
- *   shippingTwd: number,
- * }} p
- */
-function feeSummaryHtml(p) {
-  const wristLabel = p.wristCm ? `腕圍 ${p.wristCm}cm` : ''
-  return `
-      <li class="flex items-start justify-between gap-3 py-2.5 text-sm">
-        <div class="min-w-0">
-          <p class="truncate font-medium text-stone-800">${escapeHtml(p.designName)}</p>
-          ${
-            wristLabel
-              ? `<p class="mt-0.5 text-xs text-stone-400">${escapeHtml(wristLabel)}</p>`
-              : ''
-          }
-        </div>
-        <div class="shrink-0 text-right">
-          <p class="text-stone-600">×1</p>
-          <p class="mt-0.5 font-medium text-stone-800">NT$${formatPrice(p.beadsSubtotal)}</p>
-        </div>
-      </li>
-      <li class="flex items-start justify-between gap-3 py-2.5 text-sm">
-        <div class="min-w-0 pr-2">
-          <p class="font-medium text-stone-800">設計費用</p>
-          <p class="mt-0.5 text-xs text-stone-400">由設計師收取，平台不抽成</p>
-        </div>
-        <div class="shrink-0 text-right">
-          <p class="text-stone-600">×1</p>
-          <p class="mt-0.5 font-medium text-stone-800">${
-            p.designFee > 0 ? `NT$${formatPrice(p.designFee)}` : '免費'
-          }</p>
-        </div>
-      </li>
-      ${shippingRowHtml(p.shippingTwd)}`
-}
-
-/**
- * Normal details — SKU BOM + shipping (same as details `#details-bom`).
- * @param {CheckoutDraft['bom']} bom
- * @param {number} shippingTwd
- */
-function skuBomHtml(bom, shippingTwd) {
-  const rows = (bom || []).map(
-    (row) => `
-      <li class="flex items-start justify-between gap-3 py-2.5 text-sm">
-        <div class="min-w-0">
-          <p class="truncate font-medium text-stone-800">${escapeHtml(row.name)}</p>
-          <p class="mt-0.5 text-xs text-stone-400">${escapeHtml(String(row.diameterMm))}mm</p>
-        </div>
-        <div class="shrink-0 text-right">
-          <p class="text-stone-600">×${row.qty}</p>
-          <p class="mt-0.5 font-medium text-stone-800">NT$${formatPrice(
-            Number(row.lineTotal) || Number(row.unitPrice || 0) * row.qty,
-          )}</p>
-        </div>
-      </li>`,
-  )
-  if (!rows.length) {
-    rows.push(`<li class="py-2.5 text-sm text-stone-400">尚無珠子明細</li>`)
-  }
-  return rows.join('') + shippingRowHtml(shippingTwd)
-}
-
-/** @param {number} shippingTwd */
-function shippingRowHtml(shippingTwd) {
-  const free = shippingTwd <= 0
-  return `
-      <li class="flex items-start justify-between gap-3 py-2.5 text-sm">
-        <div class="min-w-0">
-          <p class="truncate font-medium text-stone-800">運費</p>
-          <p class="mt-0.5 text-xs text-stone-400">${free ? '滿1000包郵' : '標準配送'}</p>
-        </div>
-        <div class="shrink-0 text-right">
-          <p class="text-stone-600">×1</p>
-          <p class="mt-0.5 font-medium text-stone-800">NT$${formatPrice(shippingTwd)}</p>
-        </div>
-      </li>`
 }
 
 function prefillsFromProfile() {
