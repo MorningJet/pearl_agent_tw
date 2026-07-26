@@ -285,10 +285,59 @@ async function createShopifyOrder(env, record, opts) {
   const created = json?.order
   if (!created?.id) throw new Error('Shopify 未回傳 order.id')
 
+  if (memberEmail) {
+    await ensureCustomerEmailIdentity(env, token, domain, version, created, memberEmail)
+  }
+
   return {
     id: created.id,
     name: created.name || String(created.id),
     adminUrl: `https://${domain}/admin/orders/${created.id}`,
+  }
+}
+
+/**
+ * Force Admin「客户」row to show email (unique), not shipping 姓氏名字.
+ * Soft-fail if app lacks write_customers.
+ * @param {any} env
+ * @param {string} token
+ * @param {string} domain
+ * @param {string} version
+ * @param {any} order
+ * @param {string} email
+ */
+async function ensureCustomerEmailIdentity(env, token, domain, version, order, email) {
+  const customerId = order?.customer?.id || order?.customer_id
+  if (!customerId || !email) return
+  try {
+    const res = await fetch(
+      `https://${domain}/admin/api/${version}/customers/${customerId}.json`,
+      {
+        method: 'PUT',
+        headers: adminHeaders(token),
+        body: JSON.stringify({
+          customer: {
+            id: customerId,
+            email,
+            first_name: email,
+            last_name: '',
+          },
+        }),
+      },
+    )
+    if (!res.ok) {
+      const text = await res.text()
+      console.warn(
+        '[shopify] customer email-identity update failed',
+        res.status,
+        clip(text, 200),
+      )
+    }
+  } catch (e) {
+    console.warn(
+      '[shopify] customer email-identity update error',
+      e instanceof Error ? e.message : e,
+    )
   }
 }
 
