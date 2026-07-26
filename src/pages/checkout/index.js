@@ -10,6 +10,7 @@ import {
   submitNewebpayForm,
 } from '../../shared/newebpay/checkout.js'
 import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
+import { canonicalOrderImageUrl } from '../../shared/orderImage.js'
 import {
   getMemberId,
   isEmailMemberId,
@@ -353,7 +354,7 @@ async function submitCheckout() {
       result,
       {
         designName: draft.designName,
-        designImageUrl: draft.designImageUrl || '',
+        designImageUrl: canonicalOrderImageUrl(draft.designImageUrl || ''),
         wristCmNum: draft.wristCmNum,
         wristCm: draft.wristCm,
         beadsSubtotalTwd: draft.beadsSubtotalTwd,
@@ -362,6 +363,7 @@ async function submitCheckout() {
         shippingAddress: parsed.shippingAddress,
         bomDisplay: draft.bomDisplay || 'sku',
         bom: draft.bom,
+        plazaPublishId: draft.plazaPublishId || '',
       },
       {
         beadsSubtotal: draft.beadsSubtotalTwd,

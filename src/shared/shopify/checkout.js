@@ -15,6 +15,7 @@ import {
 } from './config.js'
 import { storefrontGraphql } from './storefront.js'
 import { ensureVariantsForSkus, getVariantGidForSku } from './variantMap.js'
+import { normalizeAssetUrl } from '../assetUrl.js'
 
 /**
  * @typedef {{
@@ -196,12 +197,11 @@ function formatRecipe(bom) {
  */
 export function publicDesignImageUrl(url) {
   const u = String(url || '').trim()
-  if (!u) return ''
-  if (/^data:/i.test(u)) return ''
-  if (/^https?:\/\//i.test(u)) return u
+  if (!u || /^data:/i.test(u)) return ''
   try {
-    const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
-    return new URL(u.replace(/^\//, ''), base).href
+    const pathOrAbs = normalizeAssetUrl(u)
+    if (/^https?:\/\//i.test(pathOrAbs)) return pathOrAbs
+    return new URL(pathOrAbs, window.location.origin).href
   } catch {
     return u
   }

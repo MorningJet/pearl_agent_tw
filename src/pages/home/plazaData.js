@@ -52,7 +52,7 @@ function listMasterPublished() {
 export function getMasterPlazaImagePath(id) {
   const row = (plazaMaster.designs || []).find((d) => d.id === id)
   const path = row?.image_path
-  return typeof path === 'string' && path ? withBase(path) : ''
+  return typeof path === 'string' && path ? path : ''
 }
 
 /**
@@ -66,6 +66,8 @@ export function resolvePlazaPreviewUrl(p) {
     p.imageDataUrl ||
     getMasterPlazaImagePath(p.id) ||
     ''
+  // withBase once only (paths from master are root-relative `/plaza/...`)
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw
   return withBase(raw)
 }
 export function getSeedPlazaDesignRow(id) {

@@ -2,7 +2,6 @@ import ordersHtml from './page.html?raw'
 import { mountFragment } from '../../shared/mount.js'
 import { showOrderDetailPage, showTab } from '../../shared/nav.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
-import { withBase } from '../../shared/assetUrl.js'
 import { showToast } from '../../shared/ui/toast.js'
 import {
   CUSTOM_GOODS_NOTE,
@@ -13,6 +12,7 @@ import {
   orderStatusLabel,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
+import { resolveOrderThumbUrl } from '../../shared/orderImage.js'
 import { syncOrdersFromServer } from '../../shared/newebpay/orderStatus.js'
 import { openOrderDetail } from '../orderDetail/index.js'
 
@@ -113,6 +113,16 @@ function renderOrders() {
   }
   empty.classList.add('hidden')
   list.innerHTML = orders.map(orderCardHtml).join('')
+  list.querySelectorAll('img[data-order-thumb]').forEach((el) => {
+    if (!(el instanceof HTMLImageElement)) return
+    el.addEventListener('error', () => {
+      const fallback = document.createElement('div')
+      fallback.className =
+        'flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400'
+      fallback.textContent = '設計圖'
+      el.replaceWith(fallback)
+    })
+  })
 }
 
 /**
@@ -120,9 +130,9 @@ function renderOrders() {
  */
 function orderCardHtml(o) {
   const status = normalizeStatus(o.status)
-  const img = o.imageUrl ? withBase(o.imageUrl) : ''
+  const img = resolveOrderThumbUrl(o)
   const media = img
-    ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
+    ? `<img data-order-thumb src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400">設計圖</div>`
 
   const showNote = showsCustomGoodsNote(status)

@@ -3,6 +3,7 @@
  */
 
 import { getMemberId, isEmailMemberId } from '../state/userProfileStore.js'
+import { canonicalOrderImageUrl } from '../orderImage.js'
 import {
   listOrders,
   normalizeStatus,
@@ -71,6 +72,7 @@ function apiBase() {
  *     unitPrice?: number,
  *     lineTotal?: number,
  *   }>,
+ *   plazaPublishId?: string,
  * }} meta
  * @param {{ beadsSubtotal?: number, designFee?: number, shipping?: number }} [breakdown]
  */
@@ -121,6 +123,7 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
     email: String(meta.email || '').trim().toLowerCase(),
     bomDisplay,
     bom: Array.isArray(meta.bom) ? meta.bom : [],
+    plazaPublishId: String(meta.plazaPublishId || ''),
   })
 }
 
@@ -274,7 +277,7 @@ function applyRemoteOrder(remote) {
       designFeeTwd: remote.designFeeTwd,
       shippingTwd: remote.shippingTwd,
       wristCm: remote.wristCm,
-      imageUrl: remote.imageUrl,
+      imageUrl: canonicalOrderImageUrl(remote.imageUrl || ''),
       bomDisplay: remote.bomDisplay,
       bom: remote.bom,
       paymentType: remote.paymentType,
@@ -288,7 +291,7 @@ function applyRemoteOrder(remote) {
     status: normalizeStatus(remote.h5Status || 'unpaid'),
     amountTwd: Number(remote.amountTwd) || 0,
     createdAt: Number(remote.updatedAt) || Date.now(),
-    imageUrl: String(remote.imageUrl || ''),
+    imageUrl: canonicalOrderImageUrl(remote.imageUrl || ''),
     trackingNo: String(remote.trackingNo || ''),
     beadsSubtotalTwd:
       remote.beadsSubtotalTwd != null ? Number(remote.beadsSubtotalTwd) : undefined,

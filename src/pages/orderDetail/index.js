@@ -3,7 +3,7 @@ import { mountFragment } from '../../shared/mount.js'
 import { showOrdersPage } from '../../shared/nav.js'
 import { showToast } from '../../shared/ui/toast.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
-import { withBase } from '../../shared/assetUrl.js'
+import { resolveOrderThumbUrl } from '../../shared/orderImage.js'
 import {
   CUSTOM_GOODS_NOTE,
   canContinuePayment,
@@ -89,7 +89,7 @@ export function refreshOrderDetailPage() {
  */
 function detailHtml(o) {
   const status = normalizeStatus(o.status)
-  const img = orderImageSrc(o.imageUrl)
+  const img = resolveOrderThumbUrl(o)
   const media = img
     ? `<img data-order-thumb src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400">設計圖</div>`
@@ -434,16 +434,6 @@ function statusProgressHtml(status) {
         })
         .join('')}
     </ol>`
-}
-
-/**
- * @param {string | undefined} url
- */
-function orderImageSrc(url) {
-  const u = String(url || '').trim()
-  if (!u) return ''
-  if (/^(https?:|data:|blob:)/i.test(u)) return u
-  return withBase(u)
 }
 
 /**

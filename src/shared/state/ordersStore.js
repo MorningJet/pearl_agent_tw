@@ -50,6 +50,7 @@
  *   bomDisplay?: 'fee' | 'sku',
  *   bom?: OrderBomLine[],
  *   paymentType?: string,
+ *   plazaPublishId?: string,
  * }} Order
  */
 
@@ -170,6 +171,7 @@ function normalizeOrder(raw) {
     bomDisplay: o.bomDisplay === 'fee' || o.bomDisplay === 'sku' ? o.bomDisplay : undefined,
     bom: normalizeBomLines(o.bom),
     paymentType: String(o.paymentType || ''),
+    plazaPublishId: String(o.plazaPublishId || ''),
   }
 }
 
@@ -292,6 +294,7 @@ export function upsertOrder(input) {
     bomDisplay: input.bomDisplay === 'fee' || input.bomDisplay === 'sku' ? input.bomDisplay : undefined,
     bom: normalizeBomLines(input.bom),
     paymentType: input.paymentType || '',
+    plazaPublishId: input.plazaPublishId || '',
   }
   if (idx >= 0) {
     const prev = list[idx]
@@ -315,6 +318,7 @@ export function upsertOrder(input) {
       bomDisplay: next.bomDisplay || prev.bomDisplay,
       bom: next.bom?.length ? next.bom : prev.bom || [],
       paymentType: next.paymentType || prev.paymentType || '',
+      plazaPublishId: next.plazaPublishId || prev.plazaPublishId || '',
     }
     writeAll(list)
     return list[idx]

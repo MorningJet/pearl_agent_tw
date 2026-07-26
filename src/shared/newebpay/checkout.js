@@ -3,6 +3,8 @@
  * HashKey / HashIV live only on the Cloudflare Worker — never in this H5 bundle.
  */
 
+import { normalizeAssetUrl } from '../assetUrl.js'
+
 const FREE_SHIPPING_MIN_TWD = 1000
 const STANDARD_SHIPPING_TWD = 50
 
@@ -215,17 +217,11 @@ function formatRecipe(bom) {
 /** @param {string} url */
 function publicDesignImageUrl(url) {
   const u = String(url || '').trim()
-  if (!u) return ''
-  if (/^data:/i.test(u)) return ''
-  if (/^https?:\/\//i.test(u)) return u
+  if (!u || /^data:/i.test(u)) return ''
   try {
-    const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
-    // Avoid double-prefix when caller already applied withBase()/BASE_URL.
-    const basePath = base.pathname.endsWith('/') ? base.pathname : `${base.pathname}/`
-    if (u.startsWith(basePath) || u.startsWith(base.href)) {
-      return new URL(u, window.location.origin).href
-    }
-    return new URL(u.replace(/^\//, ''), base).href
+    const pathOrAbs = normalizeAssetUrl(u)
+    if (/^https?:\/\//i.test(pathOrAbs)) return pathOrAbs
+    return new URL(pathOrAbs, window.location.origin).href
   } catch {
     return u
   }
