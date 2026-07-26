@@ -239,6 +239,125 @@ export async function handleH5OrdersByEmail(url, env, cors) {
 }
 
 /**
+ * Latest shipping address for a buyer email (Shopify Admin, then KV checkout records).
+ * GET /api/h5/shipping-address?email=
+ * @param {URL} url
+ * @param {any} env
+ * @param {Record<string, string>} cors
+ */
+export async function handleH5ShippingAddress(url, env, cors) {
+  const email = String(url.searchParams.get('email') || '')
+    .trim()
+    .toLowerCase()
+  if (!email || !email.includes('@')) {
+    return json({ ok: false, error: '需要 email' }, 400, cors)
+  }
+
+  if (isShopifyAuthConfigured(env)) {
+    try {
+      const adminOrders = await listShopifyOrdersByEmail(env, email, { limit: 25 })
+      const sorted = [...adminOrders].sort(
+        (a, b) => Date.parse(String(b.created_at || 0)) - Date.parse(String(a.created_at || 0)),
+      )
+      for (const order of sorted) {
+        const mapped = mapShopifyShippingToH5(order?.shipping_address)
+        if (mapped) {
+          return json(
+            {
+              ok: true,
+              found: true,
+              address: mapped,
+              shopifyOrderName: String(order?.name || ''),
+            },
+            200,
+            cors,
+          )
+        }
+      }
+    } catch (e) {
+      console.warn(
+        '[h5-shipping] admin list failed',
+        e instanceof Error ? e.message : e,
+      )
+    }
+  }
+
+  // Fallback: checkout KV records indexed by email (newest first in index).
+  const index = await listShopifyOrderIndexByEmail(env, email)
+  for (const row of index) {
+    const mno = String(row?.merchantOrderNo || '').trim()
+    if (!mno) continue
+    const record = await getOrder(env, mno)
+    const mapped = mapCheckoutShippingToH5(record?.shippingAddress)
+    if (mapped) {
+      return json(
+        {
+          ok: true,
+          found: true,
+          address: mapped,
+          shopifyOrderName: String(record?.shopifyOrderName || ''),
+        },
+        200,
+        cors,
+      )
+    }
+  }
+
+  return json({ ok: true, found: false, address: null }, 200, cors)
+}
+
+/**
+ * @param {any} addr
+ * @returns {null | {
+ *   lastName: string,
+ *   firstName: string,
+ *   phone: string,
+ *   city: string,
+ *   district: string,
+ *   zip: string,
+ *   address1: string,
+ * }}
+ */
+function mapShopifyShippingToH5(addr) {
+  if (!addr || typeof addr !== 'object') return null
+  const address1 = String(addr.address1 || '').trim()
+  const city = String(addr.province || '').trim() // 縣市
+  const district = String(addr.city || '').trim() // 鄉鎮市區
+  if (!address1 && !city && !district) return null
+  return {
+    lastName: String(addr.last_name || '').trim(),
+    firstName: String(addr.first_name || '').trim(),
+    phone: String(addr.phone || '').trim(),
+    city,
+    district,
+    zip: String(addr.zip || '').trim(),
+    address1,
+  }
+}
+
+/**
+ * @param {any} addr
+ */
+function mapCheckoutShippingToH5(addr) {
+  if (!addr || typeof addr !== 'object') return null
+  const address1 = String(addr.address1 || addr.detail || '').trim()
+  // Checkout → Shopify mapAddress: province=縣市, city=鄉鎮市區 (district)
+  const city = String(addr.province || addr.city || '').trim()
+  const district = String(addr.district || '').trim() ||
+    (addr.province ? String(addr.city || '').trim() : '')
+  if (!address1 && !city && !district) return null
+  return {
+    lastName: String(addr.last_name || '').trim(),
+    firstName: String(addr.first_name || '').trim(),
+    phone: String(addr.phone || '').trim(),
+    city,
+    district,
+    zip: String(addr.zip || '').trim(),
+    address1,
+  }
+}
+
+/**
  * Build + store mirror from a NewebPay checkout record (after Shopify create / paid).
  * @param {any} env
  * @param {object} record

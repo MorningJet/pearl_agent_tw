@@ -1,7 +1,6 @@
 import meHtml from './page.html?raw'
 import { mountFragment } from '../../shared/mount.js'
 import {
-  showAddressPage,
   showEarningsPage,
   showHomePage,
   showOrdersPage,
@@ -21,7 +20,6 @@ import {
 } from '../../shared/state/ordersStore.js'
 import { refreshEarningsPage } from '../earnings/index.js'
 import { refreshOrdersPage } from '../orders/index.js'
-import { refreshAddressPage } from '../address/index.js'
 
 const AVATAR_OUT_PX = 256
 
@@ -96,11 +94,6 @@ function bindLinks() {
       if (link === 'orders') {
         showOrdersPage()
         refreshOrdersPage()
-        return
-      }
-      if (link === 'address') {
-        showAddressPage()
-        refreshAddressPage()
         return
       }
       showToast('即將推出')

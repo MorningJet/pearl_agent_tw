@@ -22,6 +22,7 @@
  *   GET  /api/h5/order-status
  *   POST /api/h5/order-status/batch
  *   GET  /api/h5/orders?email=
+ *   GET  /api/h5/shipping-address?email=
  */
 
 import { getOrder, putOrder } from './store.js'
@@ -30,12 +31,12 @@ import {
   createUnpaidShopifyOrder,
   isShopifyAuthConfigured,
   markShopifyOrderPaid,
-  toShopifyShippingAddress,
 } from './shopify.js'
 import {
   handleH5OrderStatus,
   handleH5OrderStatusBatch,
   handleH5OrdersByEmail,
+  handleH5ShippingAddress,
   handleShopifyWebhook,
   mirrorFromCheckoutRecord,
 } from './shopifyWebhook.js'
@@ -97,6 +98,10 @@ export default {
 
       if (url.pathname === '/api/h5/orders' && request.method === 'GET') {
         return await handleH5OrdersByEmail(url, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/shipping-address' && request.method === 'GET') {
+        return await handleH5ShippingAddress(url, env, cors)
       }
 
       if (url.pathname === '/api/h5/order-status/batch' && request.method === 'POST') {
@@ -209,10 +214,7 @@ async function handleCheckout(request, env, cors) {
       unitPrice: Number(row.unitPrice) || 0,
       lineTotal: Number(row.lineTotal) || 0,
     })),
-    shippingAddress:
-      body?.shippingAddress && typeof body.shippingAddress === 'object'
-        ? toShopifyShippingAddress(/** @type {Record<string, unknown>} */ (body.shippingAddress))
-        : null,
+    shippingAddress: body?.shippingAddress || null,
     createdAt: Date.now(),
     shopifyOrderId: null,
     shopifyOrderName: null,

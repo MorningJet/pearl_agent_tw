@@ -16,7 +16,7 @@ import {
   isEmailMemberId,
   setMemberIdFromEmail,
 } from '../../shared/state/userProfileStore.js'
-import { getDefaultAddress } from '../../shared/state/addressStore.js'
+import { fetchLatestShippingAddress } from '../../shared/newebpay/shippingAddress.js'
 import {
   isTwMobilePhone,
   joinTwFullName,
@@ -24,7 +24,6 @@ import {
   listTwDistricts,
   lookupTwZip,
   normalizeTwPlaceName,
-  splitTwFullName,
 } from '../../shared/data/twAddress.js'
 import { refreshMePage } from '../me/index.js'
 
@@ -62,6 +61,9 @@ let draft = null
 /** @type {boolean} */
 let submitInFlight = false
 
+/** Avoid overlapping address lookups when email changes quickly. */
+let shippingPrefillSeq = 0
+
 /**
  * @param {HTMLElement} host
  */
@@ -77,6 +79,7 @@ export function initCheckoutPage(host) {
   })
   bindTwAddressSelects()
   bindPhoneInput()
+  bindEmailPrefill()
 }
 
 /**
@@ -128,11 +131,24 @@ function readPhoneFull() {
 export function openCheckout(next) {
   draft = next
   renderDraft()
-  prefillsFromProfile()
+  void prefillsFromProfile()
 }
 
 export function refreshCheckoutPage() {
   if (draft) renderDraft()
+}
+
+function bindEmailPrefill() {
+  const emailEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-email')
+  )
+  if (!emailEl) return
+  emailEl.addEventListener('change', () => {
+    void prefillsFromEmail(emailEl.value, { overwrite: true })
+  })
+  emailEl.addEventListener('blur', () => {
+    void prefillsFromEmail(emailEl.value, { overwrite: false })
+  })
 }
 
 function bindTwAddressSelects() {
@@ -244,13 +260,60 @@ function renderDraft() {
   }
 }
 
-function prefillsFromProfile() {
+async function prefillsFromProfile() {
   const emailEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-email')
   )
   const countryEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-country')
   )
+
+  if (countryEl) countryEl.value = '台灣'
+
+  const memberId = getMemberId()
+  if (emailEl && !emailEl.value.trim() && isEmailMemberId(memberId)) {
+    emailEl.value = memberId
+  }
+
+  const email = String(emailEl?.value || '').trim()
+  await prefillsFromEmail(email, { overwrite: false })
+}
+
+/**
+ * Prefill from Shopify latest order for this email.
+ * First-time buyers stay blank (except email / 台灣).
+ * @param {string} email
+ * @param {{ overwrite?: boolean }} [opts]
+ */
+async function prefillsFromEmail(email, opts = {}) {
+  const overwrite = Boolean(opts.overwrite)
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized.includes('@')) return
+
+  const seq = ++shippingPrefillSeq
+  const result = await fetchLatestShippingAddress(normalized)
+  if (seq !== shippingPrefillSeq) return
+
+  if (!result.ok) {
+    console.warn('[checkout] shipping prefill failed', result.error)
+    return
+  }
+
+  if (result.found && result.address) {
+    applyShippingPrefill(result.address, { overwrite })
+    return
+  }
+
+  // No prior Shopify order for this email → leave blank for first-time fill-in.
+  if (overwrite) clearShippingFieldsExceptEmail()
+}
+
+/**
+ * @param {import('../../shared/newebpay/shippingAddress.js').RemoteShippingAddress} addr
+ * @param {{ overwrite?: boolean }} [opts]
+ */
+function applyShippingPrefill(addr, opts = {}) {
+  const overwrite = Boolean(opts.overwrite)
   const lastNameEl = /** @type {HTMLInputElement | null} */ (
     document.getElementById('checkout-last-name')
   )
@@ -267,25 +330,24 @@ function prefillsFromProfile() {
     document.getElementById('checkout-city')
   )
 
-  if (countryEl) countryEl.value = '台灣'
-
-  const memberId = getMemberId()
-  if (emailEl && !emailEl.value.trim() && isEmailMemberId(memberId)) {
-    emailEl.value = memberId
+  const canFillName =
+    overwrite ||
+    (!lastNameEl?.value.trim() && !firstNameEl?.value.trim())
+  if (canFillName && lastNameEl && firstNameEl) {
+    if (addr.lastName || addr.firstName) {
+      lastNameEl.value = addr.lastName || ''
+      firstNameEl.value = addr.firstName || ''
+    }
   }
 
-  const addr = getDefaultAddress()
-  if (!addr) return
-
-  if (lastNameEl && firstNameEl && !lastNameEl.value.trim() && !firstNameEl.value.trim()) {
-    const parts = splitTwFullName(addr.name || '')
-    lastNameEl.value = parts.lastName
-    firstNameEl.value = parts.firstName
+  if (phoneEl && (overwrite || !phoneEl.value.trim()) && addr.phone) {
+    setPhoneLocalPart(addr.phone)
   }
-  if (phoneEl && !phoneEl.value.trim()) setPhoneLocalPart(addr.phone || '')
-  if (addressEl && !addressEl.value.trim()) addressEl.value = addr.detail || ''
+  if (addressEl && (overwrite || !addressEl.value.trim()) && addr.address1) {
+    addressEl.value = addr.address1
+  }
 
-  if (cityEl && !cityEl.value) {
+  if (cityEl && (overwrite || !cityEl.value) && addr.city) {
     const matchedCity =
       listTwCities().find(
         (c) => normalizeTwPlaceName(c) === normalizeTwPlaceName(addr.city || ''),
@@ -295,6 +357,33 @@ function prefillsFromProfile() {
       fillDistrictOptions(matchedCity, addr.district || '')
       syncZipFromSelection()
     }
+  }
+}
+
+function clearShippingFieldsExceptEmail() {
+  const lastNameEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-last-name')
+  )
+  const firstNameEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-first-name')
+  )
+  const addressEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-address')
+  )
+  const phoneEl = /** @type {HTMLInputElement | null} */ (
+    document.getElementById('checkout-phone')
+  )
+  const cityEl = /** @type {HTMLSelectElement | null} */ (
+    document.getElementById('checkout-city')
+  )
+  if (lastNameEl) lastNameEl.value = ''
+  if (firstNameEl) firstNameEl.value = ''
+  if (addressEl) addressEl.value = ''
+  if (phoneEl) phoneEl.value = ''
+  if (cityEl) {
+    cityEl.value = ''
+    fillDistrictOptions('', '')
+    syncZipFromSelection()
   }
 }
 
