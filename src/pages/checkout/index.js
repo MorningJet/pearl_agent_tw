@@ -22,6 +22,7 @@ import {
   setMemberIdFromEmail,
 } from '../../shared/state/userProfileStore.js'
 import { getDefaultAddress } from '../../shared/state/addressStore.js'
+import { buildShopifyShippingAddress } from '../../shared/domain/shippingAddress.js'
 import { refreshMePage } from '../me/index.js'
 
 /**
@@ -405,7 +406,6 @@ function readForm() {
   )
     .trim()
     .replace(/[\s-]/g, '')
-  const country = '台灣'
   const city = normalizeTwCityName(
     String(
       /** @type {HTMLSelectElement | null} */ (document.getElementById('checkout-city'))
@@ -440,24 +440,21 @@ function readForm() {
   if (!/^\d{3}$/.test(zip)) return { ok: false, error: '郵遞區號異常，請重新選擇縣市與鄉鎮市區' }
   if (!address1) return { ok: false, error: '請填寫地址' }
 
-  const fullName = `${lastName}${firstName}`
+  /** Native Shopify Admin Order.shipping_address JSON */
+  const shippingAddress = buildShopifyShippingAddress({
+    lastName,
+    firstName,
+    phone,
+    province: city,
+    city: district,
+    address1,
+    zip,
+  })
 
   return {
     ok: true,
     email,
-    shippingAddress: {
-      last_name: lastName,
-      first_name: firstName,
-      name: fullName,
-      phone,
-      province: city,
-      city: district,
-      district,
-      address1,
-      zip,
-      country,
-      country_code: 'TW',
-    },
+    shippingAddress,
   }
 }
 

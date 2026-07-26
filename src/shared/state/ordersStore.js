@@ -49,6 +49,7 @@
  *   email?: string,
  *   bomDisplay?: 'fee' | 'sku',
  *   bom?: OrderBomLine[],
+ *   shippingAddress?: import('../domain/shippingAddress.js').ShopifyShippingAddress | null,
  * }} Order
  */
 
@@ -168,7 +169,17 @@ function normalizeOrder(raw) {
     email: String(o.email || ''),
     bomDisplay: o.bomDisplay === 'fee' || o.bomDisplay === 'sku' ? o.bomDisplay : undefined,
     bom: normalizeBomLines(o.bom),
+    shippingAddress: normalizeStoredShipping(o.shippingAddress),
   }
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {import('../domain/shippingAddress.js').ShopifyShippingAddress | undefined}
+ */
+function normalizeStoredShipping(raw) {
+  if (!raw || typeof raw !== 'object') return undefined
+  return /** @type {import('../domain/shippingAddress.js').ShopifyShippingAddress} */ (raw)
 }
 
 /**
@@ -289,6 +300,7 @@ export function upsertOrder(input) {
     email: input.email || '',
     bomDisplay: input.bomDisplay === 'fee' || input.bomDisplay === 'sku' ? input.bomDisplay : undefined,
     bom: normalizeBomLines(input.bom),
+    shippingAddress: input.shippingAddress || undefined,
   }
   if (idx >= 0) {
     const prev = list[idx]
@@ -311,6 +323,7 @@ export function upsertOrder(input) {
       merchantOrderNo: next.merchantOrderNo || prev.merchantOrderNo || '',
       bomDisplay: next.bomDisplay || prev.bomDisplay,
       bom: next.bom?.length ? next.bom : prev.bom || [],
+      shippingAddress: next.shippingAddress || prev.shippingAddress,
     }
     writeAll(list)
     return list[idx]
@@ -338,6 +351,7 @@ export function upsertOrder(input) {
  *   imageUrl?: string,
  *   bomDisplay?: 'fee' | 'sku',
  *   bom?: import('./ordersStore.js').OrderBomLine[],
+ *   shippingAddress?: import('../domain/shippingAddress.js').ShopifyShippingAddress | null,
  * }} patch
  */
 export function patchOrderFromRemote(id, patch) {
@@ -389,6 +403,16 @@ export function patchOrderFromRemote(id, patch) {
         ? patch.bomDisplay
         : prev.bomDisplay,
     bom: bom.length ? bom : prev.bom || [],
+    shippingAddress: patch.shippingAddress || prev.shippingAddress,
+    recipientName: patch.recipientName
+      ? String(patch.recipientName)
+      : prev.recipientName,
+    recipientPhone: patch.recipientPhone
+      ? String(patch.recipientPhone)
+      : prev.recipientPhone,
+    recipientAddress: patch.recipientAddress
+      ? String(patch.recipientAddress)
+      : prev.recipientAddress,
   }
   writeAll(list)
   return list[idx]

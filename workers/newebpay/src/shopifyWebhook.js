@@ -272,6 +272,7 @@ export async function mirrorFromCheckoutRecord(env, record, topic = 'checkout') 
     imageUrl: String(record.designImageUrl || ''),
     bomDisplay,
     bom: Array.isArray(record.bom) ? record.bom : [],
+    shippingAddress: record.shippingAddress || null,
     topic,
     updatedAt: Date.now(),
     shopifyUpdatedAt: null,
@@ -358,10 +359,54 @@ function buildMirror(order, topic) {
     wristCm: Number.isFinite(wristCm) ? wristCm : null,
     email: String(order.email || readNoteAttr(order, 'pearl_member_email') || ''),
     imageUrl: String(readNoteAttr(order, 'pearl_design_image_url') || ''),
+    shippingAddress: extractShippingAddress(order),
     topic,
     updatedAt: Date.now(),
     shopifyUpdatedAt: order.updated_at || null,
   }
+}
+
+/**
+ * Prefer native order.shipping_address; fall back to note JSON.
+ * @param {any} order
+ */
+function extractShippingAddress(order) {
+  if (order?.shipping_address && typeof order.shipping_address === 'object') {
+    return publicShippingAddress(order.shipping_address)
+  }
+  const raw = readNoteAttr(order, 'pearl_shipping_address')
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? publicShippingAddress(parsed) : null
+  } catch {
+    return null
+  }
+}
+
+/** @param {Record<string, unknown>} addr */
+function publicShippingAddress(addr) {
+  /** @type {Record<string, string>} */
+  const out = {}
+  for (const key of [
+    'first_name',
+    'last_name',
+    'name',
+    'phone',
+    'company',
+    'address1',
+    'address2',
+    'city',
+    'province',
+    'country',
+    'country_code',
+    'zip',
+    'province_code',
+  ]) {
+    const v = addr[key]
+    if (v != null && String(v).trim()) out[key] = String(v).trim()
+  }
+  return Object.keys(out).length ? out : null
 }
 
 /**
@@ -389,6 +434,9 @@ async function mergeMirrorPreservingBom(env, mirror) {
   }
   if (mirror.wristCm == null && existing.wristCm != null) mirror.wristCm = existing.wristCm
   if (!mirror.imageUrl && existing.imageUrl) mirror.imageUrl = existing.imageUrl
+  if (!mirror.shippingAddress && existing.shippingAddress) {
+    mirror.shippingAddress = existing.shippingAddress
+  }
   return mirror
 }
 
@@ -412,6 +460,7 @@ function publicMirror(mirror) {
     imageUrl: mirror.imageUrl || '',
     bomDisplay: mirror.bomDisplay || null,
     bom: Array.isArray(mirror.bom) ? mirror.bom : [],
+    shippingAddress: mirror.shippingAddress || null,
     updatedAt: mirror.updatedAt,
   }
 }
@@ -435,6 +484,7 @@ function publicFromCheckoutRecord(record) {
     bomDisplay:
       detailsMode === 'plaza' || detailsMode === 'plaza-edit' ? 'fee' : 'sku',
     bom: Array.isArray(record.bom) ? record.bom : [],
+    shippingAddress: record.shippingAddress || null,
     updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
   }
 }

@@ -240,7 +240,9 @@ async function createShopifyOrder(env, record, opts) {
   }
 
   if (record.shippingAddress && typeof record.shippingAddress === 'object') {
-    order.shipping_address = mapAddress(record.shippingAddress)
+    order.shipping_address = mapAddress(
+      /** @type {Record<string, unknown>} */ (record.shippingAddress),
+    )
   }
 
   const url = `https://${domain}/admin/api/${version}/orders.json`
@@ -831,8 +833,6 @@ function buildNoteAttributes(record, pay, h5Status) {
       ? String(Number(record.wristCmNum))
       : String(record.wristCm || '')
 
-  const shippingJson = buildShippingAddressJson(record.shippingAddress)
-
   return [
     { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
     { name: 'newebpay_trade_no', value: String(pay?.tradeNo || '') },
@@ -848,70 +848,15 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_design_fee_twd', value: String(record.designFee ?? '') },
     { name: 'pearl_shipping_twd', value: String(record.shipping ?? '') },
     { name: 'pearl_member_email', value: String(record.email || '') },
+    {
+      name: 'pearl_shipping_address',
+      value:
+        record.shippingAddress && typeof record.shippingAddress === 'object'
+          ? JSON.stringify(mapAddress(/** @type {Record<string, unknown>} */ (record.shippingAddress)))
+          : '',
+    },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
-    // Logistics-friendly structured address (JSON string)
-    { name: 'pearl_shipping_address_json', value: shippingJson },
-    { name: '收貨地址JSON', value: shippingJson },
   ].filter((a) => a.value)
-}
-
-/**
- * Flatten checkout shipping fields into a logistics-ready JSON string.
- * Keys are stable English + Traditional Chinese aliases for TW carriers.
- * @param {unknown} raw
- * @returns {string}
- */
-function buildShippingAddressJson(raw) {
-  if (!raw || typeof raw !== 'object') return ''
-  const addr = /** @type {Record<string, unknown>} */ (raw)
-  const lastName = String(addr.last_name || addr.lastName || '').trim()
-  const firstName = String(addr.first_name || addr.firstName || '').trim()
-  const name = String(addr.name || `${lastName}${firstName}` || '').trim()
-  const phone = String(addr.phone || '').trim().replace(/[\s-]/g, '')
-  const country = String(addr.country || '台灣').trim() || '台灣'
-  const countryCode = String(addr.country_code || addr.countryCode || 'TW')
-    .trim()
-    .toUpperCase() || 'TW'
-  // Checkout: province=縣市, city=鄉鎮市區, district=鄉鎮市區, address1=街道
-  const city =
-    String(addr.province || addr.city_county || '').trim() ||
-    (!String(addr.district || '').trim() ? String(addr.city || '').trim() : '')
-  const district =
-    String(addr.district || '').trim() ||
-    (String(addr.province || '').trim() ? String(addr.city || '').trim() : '')
-  const zip = String(addr.zip || addr.postal_code || addr.postalCode || '').trim()
-  const address = String(addr.address1 || addr.detail || addr.address || '').trim()
-  if (!lastName && !firstName && !name && !phone && !city && !district && !address) {
-    return ''
-  }
-
-  const payload = {
-    version: 1,
-    country,
-    country_code: countryCode,
-    last_name: lastName,
-    first_name: firstName,
-    name,
-    phone,
-    city,
-    district,
-    zip,
-    address,
-    // Traditional Chinese aliases for TW ops / carriers
-    國家: country,
-    姓氏: lastName,
-    名字: firstName,
-    手機號碼: phone,
-    縣市: city,
-    鄉鎮市區: district,
-    郵遞區號: zip,
-    地址: address,
-  }
-  try {
-    return JSON.stringify(payload)
-  } catch {
-    return ''
-  }
 }
 
 /** @param {string} token */
@@ -932,33 +877,54 @@ function shopDomain(env) {
 }
 
 /**
- * Shopify native shipping_address (also keep structured JSON in note_attributes).
- * @param {Record<string, string>} addr
+ * Pass-through / normalize to Shopify Admin Order.shipping_address JSON.
+ * H5 already sends native fields; this only clips + fills TW defaults.
+ * @param {Record<string, unknown>} addr
  */
-function mapAddress(addr) {
-  const lastName = clip(addr.last_name || '', 40)
-  const firstName = clip(addr.first_name || '', 40)
-  const fullName = clip(addr.name || `${lastName}${firstName}` || 'Customer', 40)
-  const province = clip(addr.province || addr.city_county || '', 40)
-  const city = clip(addr.city || addr.district || '', 40)
-  const address1 = clip(
-    addr.address1 ||
-      addr.detail ||
-      [province, city, addr.district, addr.detail].filter(Boolean).join('') ||
-      '',
-    120,
-  )
-  return {
-    last_name: lastName || undefined,
-    first_name: firstName || fullName,
-    phone: clip(addr.phone || '', 20) || undefined,
-    address1,
-    city: city || undefined,
-    province: province || city || undefined,
-    country: 'Taiwan',
-    country_code: clip(addr.country_code || 'TW', 2) || 'TW',
-    zip: clip(addr.zip || '', 12) || undefined,
+export function toShopifyShippingAddress(addr) {
+  const lastName = clip(String(addr.last_name || addr.lastName || ''), 40)
+  const firstName = clip(String(addr.first_name || addr.firstName || ''), 40)
+  const legacyName = clip(String(addr.name || ''), 40)
+
+  let province = clip(String(addr.province || ''), 40)
+  let city = clip(String(addr.city || ''), 40)
+  let address1 = clip(String(addr.address1 || addr.detail || ''), 120)
+
+  // Legacy: city=縣市, district=鄉鎮市區
+  if (addr.district && !addr.province) {
+    province = clip(String(addr.city || ''), 40)
+    city = clip(String(addr.district || ''), 40)
+    address1 = clip(String(addr.address1 || addr.detail || ''), 120)
   }
+
+  const resolvedLast = lastName || (legacyName ? legacyName.slice(0, 1) : '')
+  const resolvedFirst =
+    firstName || (legacyName.length > 1 ? legacyName.slice(1) : '')
+
+  /** @type {Record<string, string | undefined>} */
+  const shipping = {
+    last_name: resolvedLast || undefined,
+    first_name: resolvedFirst || resolvedLast || 'Customer',
+    phone: clip(String(addr.phone || ''), 20) || undefined,
+    company: clip(String(addr.company || ''), 40) || undefined,
+    address1: address1 || undefined,
+    address2: clip(String(addr.address2 || ''), 80) || undefined,
+    city: city || undefined,
+    province: province || undefined,
+    country: clip(String(addr.country || 'Taiwan'), 40) || 'Taiwan',
+    country_code: clip(String(addr.country_code || 'TW'), 2) || 'TW',
+    zip: clip(String(addr.zip || ''), 12) || undefined,
+  }
+
+  for (const key of Object.keys(shipping)) {
+    if (shipping[key] == null || shipping[key] === '') delete shipping[key]
+  }
+  return shipping
+}
+
+/** @deprecated use toShopifyShippingAddress */
+function mapAddress(addr) {
+  return toShopifyShippingAddress(addr)
 }
 
 /** @param {string} s @param {number} n */

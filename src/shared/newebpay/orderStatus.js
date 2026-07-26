@@ -4,6 +4,11 @@
 
 import { getMemberId, isEmailMemberId } from '../state/userProfileStore.js'
 import {
+  formatShopifyShippingAddress,
+  normalizeShopifyShippingAddress,
+  shippingRecipientName,
+} from '../domain/shippingAddress.js'
+import {
   listOrders,
   normalizeStatus,
   orderIdFromKeys,
@@ -36,6 +41,7 @@ import {
  *     unitPrice?: number,
  *     lineTotal?: number,
  *   }>,
+ *   shippingAddress?: import('../domain/shippingAddress.js').ShopifyShippingAddress | null,
  * }} RemoteOrder
  */
 
@@ -78,7 +84,7 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
   const merchantOrderNo = String(result.merchantOrderNo || '').trim()
   if (!shopifyOrderId && !merchantOrderNo) return null
 
-  const addr = meta.shippingAddress && typeof meta.shippingAddress === 'object' ? meta.shippingAddress : {}
+  const addr = normalizeShopifyShippingAddress(meta.shippingAddress)
   const shipping =
     breakdown.shipping != null
       ? Number(breakdown.shipping)
@@ -111,38 +117,17 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
     designFeeTwd:
       breakdown.designFee != null ? Number(breakdown.designFee) : meta.designFeeTwd,
     shippingTwd: shipping,
-    recipientName: String(
-      addr.name || `${addr.last_name || ''}${addr.first_name || ''}` || addr.recipientName || '',
-    ),
-    recipientPhone: String(addr.phone || addr.recipientPhone || ''),
-    recipientAddress: formatAddress(addr),
+    recipientName: shippingRecipientName(addr) || '',
+    recipientPhone: addr?.phone || '',
+    recipientAddress: formatShopifyShippingAddress(addr) || '',
     shopifyOrderId,
     shopifyOrderName: String(result.shopifyOrderName || ''),
     merchantOrderNo,
     email: String(meta.email || '').trim().toLowerCase(),
     bomDisplay,
     bom: Array.isArray(meta.bom) ? meta.bom : [],
+    shippingAddress: addr || undefined,
   })
-}
-
-/** @param {Record<string, unknown>} addr */
-function formatAddress(addr) {
-  const parts = [
-    addr.country,
-    addr.zip || addr.postal_code,
-    addr.province,
-    addr.city,
-    addr.district,
-    addr.address1 || addr.address || addr.detail,
-  ]
-    .map((p) => String(p || '').trim())
-    .filter(Boolean)
-  // Deduplicate if city === district naming overlap
-  const uniq = []
-  for (const p of parts) {
-    if (uniq[uniq.length - 1] !== p) uniq.push(p)
-  }
-  return uniq.join(' ')
 }
 
 /**
@@ -262,6 +247,8 @@ function applyRemoteOrder(remote) {
       (merchantOrderNo && String(o.merchantOrderNo || '') === merchantOrderNo),
   )
 
+  const shipping = normalizeShopifyShippingAddress(remote.shippingAddress)
+
   if (existing) {
     patchOrderFromRemote(existing.id, {
       status: remote.h5Status,
@@ -278,6 +265,10 @@ function applyRemoteOrder(remote) {
       imageUrl: remote.imageUrl,
       bomDisplay: remote.bomDisplay,
       bom: remote.bom,
+      shippingAddress: shipping,
+      recipientName: shippingRecipientName(shipping) || undefined,
+      recipientPhone: shipping?.phone || undefined,
+      recipientAddress: formatShopifyShippingAddress(shipping) || undefined,
     })
     return
   }
@@ -301,5 +292,9 @@ function applyRemoteOrder(remote) {
     email: String(remote.email || ''),
     bomDisplay: remote.bomDisplay,
     bom: remote.bom,
+    shippingAddress: shipping || undefined,
+    recipientName: shippingRecipientName(shipping) || '',
+    recipientPhone: shipping?.phone || '',
+    recipientAddress: formatShopifyShippingAddress(shipping) || '',
   })
 }

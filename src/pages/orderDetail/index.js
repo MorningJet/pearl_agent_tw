@@ -13,6 +13,11 @@ import {
   orderStatusLabel,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
+import {
+  formatShopifyShippingAddress,
+  normalizeShopifyShippingAddress,
+  shippingRecipientName,
+} from '../../shared/domain/shippingAddress.js'
 import { syncOneOrderFromServer } from '../../shared/newebpay/orderStatus.js'
 
 /** @type {string} */
@@ -148,7 +153,13 @@ function detailHtml(o) {
     </div>`
       : ''
 
-  const hasAddress = o.recipientName || o.recipientPhone || o.recipientAddress
+  const hasAddress =
+    o.shippingAddress || o.recipientName || o.recipientPhone || o.recipientAddress
+  const shipAddr = normalizeShopifyShippingAddress(o.shippingAddress)
+  const recipientName = shippingRecipientName(shipAddr) || o.recipientName || '—'
+  const recipientPhone = shipAddr?.phone || o.recipientPhone || ''
+  const recipientAddress =
+    formatShopifyShippingAddress(shipAddr) || o.recipientAddress || ''
   const paidLabel = status === 'unpaid' ? '建立時間' : '付款時間'
   const paidValue =
     status === 'unpaid'
@@ -174,13 +185,13 @@ function detailHtml(o) {
         ? `<section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
       <p class="text-xs font-medium text-stone-400">收件資訊</p>
       <p class="mt-2 text-sm font-medium text-stone-900">
-        ${escapeHtml(o.recipientName || '—')}
+        ${escapeHtml(recipientName)}
         <span class="ml-2 font-normal tabular-nums text-stone-600">${escapeHtml(
-          o.recipientPhone || '',
+          recipientPhone,
         )}</span>
       </p>
       <p class="mt-1 text-sm leading-relaxed text-stone-600">${escapeHtml(
-        o.recipientAddress || '',
+        recipientAddress,
       )}</p>
     </section>`
         : ''
