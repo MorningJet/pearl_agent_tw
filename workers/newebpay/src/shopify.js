@@ -227,13 +227,20 @@ async function createShopifyOrder(env, record, opts) {
 
   // Customer row: use email as display identity so same Chinese names don't collide.
   // Shipping address still carries 姓氏／名字 for logistics.
+  // Shopify Admin rejects blank last_name (422), so never send "".
   const memberEmail = String(record.email || '').trim().toLowerCase()
   if (memberEmail) {
+    const ship =
+      record.shippingAddress && typeof record.shippingAddress === 'object'
+        ? /** @type {Record<string, unknown>} */ (record.shippingAddress)
+        : {}
+    const shipLast = clip(String(ship.last_name || ''), 40)
+    const shipFirst = clip(String(ship.first_name || ''), 40)
     order.email = memberEmail
     order.customer = {
       email: memberEmail,
-      first_name: memberEmail,
-      last_name: '',
+      first_name: shipFirst || memberEmail,
+      last_name: shipLast || '-',
     }
   }
 
@@ -336,7 +343,7 @@ async function ensureCustomerEmailIdentity(env, token, domain, version, order, e
             id: customerId,
             email,
             first_name: email,
-            last_name: '',
+            last_name: '-',
           },
         }),
       },
