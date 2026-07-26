@@ -5,9 +5,11 @@ import { showToast } from '../../shared/ui/toast.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
 import { withBase } from '../../shared/assetUrl.js'
 import {
+  createNewebpayCheckout,
   isNewebpayConfigured,
-  startNewebpayCheckoutBrowser,
+  submitNewebpayForm,
 } from '../../shared/newebpay/checkout.js'
+import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
 import {
   getMemberId,
   isEmailMemberId,
@@ -421,6 +423,7 @@ async function submitCheckout() {
 
   submitInFlight = true
   clearSubmitRecoverTimer()
+  hidePayBreakoutOverlay()
   const btn = document.getElementById('checkout-submit')
   if (btn) {
     btn.setAttribute('disabled', 'true')
@@ -433,9 +436,7 @@ async function submitCheckout() {
       refreshMyDesignsPage()
     })
 
-    // Must run in the click turn: open visible top-level window, then POST.
-    // fetch()/iframe POST to workers.dev hangs on Cloudflare challenges.
-    const nav = startNewebpayCheckoutBrowser(draft.bom, {
+    const meta = {
       designName: draft.designName,
       wristCm: draft.wristCm,
       wristCmNum: draft.wristCmNum,
@@ -449,47 +450,46 @@ async function submitCheckout() {
       beadsSubtotalTwd: draft.beadsSubtotalTwd,
       email: parsed.email,
       shippingAddress: parsed.shippingAddress,
-    })
+    }
 
-    if (!nav.ok) {
-      showToast(nav.error)
+    // Stay on this page: JSON create via App Proxy, then top-level POST to NewebPay.
+    const result = await createNewebpayCheckout(draft.bom, meta)
+
+    if (!result.ok) {
+      showToast(result.error)
       resetSubmitButton()
       return
     }
 
     setMemberIdFromEmail(parsed.email)
     refreshMePage()
+    persistCheckoutOrder(
+      result,
+      {
+        designName: draft.designName,
+        designImageUrl: draft.designImageUrl || '',
+        wristCmNum: draft.wristCmNum,
+        wristCm: draft.wristCm,
+        beadsSubtotalTwd: draft.beadsSubtotalTwd,
+        designFeeTwd: draft.designFeeTwd,
+        email: parsed.email,
+        shippingAddress: parsed.shippingAddress,
+      },
+      {
+        beadsSubtotal: draft.beadsSubtotalTwd,
+        designFee: draft.designFeeTwd,
+        shipping: draft.shippingTwd,
+      },
+    )
 
-    if (nav.mode === 'popup') {
-      showPayBreakoutOverlay({
-        title: '請在新視窗完成付款',
-        body: '已開啟付款視窗。請先在該視窗完成人機驗證（若有），驗證通過後會自動前往藍新金流。若新分頁是空白頁，請允許彈出視窗後點「重新開啟付款」。',
-      })
-      // Keep CTA usable if the popup was closed or blocked mid-flight.
-      submitRecoverTimer = window.setTimeout(() => {
-        resetSubmitButton()
-        showToast('若未看到付款頁，請允許彈出視窗後再點「重新開啟付款」')
-      }, 12000)
-      return
-    }
-
-    if (nav.mode === 'top') {
-      showPayBreakoutOverlay({
-        title: '正在離開商店頁前往付款',
-        body: '瀏覽器可能攔截了彈出視窗，改為在整個頁面開啟付款。若出現人機驗證，請直接在本頁完成。若長時間無反應，請允許彈出視窗後重試。',
-      })
-      submitRecoverTimer = window.setTimeout(() => {
-        resetSubmitButton()
-        showToast('仍停留在本頁？請允許彈出視窗後點「重新開啟付款」')
-      }, 8000)
-      return
-    }
-
-    // Same-tab navigation — page should unload; recover if it does not.
-    submitRecoverTimer = window.setTimeout(() => {
+    if (!result.paymentReady) {
+      showToast(result.paymentError || '藍新付款尚未就緒，請稍後在訂單中繼續付款')
       resetSubmitButton()
-      showToast('前往付款逾時，請再試一次')
-    }, 15000)
+      return
+    }
+
+    // Direct to NewebPay MPG (breaks out of Shopify iframe). No intermediate page.
+    submitNewebpayForm(result)
   } catch (err) {
     console.error('[checkout] submit failed', err)
     const msg = err instanceof Error ? err.message : String(err || '未知錯誤')
