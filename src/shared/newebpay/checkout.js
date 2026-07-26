@@ -168,6 +168,73 @@ export async function createNewebpayCheckout(bom, meta) {
 }
 
 /**
+ * Start NewebPay checkout by navigating top-level to Worker (breaks out of Shopify iframe).
+ * Fetching workers.dev from an iframe often hangs on Cloudflare challenges forever.
+ *
+ * @param {Array<{ productId: string, name: string, diameterMm: number, qty: number, unitPrice?: number, lineTotal?: number }>} bom
+ * @param {CheckoutMeta} meta
+ * @returns {{ ok: true } | { ok: false, error: string }}
+ */
+export function startNewebpayCheckoutBrowser(bom, meta) {
+  if (!bom?.length) {
+    return { ok: false, error: '設計中沒有珠子，無法下單' }
+  }
+  const base = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
+    .trim()
+    .replace(/\/$/, '')
+  if (!base) {
+    return {
+      ok: false,
+      error: '尚未設定結帳服務（VITE_NEWEBPAY_API_BASE）',
+    }
+  }
+
+  const beadsSubtotal = resolveBeadsSubtotal(bom, meta)
+  const designFee = Math.max(0, Math.round(Number(meta.designFeeTwd) || 0))
+  const shipping =
+    beadsSubtotal >= FREE_SHIPPING_MIN_TWD ? 0 : STANDARD_SHIPPING_TWD
+
+  const payload = {
+    bom,
+    designName: meta.designName || '',
+    wristCm: meta.wristCm || '',
+    wristCmNum:
+      meta.wristCmNum != null && Number.isFinite(Number(meta.wristCmNum))
+        ? Number(meta.wristCmNum)
+        : undefined,
+    beadProductCode: meta.beadProductCode || '',
+    detailsMode: meta.detailsMode || 'normal',
+    designId: meta.designId || '',
+    plazaPublishId: meta.plazaPublishId || '',
+    designerId: meta.designerId || '',
+    designFeeTwd: designFee,
+    beadsSubtotalTwd: beadsSubtotal,
+    shippingTwd: shipping,
+    designImageUrl: publicDesignImageUrl(meta.designImageUrl || ''),
+    recipe: formatRecipe(bom),
+    email: meta.email || '',
+    shippingAddress: meta.shippingAddress || null,
+  }
+
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = `${base}/api/checkout-browser`
+  form.acceptCharset = 'UTF-8'
+  form.style.display = 'none'
+  // Critical: leave Shopify iframe so Cloudflare / Worker can finish.
+  form.target = '_top'
+
+  const input = document.createElement('input')
+  input.type = 'hidden'
+  input.name = 'payload'
+  input.value = JSON.stringify(payload)
+  form.appendChild(input)
+  document.body.appendChild(form)
+  form.submit()
+  return { ok: true }
+}
+
+/**
  * POST hidden form to NewebPay MPG (top-level, breaks out of Shopify iframe).
  * @param {{
  *   gatewayUrl: string,

@@ -124,6 +124,11 @@ export default {
         return await handleCheckout(request, env, cors, ctx)
       }
 
+      // Browser form POST from H5 (breaks out of Shopify iframe — CF challenges hang in iframes).
+      if (url.pathname === '/api/checkout-browser' && request.method === 'POST') {
+        return await handleCheckoutBrowser(request, env, ctx)
+      }
+
       if (url.pathname === '/api/notify' && request.method === 'POST') {
         return await handleNotify(request, env)
       }
@@ -168,9 +173,83 @@ export default {
 async function handleCheckout(request, env, cors, ctx) {
   /** @type {any} */
   const body = await request.json()
+  const result = await runCheckout(env, body, ctx)
+  if (!result.ok) {
+    return json({ ok: false, error: result.error }, result.status || 400, cors)
+  }
+  return json(result.body, 200, cors)
+}
+
+/**
+ * Top-level browser navigation checkout (avoids iframe Cloudflare hang).
+ * Expects application/x-www-form-urlencoded or multipart with `payload` JSON.
+ * @param {Request} request
+ * @param {any} env
+ * @param {ExecutionContext} [ctx]
+ */
+async function handleCheckoutBrowser(request, env, ctx) {
+  let body = null
+  try {
+    const ct = String(request.headers.get('content-type') || '')
+    if (ct.includes('application/json')) {
+      body = await request.json()
+    } else {
+      const form = await request.formData()
+      const raw = String(form.get('payload') || '')
+      body = JSON.parse(raw)
+    }
+  } catch {
+    return htmlPage('結帳失敗', '無法解析訂單資料，請返回重試。', 400)
+  }
+
+  const result = await runCheckout(env, body, ctx)
+  if (!result.ok) {
+    return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), result.status || 400)
+  }
+
+  const b = result.body
+  if (
+    b.paymentReady &&
+    b.gatewayUrl &&
+    b.TradeInfo &&
+    b.TradeSha &&
+    b.MerchantID
+  ) {
+    return newebpayAutoSubmitHtml({
+      gatewayUrl: String(b.gatewayUrl),
+      MerchantID: String(b.MerchantID),
+      TradeInfo: String(b.TradeInfo),
+      TradeSha: String(b.TradeSha),
+      Version: String(b.Version || MPG_VERSION),
+      merchantOrderNo: String(b.merchantOrderNo || ''),
+    })
+  }
+
+  return htmlPage(
+    '付款尚未就緒',
+    escapeHtml(
+      `訂單 ${b.merchantOrderNo || ''} 已建立，但藍新付款參數尚未就緒。${
+        b.paymentError ? `（${b.paymentError}）` : ''
+      }`,
+    ),
+    200,
+  )
+}
+
+/**
+ * Shared checkout core (JSON API + browser form).
+ * @param {any} env
+ * @param {any} body
+ * @param {ExecutionContext} [ctx]
+ * @returns {Promise<
+ *   | { ok: false, error: string, status?: number }
+ *   | { ok: true, body: Record<string, unknown> }
+ * >}
+ */
+async function runCheckout(env, body, ctx) {
   const bom = Array.isArray(body?.bom) ? body.bom : []
   if (!bom.length) {
-    return json({ ok: false, error: '設計中沒有珠子，無法下單' }, 400, cors)
+    return { ok: false, error: '設計中沒有珠子，無法下單', status: 400 }
   }
 
   const beadsSubtotal = Math.max(
@@ -182,7 +261,7 @@ async function handleCheckout(request, env, cors, ctx) {
     beadsSubtotal >= FREE_SHIPPING_MIN_TWD ? 0 : STANDARD_SHIPPING_TWD
   const amt = beadsSubtotal + designFee + shipping
   if (amt < 1) {
-    return json({ ok: false, error: '金額無效' }, 400, cors)
+    return { ok: false, error: '金額無效', status: 400 }
   }
 
   const designName = clip(String(body?.designName || '手鍊設計'), 40)
@@ -236,18 +315,14 @@ async function handleCheckout(request, env, cors, ctx) {
   }
 
   if (!isShopifyAuthConfigured(env)) {
-    return json(
-      {
-        ok: false,
-        error:
-          '未設定 Shopify 憑證（SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET，或舊版 SHOPIFY_ADMIN_TOKEN）',
-      },
-      500,
-      cors,
-    )
+    return {
+      ok: false,
+      error:
+        '未設定 Shopify 憑證（SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET，或舊版 SHOPIFY_ADMIN_TOKEN）',
+      status: 500,
+    }
   }
 
-  // Persist first so NewebPay notify can always find the checkout record.
   await putOrder(env, merchantOrderNo, record)
 
   /** @type {string | null} */
@@ -266,13 +341,10 @@ async function handleCheckout(request, env, cors, ctx) {
     console.warn('[newebpay] payment prepare failed', paymentError)
   }
 
-  // Shopify unpaid create is slow / can hang — never block redirect to NewebPay.
-  // Notify handler already falls back to createPaidShopifyOrder if id is still missing.
   const bgShopify = createUnpaidShopifyInBackground(env, merchantOrderNo)
   if (typeof ctx?.waitUntil === 'function') {
     ctx.waitUntil(bgShopify)
   } else {
-    // wrangler/local without waitUntil: fire-and-forget
     void bgShopify
   }
 
@@ -286,8 +358,9 @@ async function handleCheckout(request, env, cors, ctx) {
     shopify: 'background',
   })
 
-  return json(
-    {
+  return {
+    ok: true,
+    body: {
       ok: true,
       merchantOrderNo,
       amountTwd: amt,
@@ -299,9 +372,105 @@ async function handleCheckout(request, env, cors, ctx) {
       paymentError,
       ...(paymentPayload || {}),
     },
-    200,
-    cors,
-  )
+  }
+}
+
+/**
+ * @param {{
+ *   gatewayUrl: string,
+ *   MerchantID: string,
+ *   TradeInfo: string,
+ *   TradeSha: string,
+ *   Version: string,
+ *   merchantOrderNo: string,
+ * }} p
+ */
+function newebpayAutoSubmitHtml(p) {
+  const html = `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>前往付款</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#292524}
+    .card{max-width:20rem;padding:1.5rem;text-align:center}
+    p{margin:0.5rem 0;font-size:0.95rem}
+    .muted{color:#78716c;font-size:0.8rem}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p>正在前往藍新金流…</p>
+    <p class="muted">訂單 ${escapeHtml(p.merchantOrderNo)}</p>
+  </div>
+  <form id="newebpay-form" method="POST" action="${escapeAttr(p.gatewayUrl)}" accept-charset="UTF-8">
+    <input type="hidden" name="MerchantID" value="${escapeAttr(p.MerchantID)}" />
+    <input type="hidden" name="TradeInfo" value="${escapeAttr(p.TradeInfo)}" />
+    <input type="hidden" name="TradeSha" value="${escapeAttr(p.TradeSha)}" />
+    <input type="hidden" name="Version" value="${escapeAttr(p.Version)}" />
+  </form>
+  <script>document.getElementById('newebpay-form').submit()</script>
+</body>
+</html>`
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  })
+}
+
+/**
+ * @param {string} title
+ * @param {string} messageHtml
+ * @param {number} [status]
+ */
+function htmlPage(title, messageHtml, status = 200) {
+  const html = `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#292524;padding:1.25rem}
+    .card{max-width:22rem;padding:1.5rem;background:#fff;border-radius:1rem;box-shadow:0 1px 3px rgb(0 0 0 / 8%)}
+    h1{font-size:1.05rem;margin:0 0 0.75rem}
+    p{margin:0;font-size:0.9rem;line-height:1.5;color:#57534e;word-break:break-word}
+    a{display:inline-block;margin-top:1rem;color:#292524;font-size:0.875rem}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>${escapeHtml(title)}</h1>
+    <p>${messageHtml}</p>
+    <a href="javascript:history.back()">返回</a>
+  </div>
+</body>
+</html>`
+  return new Response(html, {
+    status,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  })
+}
+
+/** @param {string} s */
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+}
+
+/** @param {string} s */
+function escapeAttr(s) {
+  return escapeHtml(s).replaceAll("'", '&#39;')
 }
 
 /**
@@ -937,11 +1106,3 @@ function json(data, status = 200, cors = {}) {
   })
 }
 
-/** @param {string} s */
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}

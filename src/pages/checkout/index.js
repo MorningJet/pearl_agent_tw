@@ -5,12 +5,9 @@ import { showToast } from '../../shared/ui/toast.js'
 import { formatPrice } from '../../shared/domain/pricing.js'
 import { withBase } from '../../shared/assetUrl.js'
 import {
-  createNewebpayCheckout,
   isNewebpayConfigured,
-  submitNewebpayForm,
+  startNewebpayCheckoutBrowser,
 } from '../../shared/newebpay/checkout.js'
-import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
-import { canonicalOrderImageUrl } from '../../shared/orderImage.js'
 import {
   getMemberId,
   isEmailMemberId,
@@ -411,17 +408,17 @@ async function submitCheckout() {
   const prevLabel = btn?.textContent
   if (btn) {
     btn.setAttribute('disabled', 'true')
-    btn.textContent = '建立訂單中…'
+    btn.textContent = '前往付款…'
   }
 
   try {
     draft.onBeforePay?.()
-    // Social-proof designer count: +1 per「立即付款」click (non-blocking).
     void incrementDesignerCount().then(() => {
       refreshMyDesignsPage()
     })
 
-    const result = await createNewebpayCheckout(draft.bom, {
+    // Leave Shopify iframe via top-level form POST — fetch() to workers.dev hangs on CF challenges inside iframes.
+    const nav = startNewebpayCheckoutBrowser(draft.bom, {
       designName: draft.designName,
       wristCm: draft.wristCm,
       wristCmNum: draft.wristCmNum,
@@ -437,61 +434,18 @@ async function submitCheckout() {
       shippingAddress: parsed.shippingAddress,
     })
 
-    if (!result.ok) {
-      showToast(result.error)
+    if (!nav.ok) {
+      showToast(nav.error)
       return
     }
 
     setMemberIdFromEmail(parsed.email)
     refreshMePage()
-
-    persistCheckoutOrder(
-      result,
-      {
-        designName: draft.designName,
-        designImageUrl: canonicalOrderImageUrl(draft.designImageUrl || ''),
-        wristCmNum: draft.wristCmNum,
-        wristCm: draft.wristCm,
-        beadsSubtotalTwd: draft.beadsSubtotalTwd,
-        designFeeTwd: draft.designFeeTwd,
-        email: parsed.email,
-        shippingAddress: parsed.shippingAddress,
-        bomDisplay: draft.bomDisplay || 'sku',
-        bom: draft.bom,
-        plazaPublishId: draft.plazaPublishId || '',
-      },
-      {
-        beadsSubtotal: draft.beadsSubtotalTwd,
-        designFee: draft.designFeeTwd,
-        shipping: draft.shippingTwd,
-      },
-    )
-
-    if (result.paymentReady) {
-      if (btn) btn.textContent = '前往付款…'
-      // Keep button disabled while navigating to NewebPay.
-      submitNewebpayForm(result)
-      return
-    }
-
-    const orderLabel = result.shopifyOrderName
-      ? `訂單 ${result.shopifyOrderName} 已建立（未付款）`
-      : '未付款訂單已建立'
-    showToast(
-      `${orderLabel}；付款頁暫不可用${
-        result.paymentError ? `：${result.paymentError}` : ''
-      }`,
-    )
+    // Navigation in progress — keep button disabled.
   } catch (err) {
     console.error('[checkout] submit failed', err)
     const msg = err instanceof Error ? err.message : String(err || '未知錯誤')
     showToast(`下單失敗：${msg}`)
-  } finally {
-    // Don't re-enable if we already handed off to NewebPay (page is navigating).
-    if (document.getElementById('checkout-submit')?.textContent === '前往付款…') {
-      submitInFlight = false
-      return
-    }
     submitInFlight = false
     if (btn) {
       btn.removeAttribute('disabled')
