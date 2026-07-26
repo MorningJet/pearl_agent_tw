@@ -529,6 +529,7 @@ function buyNow() {
       plazaPublishId: pub?.id || getAppliedPlazaPublishId() || '',
       designerId: isPlaza ? String(pub?.designerId || '').trim() : '',
       designFeeTwd: designFee,
+      shippingTwd: shipping.amount,
       designImageUrl,
       beadsSubtotalTwd,
       amountTwd,
