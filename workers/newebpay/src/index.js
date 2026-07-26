@@ -3,17 +3,28 @@
  *
  * Secrets (.dev.vars / wrangler secret):
  *   NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV
- *   SHOPIFY_ADMIN_TOKEN
+ *   SHOPIFY_ADMIN_TOKEN / SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET
+ *   SHOPIFY_WEBHOOK_SECRET
  * Vars:
  *   NEWEBPAY_ENV, PUBLIC_API_BASE, H5_RETURN_URL, CORS_ORIGINS
  *   SHOPIFY_STORE_DOMAIN, SHOPIFY_API_VERSION
  *   ALLOW_DEV_SIMULATE=1  → enables POST /api/dev/simulate-paid (pre-NewebPay QA)
  * Bindings:
  *   ORDERS (KV) — optional locally (falls back to memory)
+ *
+ * Shopify order status webhooks:
+ *   POST /api/webhooks/shopify
+ *   GET  /api/h5/order-status
+ *   POST /api/h5/order-status/batch
  */
 
 import { getOrder, putOrder } from './store.js'
 import { createPaidShopifyOrder, isShopifyAuthConfigured } from './shopify.js'
+import {
+  handleH5OrderStatus,
+  handleH5OrderStatusBatch,
+  handleShopifyWebhook,
+} from './shopifyWebhook.js'
 
 const GATEWAYS = {
   sandbox: 'https://ccore.newebpay.com/MPG/mpg_gateway',
@@ -43,12 +54,25 @@ export default {
           {
             ok: true,
             shopifyConfigured: isShopifyAuthConfigured(env),
+            shopifyWebhookConfigured: Boolean(String(env.SHOPIFY_WEBHOOK_SECRET || '').trim()),
             ordersKv: Boolean(env.ORDERS),
             allowDevSimulate: isDevSimulateEnabled(env),
           },
           200,
           cors,
         )
+      }
+
+      if (url.pathname === '/api/webhooks/shopify' && request.method === 'POST') {
+        return await handleShopifyWebhook(request, env)
+      }
+
+      if (url.pathname === '/api/h5/order-status' && request.method === 'GET') {
+        return await handleH5OrderStatus(url, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/order-status/batch' && request.method === 'POST') {
+        return await handleH5OrderStatusBatch(request, env, cors)
       }
 
       if (url.pathname === '/api/checkout' && request.method === 'POST') {
@@ -529,6 +553,7 @@ function publicOrderView(record) {
   return {
     merchantOrderNo: record.merchantOrderNo,
     status: record.status,
+    h5Status: record.h5Status || null,
     amountTwd: record.amountTwd,
     beadsSubtotal: record.beadsSubtotal,
     designFee: record.designFee,
@@ -538,6 +563,7 @@ function publicOrderView(record) {
     shopifyOrderName: record.shopifyOrderName,
     shopifyAdminUrl: record.shopifyAdminUrl,
     shopifyError: record.shopifyError,
+    trackingNo: record.trackingNo || '',
     newebpay: record.newebpay,
     createdAt: record.createdAt,
     paidAt: record.paidAt,

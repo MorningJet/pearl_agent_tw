@@ -9,6 +9,7 @@ workers_dev = true
 #   npx wrangler secret put NEWEBPAY_HASH_KEY
 #   npx wrangler secret put NEWEBPAY_HASH_IV
 #   npx wrangler secret put SHOPIFY_ADMIN_TOKEN
+#   npx wrangler secret put SHOPIFY_WEBHOOK_SECRET
 #   npx wrangler secret put ADMIN_SYNC_SECRET
 #
 # KV (production):

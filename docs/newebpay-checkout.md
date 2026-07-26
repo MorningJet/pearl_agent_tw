@@ -92,6 +92,10 @@ curl -X POST https://YOUR_WORKER/api/admin/retry-sync \
 
 ## 安全
 
-- HashKey / HashIV / Admin Token 只放 Secrets / `.dev.vars`，勿進 git、勿 `VITE_*`  
+- HashKey / HashIV / Admin Token / **Webhook Secret** 只放 Secrets / `.dev.vars`，勿進 git、勿 `VITE_*`  
 - 正式關閉 `ALLOW_DEV_SIMULATE`  
-- Notify 驗 `TradeSha`；Shopify 建單以 `shopifyOrderId` 冪等
+- Notify 驗 `TradeSha`；Shopify 建單以 `shopifyOrderId` 冪等  
+
+## Shopify 訂單狀態 →「我的訂單」
+
+見 [shopify-order-webhooks.md](shopify-order-webhooks.md)：`POST /api/webhooks/shopify`。

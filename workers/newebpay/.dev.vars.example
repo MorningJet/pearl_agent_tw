@@ -16,6 +16,9 @@ SHOPIFY_API_VERSION=2025-01
 # 舊版商店「自訂應用」才有 shpat_；新店可留空
 SHOPIFY_ADMIN_TOKEN=
 
+# Shopify Webhooks 簽名密鑰（Admin → 通知 → Webhooks 建立時顯示）
+SHOPIFY_WEBHOOK_SECRET=
+
 # 藍新過審前可用 /api/dev/simulate-paid 測 Shopify 寫回
 ALLOW_DEV_SIMULATE=1
 ADMIN_SYNC_SECRET=
