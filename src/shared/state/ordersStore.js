@@ -464,6 +464,15 @@ export function showsCustomGoodsNote(status) {
   return CUSTOM_NOTE_STATUSES.has(normalizeStatus(status))
 }
 
+/** True when member has at least one「已完成」order (designer features gate). */
+export function hasCompletedOrder() {
+  return listOrders().some((o) => normalizeStatus(o.status) === 'done')
+}
+
+/** Taiwan Traditional copy when gated designer features are tapped. */
+export const DESIGNER_FEATURE_LOCKED_TOAST =
+  '設計師功能僅限購買過商品的會員使用，敬請期待。'
+
 function newOrderId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return `ord-${crypto.randomUUID()}`
   return `ord-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

@@ -15,6 +15,10 @@ import {
   setAvatarDataUrl,
   setDisplayName,
 } from '../../shared/state/userProfileStore.js'
+import {
+  DESIGNER_FEATURE_LOCKED_TOAST,
+  hasCompletedOrder,
+} from '../../shared/state/ordersStore.js'
 import { refreshEarningsPage } from '../earnings/index.js'
 import { refreshOrdersPage } from '../orders/index.js'
 import { refreshAddressPage } from '../address/index.js'
@@ -81,6 +85,10 @@ function bindLinks() {
         return
       }
       if (link === 'earnings') {
+        if (!hasCompletedOrder()) {
+          showToast(DESIGNER_FEATURE_LOCKED_TOAST)
+          return
+        }
         showEarningsPage()
         refreshEarningsPage()
         return
