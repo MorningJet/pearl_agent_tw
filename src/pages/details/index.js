@@ -58,9 +58,6 @@ let designImageUrl = ''
 /** @type {null | (() => string)} */
 let getDesignImage = null
 
-/** @type {number} */
-let longPressTimer = 0
-
 /**
  * Design Details — three named variants (see docs/details-modes.md):
  *
@@ -130,7 +127,6 @@ export function initDetailsPage(host, options) {
 
   bindNav()
   bindNameEdit()
-  bindShares()
   bindActions()
   bindImagePreview()
   bindWristGuide()
@@ -455,18 +451,6 @@ function bindNameEdit() {
   })
 }
 
-function bindShares() {
-  document.getElementById('details-share-save')?.addEventListener('click', () => {
-    saveDesignImage()
-  })
-  document.getElementById('details-share-friends')?.addEventListener('click', () => {
-    showToast('分享 — 即將推出')
-  })
-  document.getElementById('details-share-feed')?.addEventListener('click', () => {
-    showToast('動態分享 — 即將推出')
-  })
-}
-
 function bindActions() {
   document.getElementById('details-submit')?.addEventListener('click', () => {
     if (!hasCompletedOrder()) {
@@ -629,15 +613,16 @@ function bindImagePreview() {
   const fullImg = /** @type {HTMLImageElement | null} */ (
     document.getElementById('details-lightbox-img')
   )
-  const hint = document.getElementById('details-lightbox-hint')
+
+  const blockNativeSave = (e) => {
+    e.preventDefault()
+  }
 
   thumb?.addEventListener('click', () => {
     if (!designImageUrl || !lightbox || !fullImg) return
     fullImg.src = designImageUrl
     lightbox.classList.remove('hidden')
     lightbox.classList.add('flex')
-    hint?.classList.remove('opacity-0')
-    window.setTimeout(() => hint?.classList.add('opacity-0'), 2200)
   })
 
   lightbox?.addEventListener('click', (e) => {
@@ -648,28 +633,16 @@ function bindImagePreview() {
     closeLightbox()
   })
 
-  const startLongPress = () => {
-    window.clearTimeout(longPressTimer)
-    longPressTimer = window.setTimeout(() => {
-      saveDesignImage()
-    }, 650)
+  // Discourage long-press / right-click save — users should screenshot instead.
+  document.getElementById('details-hero')?.addEventListener('contextmenu', blockNativeSave)
+  lightbox?.addEventListener('contextmenu', blockNativeSave)
+  for (const img of [thumb, fullImg]) {
+    img?.addEventListener('contextmenu', blockNativeSave)
+    img?.addEventListener('dragstart', blockNativeSave)
   }
-  const cancelLongPress = () => window.clearTimeout(longPressTimer)
-
-  fullImg?.addEventListener('touchstart', startLongPress, { passive: true })
-  fullImg?.addEventListener('touchend', cancelLongPress)
-  fullImg?.addEventListener('touchmove', cancelLongPress)
-  fullImg?.addEventListener('mousedown', startLongPress)
-  fullImg?.addEventListener('mouseup', cancelLongPress)
-  fullImg?.addEventListener('mouseleave', cancelLongPress)
-  fullImg?.addEventListener('contextmenu', (e) => {
-    e.preventDefault()
-    saveDesignImage()
-  })
 }
 
 function closeLightbox() {
-  window.clearTimeout(longPressTimer)
   const lightbox = document.getElementById('details-lightbox')
   lightbox?.classList.add('hidden')
   lightbox?.classList.remove('flex')
@@ -904,32 +877,6 @@ function submitPlazaPublish() {
   refreshMyDesignsPage()
   closePlazaPublish()
   showToast(`已以 @${handle} 發佈「${designName}」`)
-}
-
-function saveDesignImage() {
-  if (!designImageUrl) {
-    showToast('尚無設計圖')
-    return
-  }
-  const a = document.createElement('a')
-  a.href = designImageUrl
-  a.download = `${slugify(getDesignName())}.png`
-  a.rel = 'noopener'
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  showToast('已儲存至下載')
-}
-
-/** @param {string} name */
-function slugify(name) {
-  return (
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 40) || 'bracelet-design'
-  )
 }
 
 function renderDetails() {

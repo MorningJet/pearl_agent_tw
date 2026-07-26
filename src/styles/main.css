@@ -39,7 +39,8 @@
   .plaza-card img,
   .home-plaza-card img,
   [data-continue-id] img,
-  [data-modify-publish-id] img {
+  [data-modify-publish-id] img,
+  .details-preview-img {
     pointer-events: none;
     -webkit-user-drag: none;
     user-select: none;
