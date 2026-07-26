@@ -83,7 +83,6 @@ export function refreshCheckoutPage() {
 function renderDraft() {
   if (!draft) return
   const title = document.getElementById('checkout-product-title')
-  const wrist = document.getElementById('checkout-product-wrist')
   const price = document.getElementById('checkout-product-price')
   const media = document.getElementById('checkout-product-media')
   const bomEl = document.getElementById('checkout-bom')
@@ -112,13 +111,7 @@ function renderDraft() {
     (draft.bomDisplay !== 'sku' && designFee > 0)
 
   if (title) title.textContent = draft.designName || '手鍊設計'
-  if (wrist) {
-    wrist.textContent = draft.wristCm ? `腕圍 ≈ ${draft.wristCm}cm` : ''
-  }
-  if (price) {
-    const badge = shippingTwd === 0 ? '（包郵）' : ''
-    price.textContent = `NT$${formatPrice(beadsSubtotal)}${badge}`
-  }
+  if (price) price.textContent = `NT$${formatPrice(beadsSubtotal)}`
   if (media) {
     const imgUrl = draft.designImageUrl ? withBase(draft.designImageUrl) : ''
     media.innerHTML = imgUrl
