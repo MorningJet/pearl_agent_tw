@@ -411,12 +411,12 @@ async function submitCheckout() {
   const prevLabel = btn?.textContent
   if (btn) {
     btn.setAttribute('disabled', 'true')
-    btn.textContent = '建立訂單…'
+    btn.textContent = '建立訂單中…'
   }
 
   try {
     draft.onBeforePay?.()
-    // Social-proof designer count: +1 per「立即付款」click.
+    // Social-proof designer count: +1 per「立即付款」click (non-blocking).
     void incrementDesignerCount().then(() => {
       refreshMyDesignsPage()
     })

@@ -65,13 +65,15 @@ function getStaticSkuMap() {
  * Create an unpaid Shopify order at「立即付款」(before NewebPay redirect).
  * @param {any} env
  * @param {object} record — pending order from KV
+ * @param {{ waitUntil?: (p: Promise<unknown>) => void }} [opts]
  * @returns {Promise<{ id: number, name: string, adminUrl: string }>}
  */
-export async function createUnpaidShopifyOrder(env, record) {
+export async function createUnpaidShopifyOrder(env, record, opts = {}) {
   return createShopifyOrder(env, record, {
     financialStatus: 'pending',
     h5Status: 'unpaid',
     pay: null,
+    waitUntil: opts.waitUntil,
   })
 }
 
@@ -186,6 +188,7 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
  *   financialStatus: 'pending' | 'paid',
  *   h5Status: 'unpaid' | 'scheduling',
  *   pay: { tradeNo?: string, paymentType?: string, payTime?: string, amt?: number|string } | null,
+ *   waitUntil?: (p: Promise<unknown>) => void,
  * }} opts
  */
 async function createShopifyOrder(env, record, opts) {
@@ -286,7 +289,20 @@ async function createShopifyOrder(env, record, opts) {
   if (!created?.id) throw new Error('Shopify 未回傳 order.id')
 
   if (memberEmail) {
-    await ensureCustomerEmailIdentity(env, token, domain, version, created, memberEmail)
+    const task = ensureCustomerEmailIdentity(
+      env,
+      token,
+      domain,
+      version,
+      created,
+      memberEmail,
+    )
+    if (typeof opts.waitUntil === 'function') {
+      // Don't block checkout redirect on customer name polish.
+      opts.waitUntil(task)
+    } else {
+      await task
+    }
   }
 
   return {
@@ -585,10 +601,15 @@ async function resolveVariantIdsBySkus(env, skus) {
   const missing = unique.filter((s) => !out.has(s))
   if (!missing.length) return out
 
-  // Optional live refresh when app has read_products.
-  const catalog = await loadVariantSkuCatalog(env)
-  for (const sku of missing) {
-    const id = catalog.get(sku) || (await lookupVariantIdBySku(env, sku))
+  // Checkout path: never scan the full catalog (can take many seconds).
+  // Parallel per-SKU identifier lookups only for rare misses.
+  const found = await Promise.all(
+    missing.map(async (sku) => {
+      const id = await lookupVariantIdBySku(env, sku)
+      return /** @type {const} */ ([sku, id])
+    }),
+  )
+  for (const [sku, id] of found) {
     if (id) out.set(sku, id)
   }
   return out
@@ -745,11 +766,7 @@ async function resolveDesignFeeVariantId(env) {
     if (bundled.has(key)) return bundled.get(key) || null
   }
 
-  const catalog = await loadVariantSkuCatalog(env)
-  for (const key of ['design_fee', 'DESIGN_FEE', '设计费用', '設計費用']) {
-    if (catalog.has(key)) return catalog.get(key) || null
-  }
-
+  // Prefer a single targeted search over full catalog pagination.
   const domain = shopDomain(env)
   const token = await getAdminAccessToken(env)
   const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
