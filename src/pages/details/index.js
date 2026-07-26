@@ -20,6 +20,7 @@ import {
   upsertSavedDesign,
 } from '../../shared/state/savedDesignsStore.js'
 import { buildBom } from './bom.js'
+import { formatBeadProductCodeLines } from '../../shared/domain/beadCode.js'
 import { formatPrice, totalPrice } from '../../shared/domain/pricing.js'
 import {
   circumferenceStatus,
@@ -503,7 +504,7 @@ function buyNow() {
   const mm = totalCircumferenceMm(beads)
   const wristCm = formatCm(mm)
   const wristCmNum = Number((mm / 10).toFixed(1))
-  const beadProductCode = beads.map((b) => b.productId).filter(Boolean).join('+')
+  const beadProductCode = formatBeadProductCodeLines(beads)
   const isPlaza = detailsMode === 'plaza'
   const isPlazaEdit = detailsMode === 'plaza-edit'
   const pub = plazaViewPub

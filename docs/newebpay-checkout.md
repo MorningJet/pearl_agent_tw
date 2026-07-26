@@ -23,17 +23,17 @@ H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在
 
 ## 建單欄位（立即付款時寫入 Shopify）
 
-| 欄位 | 寫入位置 |
-|------|----------|
-| 客戶 email | `order.email` + `pearl_member_email` |
-| 商品（每種珠子顆數） | `line_items`（title / sku=`productId` / qty / price，與目錄 SKU 對應） |
-| 總計 | 藍新 `Amt` = 珠款 + 設計費 + 運費 |
-| 支付狀態 | 初值 `financial_status=pending`；藍新成功後改 paid |
-| H5 狀態 | `pearl_h5_status` + tag `pearl:unpaid` → 成功後 `pearl:scheduling` |
-| 商品編碼 | `pearl_bead_product_code`：串珠順序配件 id，以 `+` 連接 |
-| 手圍 | `pearl_wrist_cm`（note 亦寫「手圍 ≈ xcm」） |
+| Admin 欄位 | H5 寫入 |
+|------------|---------|
+| 訂單 / 日期 / 發貨期限 / 渠道 / 商品件數顯示 / 配送狀態 / 配送方式 | Shopify 自動，不特別寫入 |
+| 客戶 | `order.email` |
+| 總計 | 單一 line item，金額 = 藍新支付總價 |
+| 支付狀態 | 初值 `pending`（待付款）；藍新成功後 `paid` |
+| 發貨狀態 | 初值未發貨；後台上傳物流單號後變更 |
+| 標記 | H5 狀態中文：起初「未付款」；付款成功改「排單中」（其餘狀態後台手動加） |
+| 備註 | 藍新訂單號、手圍、商品編碼（上方中央偏右起點順時針 `1. id` 每顆一行）；**不含**商品明細 |
 
-狀態對照與 Webhook 見 [shopify-order-webhooks.md](shopify-order-webhooks.md)。
+商品編碼順序與畫布一致：陣列第 1 顆 = 手串上方中央偏右，其後順時針。
 
 ## Shopify Admin（Dev Dashboard — 新店唯一方式）
 

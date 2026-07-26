@@ -47,17 +47,14 @@ curl "https://YOUR_WORKER/api/h5/order-status?shopifyOrderId=5678"
 | H5 `h5Status` | 觸發條件（優先序由上到下） |
 |---------------|---------------------------|
 | `closed` 已關閉 | `cancelled_at`，或 `financial_status` = refunded / voided |
-| 標籤覆寫 | 訂單 tags 含 `pearl:unpaid` / `pearl:scheduling` / `pearl:designing` / `pearl:shipping` / `pearl:pickup` / `pearl:done` / `pearl:closed` |
+| 標籤覆寫 | 訂單 tags 含中文「未付款／排單中／設計中／運送中／待提貨／已完成／已關閉」，或舊版 `pearl:unpaid` 等 |
 | 屬性覆寫 | `note_attributes` 名 `pearl_h5_status` = 上列英文值 |
 | `unpaid` 未付款 | pending / authorized / partially_paid |
 | `done` 已完成 | `fulfillment_status` = fulfilled |
 | `shipping` 運送中 | `fulfillment_status` = partial |
 | `scheduling` 排單中 | paid（尚未出貨、無自訂標籤） |
 
-**排單中 → 設計中 → 待提貨** 這三段 Shopify 沒有原生欄位，請在後台訂單加 tag，例如：
-
-- 開始串珠：`pearl:designing`
-- 到店待取：`pearl:pickup`
+**排單中 → 設計中 → 待提貨** 這三段可在後台訂單改 tag 為中文狀態（例如「設計中」「待提貨」）。
 
 （改 tag 會觸發 `orders/updated`，Webhook 即更新 H5 狀態。）
 

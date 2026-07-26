@@ -1,18 +1,30 @@
 /**
  * Shopify Admin order sync for NewebPay MPG.
  *
- * Flow:
- *   1. Checkout click → createUnpaidShopifyOrder (financial_status: pending, H5: unpaid)
- *   2. NewebPay SUCCESS → markShopifyOrderPaid (transaction + H5: scheduling)
+ * H5 → Shopify field mapping (Admin 訂單列表):
+ *   備註 note     → 藍新訂單號、手圍、商品編碼（順時針編號，每顆一行）
+ *   客戶 email    → 會員 email
+ *   總計          → 與藍新一致的支付總價（單一 line item）
+ *   支付狀態      → pending（待付款）→ 藍新成功後 paid
+ *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
+ *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
  *
- * Auth (Dev Dashboard apps — preferred):
- *   SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET → client_credentials (token ~24h, auto-refresh)
- * Legacy (admin-created custom apps):
- *   SHOPIFY_ADMIN_TOKEN (static shpat_…)
+ * Auth: SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET 或 SHOPIFY_ADMIN_TOKEN
  */
 
 /** @type {{ token: string, expiresAt: number } | null} */
 let cachedToken = null
+
+/** H5 status → Shopify tag（與「我的訂單」文案一致） */
+const H5_STATUS_TAG = {
+  unpaid: '未付款',
+  scheduling: '排單中',
+  designing: '設計中',
+  shipping: '運送中',
+  pickup: '待提貨',
+  done: '已完成',
+  closed: '已關閉',
+}
 
 /**
  * Create an unpaid Shopify order at「立即付款」(before NewebPay redirect).
@@ -81,7 +93,6 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
   })
   const txText = await txRes.text()
   if (!txRes.ok) {
-    // Idempotent: already paid / duplicate transaction — still update H5 status below.
     const soft =
       /already been paid|order is already paid|Transaction error/i.test(txText) ||
       txRes.status === 422
@@ -101,7 +112,7 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
     body: JSON.stringify({
       order: {
         id: Number(id) || id,
-        tags: 'newebpay,pearl-diy,headless,pearl:scheduling',
+        tags: buildTags('scheduling'),
         note: noteParts.join('\n'),
         note_attributes: noteAttributes,
       },
@@ -154,12 +165,11 @@ async function createShopifyOrder(env, record, opts) {
   const amt = Math.round(Number(pay.amt || record.amountTwd) || 0)
   if (amt < 1) throw new Error('訂單金額無效')
 
-  const lineItems = buildLineItems(record)
+  const lineItems = buildLineItems(record, amt)
   if (!lineItems.length) throw new Error('沒有可寫入的商品列')
 
   const noteParts = buildNoteParts(record, pay)
   const noteAttributes = buildNoteAttributes(record, pay, opts.h5Status)
-  const pearlTag = opts.h5Status === 'scheduling' ? 'pearl:scheduling' : 'pearl:unpaid'
 
   /** @type {Record<string, unknown>} */
   const order = {
@@ -169,7 +179,7 @@ async function createShopifyOrder(env, record, opts) {
     send_receipt: false,
     send_fulfillment_receipt: false,
     taxes_included: true,
-    tags: `newebpay,pearl-diy,headless,${pearlTag}`,
+    tags: buildTags(opts.h5Status),
     note: noteParts.join('\n'),
     note_attributes: noteAttributes,
     line_items: lineItems,
@@ -299,76 +309,86 @@ export function isShopifyAuthConfigured(env) {
 }
 
 /**
- * BOM rows map 1:1 to Shopify catalog SKUs (productId = SKU).
- * Custom line items keep price/qty when Admin inventory linking is not required.
+ * Single custom line = 藍新支付總價（不逐顆展開商品明細）.
  * @param {object} record
- * @returns {Array<{ title: string, price: string, quantity: number, sku?: string, requires_shipping?: boolean, taxable?: boolean }>}
+ * @param {number} amt
  */
-function buildLineItems(record) {
-  /** @type {Array<{ title: string, price: string, quantity: number, sku?: string, requires_shipping?: boolean, taxable?: boolean }>} */
-  const lines = []
-  const bom = Array.isArray(record.bom) ? record.bom : []
-
-  for (const row of bom) {
-    const qty = Math.max(1, Math.round(Number(row.qty) || 1))
-    let unit = Number(row.unitPrice)
-    if (!Number.isFinite(unit) && Number.isFinite(row.lineTotal)) {
-      unit = Number(row.lineTotal) / qty
-    }
-    unit = Math.max(0, Math.round(unit || 0))
-    const name = String(row.name || row.productId || '珠款').trim()
-    const mm = row.diameterMm != null ? ` ${row.diameterMm}mm` : ''
-    lines.push({
-      title: clip(`${name}${mm}`, 255),
-      price: unit.toFixed(2),
-      quantity: qty,
-      sku: clip(String(row.productId || ''), 64) || undefined,
+function buildLineItems(record, amt) {
+  const title = clip(String(record.designName || '手鍊設計').trim() || '手鍊設計', 255)
+  return [
+    {
+      title,
+      price: Math.max(0, Math.round(amt)).toFixed(2),
+      quantity: 1,
+      sku: 'pearl-diy',
       requires_shipping: true,
       taxable: false,
-    })
-  }
-
-  const fee = Math.max(0, Math.round(Number(record.designFee) || 0))
-  if (fee > 0) {
-    lines.push({
-      title: '設計費用',
-      price: fee.toFixed(2),
-      quantity: 1,
-      sku: 'design_fee',
-      requires_shipping: false,
-      taxable: false,
-    })
-  }
-
-  const shipping = Math.max(0, Math.round(Number(record.shipping) || 0))
-  if (shipping > 0) {
-    lines.push({
-      title: '運費',
-      price: shipping.toFixed(2),
-      quantity: 1,
-      sku: 'shipping',
-      requires_shipping: false,
-      taxable: false,
-    })
-  }
-
-  return lines
+    },
+  ]
 }
 
 /**
+ * 備註：藍新訂單號、手圍、商品編碼（編號每顆一行）. 不含商品明細/配方.
  * @param {object} record
  * @param {{ tradeNo?: string, paymentType?: string, payTime?: string }} pay
  */
 function buildNoteParts(record, pay = {}) {
-  return [
-    `藍新訂單：${record.merchantOrderNo}`,
-    pay.tradeNo ? `藍新交易號：${pay.tradeNo}` : '',
-    pay.paymentType ? `付款方式：${pay.paymentType}` : '',
-    record.designName ? `設計：${record.designName}` : '',
-    record.wristCm ? `手圍 ≈ ${record.wristCm}cm` : '',
-    record.beadProductCode ? `商品編碼：${clip(record.beadProductCode, 400)}` : '',
-    record.recipe ? `配方：${clip(record.recipe, 400)}` : '',
-  ].filter(Boolean)
+  const lines = []
+  if (record.merchantOrderNo) {
+    lines.push(`藍新訂單：${record.merchantOrderNo}`)
+  }
+  if (pay.tradeNo) {
+    lines.push(`藍新交易號：${pay.tradeNo}`)
+  }
+  if (record.wristCm) {
+    lines.push(`手圍：${record.wristCm}cm`)
+  }
+  const codeBlock = formatProductCodeForNote(record)
+  if (codeBlock) {
+    lines.push('商品編碼：')
+    lines.push(codeBlock)
+  }
+  return lines
+}
+
+/**
+ * Prefer client multiline `1. id`; else expand BOM / + joined string in clockwise order.
+ * @param {object} record
+ */
+function formatProductCodeForNote(record) {
+  const raw = String(record.beadProductCode || '').trim()
+  if (raw && /^\d+\./m.test(raw)) {
+    return clip(raw, 5000)
+  }
+
+  /** @type {string[]} */
+  let ids = []
+  if (raw.includes('+')) {
+    ids = raw.split('+').map((s) => s.trim()).filter(Boolean)
+  } else if (raw && !raw.includes('\n')) {
+    ids = [raw]
+  }
+
+  if (!ids.length && Array.isArray(record.bom)) {
+    // BOM is aggregated by SKU — fall back only if no sequential code was sent.
+    for (const row of record.bom) {
+      const id = String(row.productId || '').trim()
+      const qty = Math.max(1, Math.round(Number(row.qty) || 1))
+      if (!id) continue
+      for (let i = 0; i < qty; i++) ids.push(id)
+    }
+  }
+
+  if (!ids.length) return ''
+  return ids.map((id, i) => `${i + 1}. ${id}`).join('\n')
+}
+
+/**
+ * @param {string} h5Status
+ */
+function buildTags(h5Status) {
+  const label = H5_STATUS_TAG[h5Status] || H5_STATUS_TAG.unpaid
+  return label
 }
 
 /**
@@ -382,20 +402,22 @@ function buildNoteAttributes(record, pay, h5Status) {
       ? String(Number(record.wristCmNum))
       : String(record.wristCm || '')
 
+  const codeAttr = String(record.beadProductCode || '')
+    .replace(/\n/g, ' | ')
+    .slice(0, 500)
+
   return [
     { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
     { name: 'newebpay_trade_no', value: String(pay?.tradeNo || '') },
     { name: 'pearl_h5_status', value: String(h5Status || 'unpaid') },
     { name: 'pearl_design_name', value: String(record.designName || '') },
     { name: 'pearl_wrist_cm', value: wristValue },
-    { name: 'pearl_bead_product_code', value: String(record.beadProductCode || '') },
+    { name: 'pearl_bead_product_code', value: codeAttr },
     { name: 'pearl_details_mode', value: String(record.detailsMode || '') },
     { name: 'pearl_design_id', value: String(record.designId || '') },
     { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
     { name: 'pearl_designer_id', value: String(record.designerId || '') },
-    { name: 'pearl_beads_subtotal_twd', value: String(record.beadsSubtotal || 0) },
-    { name: 'pearl_design_fee_twd', value: String(record.designFee || 0) },
-    { name: 'pearl_shipping_twd', value: String(record.shipping || 0) },
+    { name: 'pearl_amount_twd', value: String(record.amountTwd || 0) },
     { name: 'pearl_member_email', value: String(record.email || '') },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
   ].filter((a) => a.value)

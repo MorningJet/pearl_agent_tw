@@ -324,9 +324,27 @@ async function resolveOrderPayload(topic, payload, env) {
 function readPearlStatusTag(order) {
   const tags = String(order?.tags || '')
     .split(',')
-    .map((t) => t.trim().toLowerCase())
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  const zhMap = {
+    未付款: 'unpaid',
+    排單中: 'scheduling',
+    设计中: 'designing',
+    設計中: 'designing',
+    运送中: 'shipping',
+    運送中: 'shipping',
+    待提貨: 'pickup',
+    待提货: 'pickup',
+    已完成: 'done',
+    已關閉: 'closed',
+    已关闭: 'closed',
+  }
+
   for (const t of tags) {
-    const m = t.match(/^pearl:(unpaid|scheduling|designing|shipping|pickup|done|closed)$/)
+    if (zhMap[t]) return /** @type {H5OrderStatus} */ (zhMap[t])
+    const low = t.toLowerCase()
+    const m = low.match(/^pearl:(unpaid|scheduling|designing|shipping|pickup|done|closed)$/)
     if (m) return /** @type {H5OrderStatus} */ (m[1])
   }
   return null
