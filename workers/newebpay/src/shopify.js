@@ -240,9 +240,7 @@ async function createShopifyOrder(env, record, opts) {
   }
 
   if (record.shippingAddress && typeof record.shippingAddress === 'object') {
-    order.shipping_address = mapAddress(
-      /** @type {Record<string, unknown>} */ (record.shippingAddress),
-    )
+    order.shipping_address = mapAddress(record.shippingAddress)
   }
 
   const url = `https://${domain}/admin/api/${version}/orders.json`
@@ -848,13 +846,6 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_design_fee_twd', value: String(record.designFee ?? '') },
     { name: 'pearl_shipping_twd', value: String(record.shipping ?? '') },
     { name: 'pearl_member_email', value: String(record.email || '') },
-    {
-      name: 'pearl_shipping_address',
-      value:
-        record.shippingAddress && typeof record.shippingAddress === 'object'
-          ? JSON.stringify(mapAddress(/** @type {Record<string, unknown>} */ (record.shippingAddress)))
-          : '',
-    },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
   ].filter((a) => a.value)
 }
@@ -877,54 +868,32 @@ function shopDomain(env) {
 }
 
 /**
- * Pass-through / normalize to Shopify Admin Order.shipping_address JSON.
- * H5 already sends native fields; this only clips + fills TW defaults.
- * @param {Record<string, unknown>} addr
+ * @param {Record<string, string>} addr
  */
-export function toShopifyShippingAddress(addr) {
-  const lastName = clip(String(addr.last_name || addr.lastName || ''), 40)
-  const firstName = clip(String(addr.first_name || addr.firstName || ''), 40)
-  const legacyName = clip(String(addr.name || ''), 40)
-
-  let province = clip(String(addr.province || ''), 40)
-  let city = clip(String(addr.city || ''), 40)
-  let address1 = clip(String(addr.address1 || addr.detail || ''), 120)
-
-  // Legacy: city=縣市, district=鄉鎮市區
-  if (addr.district && !addr.province) {
-    province = clip(String(addr.city || ''), 40)
-    city = clip(String(addr.district || ''), 40)
-    address1 = clip(String(addr.address1 || addr.detail || ''), 120)
-  }
-
-  const resolvedLast = lastName || (legacyName ? legacyName.slice(0, 1) : '')
-  const resolvedFirst =
-    firstName || (legacyName.length > 1 ? legacyName.slice(1) : '')
-
-  /** @type {Record<string, string | undefined>} */
-  const shipping = {
-    last_name: resolvedLast || undefined,
-    first_name: resolvedFirst || resolvedLast || 'Customer',
-    phone: clip(String(addr.phone || ''), 20) || undefined,
-    company: clip(String(addr.company || ''), 40) || undefined,
-    address1: address1 || undefined,
-    address2: clip(String(addr.address2 || ''), 80) || undefined,
+function mapAddress(addr) {
+  const lastName = clip(addr.last_name || '', 40)
+  const firstName = clip(addr.first_name || '', 40)
+  const fullName = clip(addr.name || `${lastName}${firstName}` || 'Customer', 40)
+  const province = clip(addr.province || addr.city || '', 40)
+  const city = clip(addr.district || addr.city || '', 40)
+  const address1 = clip(
+    addr.address1 ||
+      addr.detail ||
+      [addr.district, addr.detail].filter(Boolean).join('') ||
+      '',
+    120,
+  )
+  return {
+    last_name: lastName || undefined,
+    first_name: firstName || fullName,
+    phone: clip(addr.phone || '', 20) || undefined,
+    address1,
     city: city || undefined,
     province: province || undefined,
-    country: clip(String(addr.country || 'Taiwan'), 40) || 'Taiwan',
-    country_code: clip(String(addr.country_code || 'TW'), 2) || 'TW',
-    zip: clip(String(addr.zip || ''), 12) || undefined,
+    country: 'Taiwan',
+    country_code: clip(addr.country_code || 'TW', 2) || 'TW',
+    zip: clip(addr.zip || '', 12) || undefined,
   }
-
-  for (const key of Object.keys(shipping)) {
-    if (shipping[key] == null || shipping[key] === '') delete shipping[key]
-  }
-  return shipping
-}
-
-/** @deprecated use toShopifyShippingAddress */
-function mapAddress(addr) {
-  return toShopifyShippingAddress(addr)
 }
 
 /** @param {string} s @param {number} n */
