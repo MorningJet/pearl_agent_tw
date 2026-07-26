@@ -29,6 +29,8 @@ H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"
 CORS_ORIGINS = "*"
 SHOPIFY_STORE_DOMAIN = "pearl-diy.myshopify.com"
 SHOPIFY_API_VERSION = "2025-01"
+# NT$1「設計費用」變體數字 ID（Storefront / Admin 變體 GID 末段）
+SHOPIFY_DESIGN_FEE_VARIANT_ID = "52116571554090"
 # Set to "1" only while NewebPay is pending review (disable in production)
 ALLOW_DEV_SIMULATE = "1"
 

@@ -10,11 +10,19 @@
  *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
  *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
  *
+ * Variant IDs come from bundled variantMap.json (Storefront sync). Admin
+ * read_products is optional; app may only have write_orders.
+ *
  * Auth: SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET 或 SHOPIFY_ADMIN_TOKEN
  */
 
+import staticVariantMap from './variantMap.json'
+
 /** @type {{ token: string, expiresAt: number } | null} */
 let cachedToken = null
+
+/** @type {Map<string, string> | null} */
+let staticSkuMap = null
 
 /** H5 status → Shopify tag（與「我的訂單」文案一致） */
 const H5_STATUS_TAG = {
@@ -25,6 +33,23 @@ const H5_STATUS_TAG = {
   pickup: '待提貨',
   done: '已完成',
   closed: '已關閉',
+}
+
+/** @returns {Map<string, string>} */
+function getStaticSkuMap() {
+  if (staticSkuMap) return staticSkuMap
+  /** @type {Map<string, string>} */
+  const map = new Map()
+  const raw = staticVariantMap && typeof staticVariantMap === 'object' ? staticVariantMap : {}
+  for (const [sku, row] of Object.entries(raw)) {
+    const id =
+      (row && typeof row === 'object' && (row.variantId || row.legacyResourceId)) ||
+      (typeof row === 'string' ? row : '')
+    const numeric = String(id || '').replace(/\D/g, '')
+    if (sku && numeric) map.set(String(sku).trim(), numeric)
+  }
+  staticSkuMap = map
+  return map
 }
 
 /**
@@ -440,19 +465,20 @@ async function resolveVariantIdsBySkus(env, skus) {
   const unique = [...new Set(skus.map((s) => String(s || '').trim()).filter(Boolean))]
   if (!unique.length) return out
 
-  const catalog = await loadVariantSkuCatalog(env)
+  const bundled = getStaticSkuMap()
   for (const sku of unique) {
-    const id = catalog.get(sku)
+    const id = bundled.get(sku)
     if (id) out.set(sku, id)
   }
 
   const missing = unique.filter((s) => !out.has(s))
+  if (!missing.length) return out
+
+  // Optional live refresh when app has read_products.
+  const catalog = await loadVariantSkuCatalog(env)
   for (const sku of missing) {
-    const id = await lookupVariantIdBySku(env, sku)
-    if (id) {
-      out.set(sku, id)
-      catalog.set(sku, id)
-    }
+    const id = catalog.get(sku) || (await lookupVariantIdBySku(env, sku))
+    if (id) out.set(sku, id)
   }
   return out
 }
@@ -502,10 +528,14 @@ async function loadVariantSkuCatalog(env) {
     })
     const json = await res.json()
     if (!res.ok || json?.errors?.length) {
-      console.warn(
-        '[shopify] catalog scan failed (need read_products?)',
-        json?.errors || res.status,
+      const denied = json?.errors?.some((e) =>
+        /ACCESS_DENIED|Access denied/i.test(String(e?.message || '')),
       )
+      if (denied) {
+        console.warn('[shopify] catalog scan skipped — app lacks read_products; using bundled variantMap')
+      } else {
+        console.warn('[shopify] catalog scan failed', json?.errors || res.status)
+      }
       break
     }
     const conn = json?.data?.products
@@ -599,6 +629,11 @@ async function resolveDesignFeeVariantId(env) {
   const configured = String(env.SHOPIFY_DESIGN_FEE_VARIANT_ID || '').trim()
   if (configured) return configured.replace(/\D/g, '') || null
 
+  const bundled = getStaticSkuMap()
+  for (const key of ['design_fee', 'DESIGN_FEE']) {
+    if (bundled.has(key)) return bundled.get(key) || null
+  }
+
   const catalog = await loadVariantSkuCatalog(env)
   for (const key of ['design_fee', 'DESIGN_FEE', '设计费用', '設計費用']) {
     if (catalog.has(key)) return catalog.get(key) || null
@@ -640,6 +675,9 @@ async function resolveDesignFeeVariantId(env) {
         }),
       })
       const json = await res.json()
+      if (json?.errors?.some((e) => /ACCESS_DENIED/i.test(String(e?.message || '')))) {
+        break
+      }
       const edges = json?.data?.productVariants?.edges || []
       for (const edge of edges) {
         const title = String(edge?.node?.product?.title || '')
