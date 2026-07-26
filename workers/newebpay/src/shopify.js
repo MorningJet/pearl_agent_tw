@@ -704,7 +704,9 @@ async function resolveDesignFeeVariantId(env) {
 }
 
 /**
- * 備註：藍新訂單號、手圍、商品編碼（編號每顆一行）. 不含商品明細/配方.
+ * 備註：藍新訂單號、手圍、商品編碼（編號每顆一行）.
+ * Shopify 訂單列表氣泡會把 \\n 摺成空格；改用 U+2028 LINE SEPARATOR，
+ * 在 Admin 預覽裡通常仍會強制換行。
  * @param {object} record
  * @param {{ tradeNo?: string, paymentType?: string, payTime?: string }} pay
  * @returns {string}
@@ -726,8 +728,7 @@ function buildNote(record, pay = {}) {
     lines.push('商品編碼：')
     for (const row of codeLines) lines.push(row)
   }
-  // Use CRLF so Shopify Admin 備註預覽較能保留分行
-  return lines.join('\r\n')
+  return lines.join('\u2028')
 }
 
 /**
@@ -741,9 +742,9 @@ function formatProductCodeLines(record) {
   let ids = []
 
   if (raw) {
-    // Accept real newlines, or repair "1. a 2. b 3. c" flattened by transport/UI.
     const normalized = raw
       .replace(/\r\n/g, '\n')
+      .replace(/\u2028/g, '\n')
       .replace(/\s+(?=\d+\.\s*)/g, '\n')
     if (/^\d+\./m.test(normalized)) {
       ids = normalized
@@ -755,7 +756,7 @@ function formatProductCodeLines(record) {
         .filter(Boolean)
     } else if (raw.includes('+')) {
       ids = raw.split('+').map((s) => s.trim()).filter(Boolean)
-    } else if (!raw.includes('\n')) {
+    } else if (!raw.includes('\n') && !raw.includes('\u2028')) {
       ids = [raw]
     }
   }
@@ -791,9 +792,13 @@ function buildNoteAttributes(record, pay, h5Status) {
       ? String(Number(record.wristCmNum))
       : String(record.wristCm || '')
 
-  const codeAttr = String(record.beadProductCode || '')
-    .replace(/\n/g, ' | ')
-    .slice(0, 500)
+  const codeLines = formatProductCodeLines(record)
+  /** @type {Array<{ name: string, value: string }>} */
+  const codeAttrs = codeLines.map((line, i) => {
+    const id = line.replace(/^\d+\.\s*/, '').trim()
+    const n = String(i + 1).padStart(2, '0')
+    return { name: `編碼${n}`, value: id }
+  })
 
   return [
     { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
@@ -801,7 +806,6 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_h5_status', value: String(h5Status || 'unpaid') },
     { name: 'pearl_design_name', value: String(record.designName || '') },
     { name: 'pearl_wrist_cm', value: wristValue },
-    { name: 'pearl_bead_product_code', value: codeAttr },
     { name: 'pearl_details_mode', value: String(record.detailsMode || '') },
     { name: 'pearl_design_id', value: String(record.designId || '') },
     { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
@@ -809,6 +813,7 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_amount_twd', value: String(record.amountTwd || 0) },
     { name: 'pearl_member_email', value: String(record.email || '') },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
+    ...codeAttrs,
   ].filter((a) => a.value)
 }
 
