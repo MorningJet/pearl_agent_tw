@@ -499,10 +499,6 @@ function buyNow() {
     showToast('請先加入珠子再下單')
     return
   }
-  if (!isNewebpayConfigured()) {
-    showToast('尚未設定藍新付款服務（VITE_NEWEBPAY_API_BASE）')
-    return
-  }
 
   const bom = buildBom(beads)
   const mm = totalCircumferenceMm(beads)
