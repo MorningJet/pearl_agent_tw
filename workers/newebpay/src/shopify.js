@@ -137,7 +137,7 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
   }
 
   // 2) Refresh note / tags → 排單中
-  const noteParts = buildNoteParts(record, pay)
+  const note = buildNote(record, pay)
   const noteAttributes = buildNoteAttributes(record, pay, 'scheduling')
   const putUrl = `https://${domain}/admin/api/${version}/orders/${id}.json`
   const putRes = await fetch(putUrl, {
@@ -147,7 +147,7 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
       order: {
         id: Number(id) || id,
         tags: buildTags('scheduling'),
-        note: noteParts.join('\n'),
+        note,
         note_attributes: noteAttributes,
       },
     }),
@@ -203,7 +203,7 @@ async function createShopifyOrder(env, record, opts) {
   const lineItems = built.lineItems
   if (!lineItems.length) throw new Error('沒有可寫入的商品列')
 
-  const noteParts = buildNoteParts(record, pay)
+  const note = buildNote(record, pay)
   const noteAttributes = buildNoteAttributes(record, pay, opts.h5Status)
 
   /** @type {Record<string, unknown>} */
@@ -216,7 +216,7 @@ async function createShopifyOrder(env, record, opts) {
     taxes_included: true,
     inventory_behaviour: 'decrement_obeying_policy',
     tags: buildTags(opts.h5Status),
-    note: noteParts.join('\n'),
+    note,
     note_attributes: noteAttributes,
     line_items: lineItems,
   }
@@ -417,12 +417,12 @@ async function buildOrderMerchandise(env, record, amt) {
         'Shopify 找不到「設計費用」產品變體。請確認後台有此產品（建議售價 NT$1），或設定 SHOPIFY_DESIGN_FEE_VARIANT_ID。',
       )
     }
-    // NT$1「設計費用」× 數量 = 設計費金額（強制單價 1，避免後台標價不一致）
+    // Keep design fee in the same shipment group as beads (avoid「無需發貨」).
     lineItems.push({
       variant_id: Number(designFeeVariantId),
       quantity: fee,
       price: '1.00',
-      requires_shipping: false,
+      requires_shipping: true,
       taxable: false,
     })
   }
@@ -430,7 +430,7 @@ async function buildOrderMerchandise(env, record, amt) {
   /** @type {Array<Record<string, unknown>>} */
   const shippingLines = [
     {
-      title: shipping > 0 ? '標準運費' : '滿額包郵',
+      title: shipping > 0 ? '標準發貨' : '滿額包郵',
       price: shipping.toFixed(2),
       code: shipping > 0 ? 'STANDARD_50' : 'FREE_SHIP_1000',
       source: 'pearl_h5',
@@ -707,8 +707,10 @@ async function resolveDesignFeeVariantId(env) {
  * 備註：藍新訂單號、手圍、商品編碼（編號每顆一行）. 不含商品明細/配方.
  * @param {object} record
  * @param {{ tradeNo?: string, paymentType?: string, payTime?: string }} pay
+ * @returns {string}
  */
-function buildNoteParts(record, pay = {}) {
+function buildNote(record, pay = {}) {
+  /** @type {string[]} */
   const lines = []
   if (record.merchantOrderNo) {
     lines.push(`藍新訂單：${record.merchantOrderNo}`)
@@ -719,34 +721,46 @@ function buildNoteParts(record, pay = {}) {
   if (record.wristCm) {
     lines.push(`手圍：${record.wristCm}cm`)
   }
-  const codeBlock = formatProductCodeForNote(record)
-  if (codeBlock) {
+  const codeLines = formatProductCodeLines(record)
+  if (codeLines.length) {
     lines.push('商品編碼：')
-    lines.push(codeBlock)
+    for (const row of codeLines) lines.push(row)
   }
-  return lines
+  // Use CRLF so Shopify Admin 備註預覽較能保留分行
+  return lines.join('\r\n')
 }
 
 /**
- * Prefer client multiline `1. id`; else expand BOM / + joined string in clockwise order.
+ * Numbered product codes, one id per line (clockwise from top-right).
  * @param {object} record
+ * @returns {string[]}
  */
-function formatProductCodeForNote(record) {
+function formatProductCodeLines(record) {
   const raw = String(record.beadProductCode || '').trim()
-  if (raw && /^\d+\./m.test(raw)) {
-    return clip(raw, 5000)
-  }
-
   /** @type {string[]} */
   let ids = []
-  if (raw.includes('+')) {
-    ids = raw.split('+').map((s) => s.trim()).filter(Boolean)
-  } else if (raw && !raw.includes('\n')) {
-    ids = [raw]
+
+  if (raw) {
+    // Accept real newlines, or repair "1. a 2. b 3. c" flattened by transport/UI.
+    const normalized = raw
+      .replace(/\r\n/g, '\n')
+      .replace(/\s+(?=\d+\.\s*)/g, '\n')
+    if (/^\d+\./m.test(normalized)) {
+      ids = normalized
+        .split('\n')
+        .map((line) => {
+          const m = String(line).trim().match(/^\d+\.\s*(.+)$/)
+          return m ? m[1].trim() : ''
+        })
+        .filter(Boolean)
+    } else if (raw.includes('+')) {
+      ids = raw.split('+').map((s) => s.trim()).filter(Boolean)
+    } else if (!raw.includes('\n')) {
+      ids = [raw]
+    }
   }
 
   if (!ids.length && Array.isArray(record.bom)) {
-    // BOM is aggregated by SKU — fall back only if no sequential code was sent.
     for (const row of record.bom) {
       const id = String(row.productId || '').trim()
       const qty = Math.max(1, Math.round(Number(row.qty) || 1))
@@ -755,8 +769,7 @@ function formatProductCodeForNote(record) {
     }
   }
 
-  if (!ids.length) return ''
-  return ids.map((id, i) => `${i + 1}. ${id}`).join('\n')
+  return ids.map((id, i) => `${i + 1}. ${id}`)
 }
 
 /**

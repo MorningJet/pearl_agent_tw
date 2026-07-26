@@ -12,7 +12,7 @@ export function formatBeadProductCodeLines(beads) {
   const ids = (Array.isArray(beads) ? beads : [])
     .map((b) => (typeof b === 'string' ? b : String(b?.productId || '')).trim())
     .filter(Boolean)
-  return ids.map((id, i) => `${i + 1}. ${id}`).join('\n')
+  return ids.map((id, i) => `${i + 1}. ${id}`).join('\r\n')
 }
 
 /**
