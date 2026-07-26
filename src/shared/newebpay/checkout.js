@@ -32,7 +32,28 @@ export function isNewebpayConfigured() {
  * @param {Array<{ productId: string, name: string, diameterMm: number, qty: number, unitPrice?: number, lineTotal?: number }>} bom
  * @param {CheckoutMeta} meta
  * @returns {Promise<
- *   | { ok: true, gatewayUrl: string, MerchantID: string, TradeInfo: string, TradeSha: string, Version: string, merchantOrderNo: string, amountTwd: number }
+ *   | {
+ *       ok: true,
+ *       paymentReady: true,
+ *       gatewayUrl: string,
+ *       MerchantID: string,
+ *       TradeInfo: string,
+ *       TradeSha: string,
+ *       Version: string,
+ *       merchantOrderNo: string,
+ *       amountTwd: number,
+ *       shopifyOrderId?: number | string | null,
+ *       shopifyOrderName?: string | null,
+ *     }
+ *   | {
+ *       ok: true,
+ *       paymentReady: false,
+ *       merchantOrderNo: string,
+ *       amountTwd: number,
+ *       shopifyOrderId?: number | string | null,
+ *       shopifyOrderName?: string | null,
+ *       paymentError?: string | null,
+ *     }
  *   | { ok: false, error: string }
  * >}
  */
@@ -46,7 +67,7 @@ export async function createNewebpayCheckout(bom, meta) {
   if (!base) {
     return {
       ok: false,
-      error: '尚未設定藍新付款服務（VITE_NEWEBPAY_API_BASE）',
+      error: '尚未設定結帳服務（VITE_NEWEBPAY_API_BASE）',
     }
   }
 
@@ -86,25 +107,48 @@ export async function createNewebpayCheckout(bom, meta) {
     if (!res.ok || !data?.ok) {
       return {
         ok: false,
-        error: data?.error || `付款服務錯誤（${res.status}）`,
+        error: data?.error || `結帳服務錯誤（${res.status}）`,
       }
     }
-    if (!data.gatewayUrl || !data.TradeInfo || !data.TradeSha || !data.MerchantID) {
-      return { ok: false, error: '付款服務回傳不完整' }
+
+    const amountTwd =
+      Number(data.amountTwd) || beadsSubtotal + designFee + shipping
+    const baseOrder = {
+      merchantOrderNo: data.merchantOrderNo || '',
+      amountTwd,
+      shopifyOrderId: data.shopifyOrderId ?? null,
+      shopifyOrderName: data.shopifyOrderName || null,
     }
+
+    // Shopify 未付款單已建立；藍新參數齊全才導向付款頁。
+    if (
+      data.paymentReady !== false &&
+      data.gatewayUrl &&
+      data.TradeInfo &&
+      data.TradeSha &&
+      data.MerchantID
+    ) {
+      return {
+        ok: true,
+        paymentReady: true,
+        gatewayUrl: data.gatewayUrl,
+        MerchantID: data.MerchantID,
+        TradeInfo: data.TradeInfo,
+        TradeSha: data.TradeSha,
+        Version: data.Version || '2.0',
+        ...baseOrder,
+      }
+    }
+
     return {
       ok: true,
-      gatewayUrl: data.gatewayUrl,
-      MerchantID: data.MerchantID,
-      TradeInfo: data.TradeInfo,
-      TradeSha: data.TradeSha,
-      Version: data.Version || '2.0',
-      merchantOrderNo: data.merchantOrderNo || '',
-      amountTwd: Number(data.amountTwd) || beadsSubtotal + designFee + shipping,
+      paymentReady: false,
+      paymentError: data.paymentError || '藍新付款尚未就緒',
+      ...baseOrder,
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e || '網路錯誤')
-    return { ok: false, error: `無法連接付款服務：${msg}` }
+    return { ok: false, error: `無法連接結帳服務：${msg}` }
   }
 }
 

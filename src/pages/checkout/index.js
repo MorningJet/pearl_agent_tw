@@ -162,7 +162,7 @@ async function submitCheckout() {
     return
   }
   if (!isNewebpayConfigured()) {
-    showToast('尚未設定藍新付款服務（VITE_NEWEBPAY_API_BASE）')
+    showToast('尚未設定結帳服務（VITE_NEWEBPAY_API_BASE）')
     return
   }
 
@@ -177,7 +177,7 @@ async function submitCheckout() {
   const prevLabel = btn?.textContent
   if (btn) {
     btn.setAttribute('disabled', 'true')
-    btn.textContent = '前往付款…'
+    btn.textContent = '建立訂單…'
   }
 
   try {
@@ -206,7 +206,21 @@ async function submitCheckout() {
 
     setMemberIdFromEmail(parsed.email)
     refreshMePage()
-    submitNewebpayForm(result)
+
+    if (result.paymentReady) {
+      if (btn) btn.textContent = '前往付款…'
+      submitNewebpayForm(result)
+      return
+    }
+
+    const orderLabel = result.shopifyOrderName
+      ? `訂單 ${result.shopifyOrderName} 已建立（未付款）`
+      : '未付款訂單已建立'
+    showToast(
+      `${orderLabel}；付款頁暫不可用${
+        result.paymentError ? `：${result.paymentError}` : ''
+      }`,
+    )
   } catch (err) {
     console.error('[checkout] submit failed', err)
     const msg = err instanceof Error ? err.message : String(err || '未知錯誤')

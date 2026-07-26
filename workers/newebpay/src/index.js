@@ -140,7 +140,6 @@ export default {
  * @param {Record<string, string>} cors
  */
 async function handleCheckout(request, env, cors) {
-  assertNewebpaySecrets(env)
   /** @type {any} */
   const body = await request.json()
   const bom = Array.isArray(body?.bom) ? body.bom : []
@@ -162,17 +161,6 @@ async function handleCheckout(request, env, cors) {
 
   const designName = clip(String(body?.designName || '手鍊設計'), 40)
   const merchantOrderNo = makeOrderNo()
-  const publicBase = String(env.PUBLIC_API_BASE || '').replace(/\/$/, '')
-  if (!publicBase) {
-    return json(
-      {
-        ok: false,
-        error: '伺服器未設定 PUBLIC_API_BASE（Notify/Return 需要公網網址）',
-      },
-      500,
-      cors,
-    )
-  }
 
   const email =
     clip(String(body?.email || env.NEWEBPAY_DEFAULT_EMAIL || ''), 50) ||
@@ -221,53 +209,85 @@ async function handleCheckout(request, env, cors) {
     newebpay: null,
   }
 
-  // 立即付款：先在 Shopify 建立「未付款」訂單，再導向藍新。
-  if (isShopifyAuthConfigured(env)) {
-    try {
-      const created = await createUnpaidShopifyOrder(env, record)
-      record.shopifyOrderId = created.id
-      record.shopifyOrderName = created.name
-      record.shopifyAdminUrl = created.adminUrl
-      record.shopifyError = null
-      record.h5Status = 'unpaid'
-      console.log('[shopify] unpaid order created', created)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      console.error('[shopify] unpaid create failed', msg)
-      return json(
-        { ok: false, error: `Shopify 建立未付款訂單失敗：${msg}` },
-        502,
-        cors,
-      )
-    }
-  } else {
-    console.warn('[shopify] auth not configured — skip unpaid order at checkout')
+  // ① 先建 Shopify 未付款單 —— 與藍新是否可用無關。
+  if (!isShopifyAuthConfigured(env)) {
+    return json(
+      {
+        ok: false,
+        error:
+          '未設定 Shopify 憑證（SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET，或舊版 SHOPIFY_ADMIN_TOKEN）',
+      },
+      500,
+      cors,
+    )
+  }
+  try {
+    const created = await createUnpaidShopifyOrder(env, record)
+    record.shopifyOrderId = created.id
+    record.shopifyOrderName = created.name
+    record.shopifyAdminUrl = created.adminUrl
+    record.shopifyError = null
+    record.h5Status = 'unpaid'
+    console.log('[shopify] unpaid order created', created)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[shopify] unpaid create failed', msg)
+    return json(
+      { ok: false, error: `Shopify 建立未付款訂單失敗：${msg}` },
+      502,
+      cors,
+    )
   }
 
   await putOrder(env, merchantOrderNo, record)
 
-  const tradePlain = {
-    MerchantID: env.NEWEBPAY_MERCHANT_ID,
-    RespondType: 'JSON',
-    TimeStamp: String(Math.floor(Date.now() / 1000)),
-    Version: MPG_VERSION,
-    MerchantOrderNo: merchantOrderNo,
-    Amt: String(amt),
-    ItemDesc: clip(`Pearl Pearl｜${designName}`, 50),
-    Email: email,
-    ReturnURL: `${publicBase}/api/return`,
-    NotifyURL: `${publicBase}/api/notify`,
-    ClientBackURL: String(env.H5_RETURN_URL || publicBase),
-    CREDIT: '1',
-    VACC: '1',
-    CVS: '1',
-    LINEPAY: '1',
-  }
+  // ② 再組藍新 MPG；失敗不影響已建立的未付款單。
+  /** @type {string | null} */
+  let paymentError = null
+  /** @type {Record<string, unknown> | null} */
+  let paymentPayload = null
 
-  const tradeInfo = await encryptTradeInfo(tradePlain, env)
-  const tradeSha = await tradeShaOf(tradeInfo, env)
-  const envName = String(env.NEWEBPAY_ENV || 'sandbox').toLowerCase()
-  const gatewayUrl = GATEWAYS[envName] || GATEWAYS.sandbox
+  try {
+    assertNewebpaySecrets(env)
+    const publicBase = String(env.PUBLIC_API_BASE || '').replace(/\/$/, '')
+    if (!publicBase) {
+      throw new Error('伺服器未設定 PUBLIC_API_BASE（Notify/Return 需要公網網址）')
+    }
+
+    const tradePlain = {
+      MerchantID: env.NEWEBPAY_MERCHANT_ID,
+      RespondType: 'JSON',
+      TimeStamp: String(Math.floor(Date.now() / 1000)),
+      Version: MPG_VERSION,
+      MerchantOrderNo: merchantOrderNo,
+      Amt: String(amt),
+      ItemDesc: clip(`Pearl Pearl｜${designName}`, 50),
+      Email: email,
+      ReturnURL: `${publicBase}/api/return`,
+      NotifyURL: `${publicBase}/api/notify`,
+      ClientBackURL: String(env.H5_RETURN_URL || publicBase),
+      CREDIT: '1',
+      VACC: '1',
+      CVS: '1',
+      LINEPAY: '1',
+    }
+
+    const tradeInfo = await encryptTradeInfo(tradePlain, env)
+    const tradeSha = await tradeShaOf(tradeInfo, env)
+    const envName = String(env.NEWEBPAY_ENV || 'sandbox').toLowerCase()
+    const gatewayUrl = GATEWAYS[envName] || GATEWAYS.sandbox
+
+    paymentPayload = {
+      gatewayUrl,
+      MerchantID: env.NEWEBPAY_MERCHANT_ID,
+      TradeInfo: tradeInfo,
+      TradeSha: tradeSha,
+      Version: MPG_VERSION,
+    }
+  } catch (e) {
+    paymentError = e instanceof Error ? e.message : String(e)
+    console.warn('[newebpay] payment prepare failed (Shopify unpaid kept)', paymentError)
+  }
 
   console.log('[newebpay] checkout', {
     merchantOrderNo,
@@ -275,22 +295,22 @@ async function handleCheckout(request, env, cors) {
     beadsSubtotal,
     designFee,
     shipping,
+    shopifyOrderId: record.shopifyOrderId,
+    paymentReady: Boolean(paymentPayload),
   })
 
   return json(
     {
       ok: true,
-      gatewayUrl,
-      MerchantID: env.NEWEBPAY_MERCHANT_ID,
-      TradeInfo: tradeInfo,
-      TradeSha: tradeSha,
-      Version: MPG_VERSION,
       merchantOrderNo,
       amountTwd: amt,
       breakdown: { beadsSubtotal, designFee, shipping },
       shopifyOrderId: record.shopifyOrderId,
       shopifyOrderName: record.shopifyOrderName,
       h5Status: record.h5Status || 'unpaid',
+      paymentReady: Boolean(paymentPayload),
+      paymentError,
+      ...(paymentPayload || {}),
     },
     200,
     cors,

@@ -7,12 +7,12 @@ H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在
 ```text
 收貨資訊「立即付款」
   → POST /api/checkout
-       ① Shopify Admin 建立「未付款」訂單（financial_status=pending, pearl:unpaid）
-       ② Worker KV 存 pending + AES 加簽
-  → 瀏覽器 POST 表單 → 藍新 MPG
+       ① 必做：Shopify Admin 建立「未付款」訂單（與藍新是否就緒無關）
+       ② 可選：AES 加簽 → 回傳藍新 MPG 參數（失敗不回滾 Shopify 單）
+  → 若 paymentReady：瀏覽器 POST → 藍新 MPG
   → 支付成功 NotifyURL / ReturnURL
        → 驗簽 → 既有 Shopify 單標記已付款 + pearl:scheduling（排單中）
-  → 支付失敗 / 取消
+  → 支付失敗 / 取消 / 藍新未就緒
        → Shopify 單維持未付款（pending / pearl:unpaid）
   → 後續履約（後台 tag / 出貨）
        → 設計中 → 運送中 → 待提貨 → 已完成 → 已關閉
