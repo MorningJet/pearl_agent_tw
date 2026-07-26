@@ -705,8 +705,6 @@ async function resolveDesignFeeVariantId(env) {
 
 /**
  * 備註：藍新訂單號、手圍、商品編碼（編號每顆一行）.
- * Shopify 訂單列表氣泡會把 \\n 摺成空格；改用 U+2028 LINE SEPARATOR，
- * 在 Admin 預覽裡通常仍會強制換行。
  * @param {object} record
  * @param {{ tradeNo?: string, paymentType?: string, payTime?: string }} pay
  * @returns {string}
@@ -728,7 +726,7 @@ function buildNote(record, pay = {}) {
     lines.push('商品編碼：')
     for (const row of codeLines) lines.push(row)
   }
-  return lines.join('\u2028')
+  return lines.join('\n')
 }
 
 /**
@@ -756,7 +754,7 @@ function formatProductCodeLines(record) {
         .filter(Boolean)
     } else if (raw.includes('+')) {
       ids = raw.split('+').map((s) => s.trim()).filter(Boolean)
-    } else if (!raw.includes('\n') && !raw.includes('\u2028')) {
+    } else if (!raw.includes('\n')) {
       ids = [raw]
     }
   }
@@ -792,14 +790,6 @@ function buildNoteAttributes(record, pay, h5Status) {
       ? String(Number(record.wristCmNum))
       : String(record.wristCm || '')
 
-  const codeLines = formatProductCodeLines(record)
-  /** @type {Array<{ name: string, value: string }>} */
-  const codeAttrs = codeLines.map((line, i) => {
-    const id = line.replace(/^\d+\.\s*/, '').trim()
-    const n = String(i + 1).padStart(2, '0')
-    return { name: `編碼${n}`, value: id }
-  })
-
   return [
     { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
     { name: 'newebpay_trade_no', value: String(pay?.tradeNo || '') },
@@ -813,7 +803,6 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_amount_twd', value: String(record.amountTwd || 0) },
     { name: 'pearl_member_email', value: String(record.email || '') },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
-    ...codeAttrs,
   ].filter((a) => a.value)
 }
 
