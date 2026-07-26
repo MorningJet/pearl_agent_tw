@@ -30,3 +30,7 @@ SHOPIFY_STORE_DOMAIN = "pearl-diy.myshopify.com"
 SHOPIFY_API_VERSION = "2025-01"
 # Set to "1" only while NewebPay is pending review (disable in production)
 ALLOW_DEV_SIMULATE = "1"
+
+# Secrets (also):
+#   npx wrangler secret put SHOPIFY_CLIENT_ID
+#   npx wrangler secret put SHOPIFY_CLIENT_SECRET

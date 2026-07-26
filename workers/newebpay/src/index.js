@@ -13,7 +13,7 @@
  */
 
 import { getOrder, putOrder } from './store.js'
-import { createPaidShopifyOrder } from './shopify.js'
+import { createPaidShopifyOrder, isShopifyAuthConfigured } from './shopify.js'
 
 const GATEWAYS = {
   sandbox: 'https://ccore.newebpay.com/MPG/mpg_gateway',
@@ -42,9 +42,7 @@ export default {
         return json(
           {
             ok: true,
-            shopifyConfigured: Boolean(
-              shopDomain(env) && String(env.SHOPIFY_ADMIN_TOKEN || '').trim(),
-            ),
+            shopifyConfigured: isShopifyAuthConfigured(env),
             ordersKv: Boolean(env.ORDERS),
             allowDevSimulate: isDevSimulateEnabled(env),
           },
@@ -406,9 +404,10 @@ async function markPaidAndSyncShopify(env, merchantOrderNo, pay) {
 async function syncShopifyFromRecord(env, record, pay) {
   if (record.shopifyOrderId) return record
 
-  if (!shopDomain(env) || !String(env.SHOPIFY_ADMIN_TOKEN || '').trim()) {
+  if (!isShopifyAuthConfigured(env)) {
     record.status = 'shopify_failed'
-    record.shopifyError = '未設定 Shopify Admin（SHOPIFY_STORE_DOMAIN / TOKEN）'
+    record.shopifyError =
+      '未設定 Shopify 憑證（SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET，或舊版 SHOPIFY_ADMIN_TOKEN）'
     await putOrder(env, record.merchantOrderNo, record)
     console.error('[shopify]', record.shopifyError)
     return record

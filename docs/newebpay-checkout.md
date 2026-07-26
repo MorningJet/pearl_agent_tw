@@ -15,27 +15,30 @@ H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在
 金額 = 珠款小計 + 設計費 + 運費（珠款 ≥ NT$1000 免運，否則 NT$50）。  
 **不經 Shopify Checkout**，一般不產生 Shopify 第三方結帳手續費。
 
-## Shopify Admin Token（藍新過審前可先做好）
+## Shopify Admin（Dev Dashboard — 新店唯一方式）
 
-1. Shopify Admin → **設定** → **應用程式和銷售管道** → **開發應用程式** → 建立 App  
-2. Admin API 權限至少勾選：`write_orders`、`read_orders`（建議再加 `write_order_edits` 視需求）  
-3. 安裝 App，複製 **Admin API access token**  
-4. 寫入本機 `workers/newebpay/.dev.vars`：
+商店後台已無法新建舊版「自訂應用」`shpat_`。請用 Dev Dashboard：
+
+1. 設定 → 應用 → 開發應用 → **在 Dev Dashboard 中構建應用**（或沿用已建的 `order_update`）
+2. 應用 **Versions / 版本** → 建立版本，Admin API scopes 勾選：
+   - `write_orders`
+   - `read_orders`
+3. **Release / 發布** 該版本
+4. **Install / 安裝到** `pearl-diy` 商店（必須安裝，否則換 token 會失敗）
+5. **Settings / 設置** 複製：
+   - Client ID
+   - Client Secret（加密密钥）
+6. 寫入 `workers/newebpay/.dev.vars`（勿提交 git、勿貼聊天）：
 
 ```bash
 SHOPIFY_STORE_DOMAIN=pearl-diy.myshopify.com
-SHOPIFY_ADMIN_TOKEN=shpat_xxx
-SHOPIFY_API_VERSION=2025-01
-ALLOW_DEV_SIMULATE=1
+SHOPIFY_CLIENT_ID=你的ClientID
+SHOPIFY_CLIENT_SECRET=你的ClientSecret
 ```
 
-正式環境用：
+Worker 會用 [client_credentials](https://shopify.dev/docs/apps/build/authentication-authorization/access-tokens/client-credentials-grant) 自動換 ~24h access token，無需手填 `shpat_`。
 
-```bash
-npx wrangler secret put SHOPIFY_ADMIN_TOKEN
-```
-
-並在 `wrangler.toml` `[vars]` 設定 `SHOPIFY_STORE_DOMAIN`。
+正式：`npx wrangler secret put SHOPIFY_CLIENT_ID` 與 `SHOPIFY_CLIENT_SECRET`。
 
 ## 本機
 

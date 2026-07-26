@@ -1,6 +1,14 @@
 /**
  * Create a paid Shopify order via Admin REST API (outside Checkout → no 3P checkout fee).
+ *
+ * Auth (Dev Dashboard apps — preferred):
+ *   SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET → client_credentials (token ~24h, auto-refresh)
+ * Legacy (admin-created custom apps):
+ *   SHOPIFY_ADMIN_TOKEN (static shpat_…)
  */
+
+/** @type {{ token: string, expiresAt: number } | null} */
+let cachedToken = null
 
 /**
  * @param {any} env
@@ -10,10 +18,10 @@
  */
 export async function createPaidShopifyOrder(env, record, pay = {}) {
   const domain = shopDomain(env)
-  const token = String(env.SHOPIFY_ADMIN_TOKEN || '').trim()
+  const token = await getAdminAccessToken(env)
   const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
-  if (!domain || !token) {
-    throw new Error('未設定 SHOPIFY_STORE_DOMAIN / SHOPIFY_ADMIN_TOKEN')
+  if (!domain) {
+    throw new Error('未設定 SHOPIFY_STORE_DOMAIN')
   }
 
   const amt = Math.round(Number(pay.amt || record.amountTwd) || 0)
@@ -112,6 +120,75 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
     name: created.name || String(created.id),
     adminUrl: `https://${domain}/admin/orders/${created.id}`,
   }
+}
+
+/**
+ * Dev Dashboard apps: client_credentials (~24h). Legacy: static SHOPIFY_ADMIN_TOKEN.
+ * @param {any} env
+ * @returns {Promise<string>}
+ */
+export async function getAdminAccessToken(env) {
+  const staticToken = String(env.SHOPIFY_ADMIN_TOKEN || '').trim()
+  const clientId = String(env.SHOPIFY_CLIENT_ID || '').trim()
+  const clientSecret = String(env.SHOPIFY_CLIENT_SECRET || '').trim()
+  const domain = shopDomain(env)
+
+  if (clientId && clientSecret && domain) {
+    const now = Date.now()
+    if (cachedToken && cachedToken.expiresAt > now + 60_000) {
+      return cachedToken.token
+    }
+    const res = await fetch(`https://${domain}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: clientId,
+        client_secret: clientSecret,
+      }),
+    })
+    const text = await res.text()
+    /** @type {any} */
+    let data
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw new Error(`Shopify token 回應非 JSON（${res.status}）：${clip(text, 200)}`)
+    }
+    if (!res.ok || !data?.access_token) {
+      throw new Error(
+        `Shopify 換取 access_token 失敗（${res.status}）：${clip(
+          JSON.stringify(data),
+          300,
+        )}`,
+      )
+    }
+    const expiresIn = Number(data.expires_in) || 86399
+    cachedToken = {
+      token: String(data.access_token),
+      expiresAt: now + expiresIn * 1000,
+    }
+    return cachedToken.token
+  }
+
+  if (staticToken) return staticToken
+
+  throw new Error(
+    '未設定 Shopify 憑證：請填 SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET（Dev Dashboard），或舊版 SHOPIFY_ADMIN_TOKEN',
+  )
+}
+
+/**
+ * @param {any} env
+ */
+export function isShopifyAuthConfigured(env) {
+  const domain = shopDomain(env)
+  if (!domain) return false
+  if (String(env.SHOPIFY_ADMIN_TOKEN || '').trim()) return true
+  return Boolean(
+    String(env.SHOPIFY_CLIENT_ID || '').trim() &&
+      String(env.SHOPIFY_CLIENT_SECRET || '').trim(),
+  )
 }
 
 /**
