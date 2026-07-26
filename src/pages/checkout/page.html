@@ -1,4 +1,4 @@
-<div id="page-checkout" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+<div id="page-checkout" class="relative hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
   <header class="page-header">
     <button type="button" id="checkout-back" class="page-header-side rounded-full" aria-label="返回">
       <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
@@ -176,5 +176,44 @@
     >
       立即付款
     </button>
+  </div>
+
+  <!-- Shown when payment opens in a breakout window (Cloudflare challenge must be visible). -->
+  <div
+    id="checkout-pay-overlay"
+    class="absolute inset-0 z-30 hidden flex-col bg-white/95 px-5"
+    style="padding-top: max(var(--safe-top, 0px), env(safe-area-inset-top, 0px))"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="checkout-pay-overlay-title"
+  >
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
+      <h2
+        id="checkout-pay-overlay-title"
+        class="text-base font-semibold text-stone-900"
+      >
+        請在新視窗完成付款
+      </h2>
+      <p
+        id="checkout-pay-overlay-body"
+        class="mt-3 max-w-xs text-sm leading-relaxed text-stone-600"
+      >
+        付款頁已在新視窗開啟。若出現人機驗證，請在該視窗完成後繼續。
+      </p>
+      <button
+        type="button"
+        id="checkout-pay-retry"
+        class="mt-8 w-full max-w-xs rounded-full bg-stone-900 py-2.5 text-sm font-semibold text-white active:opacity-90"
+      >
+        重新開啟付款
+      </button>
+      <button
+        type="button"
+        id="checkout-pay-dismiss"
+        class="mt-3 w-full max-w-xs rounded-full border border-stone-300 bg-white py-2.5 text-sm font-medium text-stone-700 active:bg-stone-50"
+      >
+        返回修改資料
+      </button>
+    </div>
   </div>
 </div>

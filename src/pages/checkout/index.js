@@ -63,6 +63,9 @@ let submitInFlight = false
 /** Avoid overlapping address lookups when email changes quickly. */
 let shippingPrefillSeq = 0
 
+/** @type {ReturnType<typeof window.setTimeout> | null} */
+let submitRecoverTimer = null
+
 /**
  * @param {HTMLElement} host
  */
@@ -76,6 +79,19 @@ export function initCheckoutPage(host) {
   document.getElementById('checkout-submit')?.addEventListener('click', () => {
     void submitCheckout()
   })
+  document
+    .getElementById('checkout-pay-retry')
+    ?.addEventListener('click', () => {
+      hidePayBreakoutOverlay()
+      resetSubmitButton()
+      void submitCheckout()
+    })
+  document
+    .getElementById('checkout-pay-dismiss')
+    ?.addEventListener('click', () => {
+      hidePayBreakoutOverlay()
+      resetSubmitButton()
+    })
   bindTwAddressSelects()
   bindPhoneInput()
   bindEmailPrefill()
@@ -404,8 +420,8 @@ async function submitCheckout() {
   }
 
   submitInFlight = true
+  clearSubmitRecoverTimer()
   const btn = document.getElementById('checkout-submit')
-  const prevLabel = btn?.textContent
   if (btn) {
     btn.setAttribute('disabled', 'true')
     btn.textContent = '前往付款…'
@@ -417,7 +433,8 @@ async function submitCheckout() {
       refreshMyDesignsPage()
     })
 
-    // Leave Shopify iframe via top-level form POST — fetch() to workers.dev hangs on CF challenges inside iframes.
+    // Must run in the click turn: open visible top-level window, then POST.
+    // fetch()/iframe POST to workers.dev hangs on Cloudflare challenges.
     const nav = startNewebpayCheckoutBrowser(draft.bom, {
       designName: draft.designName,
       wristCm: draft.wristCm,
@@ -436,22 +453,87 @@ async function submitCheckout() {
 
     if (!nav.ok) {
       showToast(nav.error)
+      resetSubmitButton()
       return
     }
 
     setMemberIdFromEmail(parsed.email)
     refreshMePage()
-    // Navigation in progress — keep button disabled.
+
+    if (nav.mode === 'popup') {
+      showPayBreakoutOverlay({
+        title: '請在新視窗完成付款',
+        body: '付款頁已在新視窗開啟。若出現人機驗證（Cloudflare），請在該視窗完成驗證後繼續前往藍新金流。',
+      })
+      // Keep CTA usable if the popup was closed or blocked mid-flight.
+      submitRecoverTimer = window.setTimeout(() => {
+        resetSubmitButton()
+        showToast('若未看到付款頁，請允許彈出視窗後再點「重新開啟付款」')
+      }, 12000)
+      return
+    }
+
+    if (nav.mode === 'top') {
+      showPayBreakoutOverlay({
+        title: '正在離開商店頁前往付款',
+        body: '瀏覽器可能攔截了彈出視窗，改為在整個頁面開啟付款。若出現人機驗證，請直接在本頁完成。若長時間無反應，請允許彈出視窗後重試。',
+      })
+      submitRecoverTimer = window.setTimeout(() => {
+        resetSubmitButton()
+        showToast('仍停留在本頁？請允許彈出視窗後點「重新開啟付款」')
+      }, 8000)
+      return
+    }
+
+    // Same-tab navigation — page should unload; recover if it does not.
+    submitRecoverTimer = window.setTimeout(() => {
+      resetSubmitButton()
+      showToast('前往付款逾時，請再試一次')
+    }, 15000)
   } catch (err) {
     console.error('[checkout] submit failed', err)
     const msg = err instanceof Error ? err.message : String(err || '未知錯誤')
     showToast(`下單失敗：${msg}`)
-    submitInFlight = false
-    if (btn) {
-      btn.removeAttribute('disabled')
-      if (prevLabel) btn.textContent = prevLabel
-    }
+    hidePayBreakoutOverlay()
+    resetSubmitButton()
   }
+}
+
+function clearSubmitRecoverTimer() {
+  if (submitRecoverTimer != null) {
+    window.clearTimeout(submitRecoverTimer)
+    submitRecoverTimer = null
+  }
+}
+
+function resetSubmitButton() {
+  clearSubmitRecoverTimer()
+  submitInFlight = false
+  const btn = document.getElementById('checkout-submit')
+  if (!btn) return
+  btn.removeAttribute('disabled')
+  btn.textContent = '立即付款'
+}
+
+/**
+ * @param {{ title: string, body: string }} copy
+ */
+function showPayBreakoutOverlay(copy) {
+  const overlay = document.getElementById('checkout-pay-overlay')
+  const titleEl = document.getElementById('checkout-pay-overlay-title')
+  const bodyEl = document.getElementById('checkout-pay-overlay-body')
+  if (titleEl) titleEl.textContent = copy.title
+  if (bodyEl) bodyEl.textContent = copy.body
+  if (!overlay) return
+  overlay.classList.remove('hidden')
+  overlay.classList.add('flex')
+}
+
+function hidePayBreakoutOverlay() {
+  const overlay = document.getElementById('checkout-pay-overlay')
+  if (!overlay) return
+  overlay.classList.add('hidden')
+  overlay.classList.remove('flex')
 }
 
 /**

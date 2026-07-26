@@ -397,20 +397,41 @@ function newebpayAutoSubmitHtml(p) {
     .card{max-width:20rem;padding:1.5rem;text-align:center}
     p{margin:0.5rem 0;font-size:0.95rem}
     .muted{color:#78716c;font-size:0.8rem}
+    noscript button{margin-top:1rem;padding:0.6rem 1.2rem;border:0;border-radius:999px;background:#292524;color:#fff;font-size:0.875rem}
   </style>
 </head>
 <body>
   <div class="card">
     <p>正在前往藍新金流…</p>
     <p class="muted">訂單 ${escapeHtml(p.merchantOrderNo)}</p>
+    <p class="muted">若本頁停住或出現人機驗證，請在本視窗完成驗證</p>
   </div>
   <form id="newebpay-form" method="POST" action="${escapeAttr(p.gatewayUrl)}" accept-charset="UTF-8">
     <input type="hidden" name="MerchantID" value="${escapeAttr(p.MerchantID)}" />
     <input type="hidden" name="TradeInfo" value="${escapeAttr(p.TradeInfo)}" />
     <input type="hidden" name="TradeSha" value="${escapeAttr(p.TradeSha)}" />
     <input type="hidden" name="Version" value="${escapeAttr(p.Version)}" />
+    <noscript><button type="submit">前往藍新付款</button></noscript>
   </form>
-  <script>document.getElementById('newebpay-form').submit()</script>
+  <script>
+    (function () {
+      var form = document.getElementById('newebpay-form');
+      try { form.submit(); } catch (e) {}
+      // If auto-submit is blocked, surface a manual CTA after a short wait.
+      setTimeout(function () {
+        if (document.visibilityState === 'hidden') return;
+        var card = document.querySelector('.card');
+        if (!card || card.querySelector('[data-manual-pay]')) return;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-manual-pay', '1');
+        btn.textContent = '點此前往藍新付款';
+        btn.style.cssText = 'margin-top:1rem;padding:0.65rem 1.25rem;border:0;border-radius:999px;background:#292524;color:#fff;font-size:0.875rem;font-weight:600';
+        btn.addEventListener('click', function () { form.submit(); });
+        card.appendChild(btn);
+      }, 2500);
+    })();
+  </script>
 </body>
 </html>`
   return new Response(html, {
