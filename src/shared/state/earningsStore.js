@@ -40,10 +40,15 @@ export const EARNINGS_TAX_RATE = 0.05
  * }} EarningsSummary
  */
 
-const STORAGE_KEY = 'pearl-tw.earningsOrders.v1'
+/** v2: drop seeded demo / local test earnings from v1 localStorage */
+const STORAGE_KEY = 'pearl-tw.earningsOrders.v2'
 
 /** @type {EarningsOrder[] | null} */
 let cache = null
+
+function isDemoEarningsId(id) {
+  return String(id).startsWith('earn-demo-')
+}
 
 function readAll() {
   if (cache) return cache
@@ -54,7 +59,14 @@ function readAll() {
       return cache
     }
     const parsed = JSON.parse(raw)
-    cache = Array.isArray(parsed) ? parsed : []
+    const list = Array.isArray(parsed) ? parsed : []
+    const cleaned = list.filter((o) => !isDemoEarningsId(o?.id))
+    if (cleaned.length !== list.length) {
+      cache = cleaned
+      writeAll(cleaned)
+      return cache
+    }
+    cache = cleaned
   } catch {
     cache = []
   }
@@ -162,7 +174,6 @@ export function listMyEarningsOrders() {
 
 /** @returns {EarningsSummary} */
 export function getEarningsSummary() {
-  ensureDemoEarningsOrders()
   const orders = listMyEarningsOrders()
   let availableTwd = 0
   let pendingTwd = 0
@@ -179,73 +190,6 @@ export function getEarningsSummary() {
     totalTwd: availableTwd + pendingTwd,
     orders,
   }
-}
-
-/**
- * Seed one sample per status for the signed-in designer (idempotent by demo ids).
- */
-export function ensureDemoEarningsOrders() {
-  const memberId = getMemberId()
-  const demos = buildDemoEarningsOrders(memberId)
-  const withoutDemo = readAll().filter((o) => !String(o.id).startsWith('earn-demo-'))
-  writeAll([...demos, ...withoutDemo])
-}
-
-/** @param {string} designerId */
-function buildDemoEarningsOrders(designerId) {
-  const now = Date.now()
-  const day = 24 * 60 * 60 * 1000
-  /** @type {EarningsOrder[]} */
-  return [
-    {
-      id: 'earn-demo-making',
-      publishId: 'pub-demo-budream',
-      designTitle: '捕夢網',
-      unitPriceTwd: 99,
-      buyerMemberId: '883401',
-      designerId,
-      status: 'making',
-      settledNetTwd: 0,
-      createdAt: now - day * 0.5,
-      updatedAt: now - day * 0.5,
-    },
-    {
-      id: 'earn-demo-shipping',
-      publishId: 'pub-demo-liuli',
-      designTitle: '金色琉璃',
-      unitPriceTwd: 89,
-      buyerMemberId: '774210',
-      designerId,
-      status: 'shipping',
-      settledNetTwd: 0,
-      createdAt: now - day * 2,
-      updatedAt: now - day,
-    },
-    {
-      id: 'earn-demo-pending',
-      publishId: 'pub-demo-caihong',
-      designTitle: '彩虹',
-      unitPriceTwd: 60,
-      buyerMemberId: '651088',
-      designerId,
-      status: 'pending_settle',
-      settledNetTwd: 0,
-      createdAt: now - day * 5,
-      updatedAt: now - day * 3,
-    },
-    {
-      id: 'earn-demo-settled',
-      publishId: 'pub-demo-jinyu',
-      designTitle: '金玉滿堂',
-      unitPriceTwd: 120,
-      buyerMemberId: '502933',
-      designerId,
-      status: 'settled',
-      settledNetTwd: netAfterTax(120),
-      createdAt: now - day * 10,
-      updatedAt: now - day * 8,
-    },
-  ]
 }
 
 function newEarningsOrderId() {

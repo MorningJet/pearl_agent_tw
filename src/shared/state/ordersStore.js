@@ -2,8 +2,6 @@
  * Orders (local persistence). Populated when checkout ships; empty by default.
  */
 
-import { withBase } from '../assetUrl.js'
-
 /**
  * @typedef {{
  *   id: string,
@@ -25,10 +23,15 @@ import { withBase } from '../assetUrl.js'
  * }} Order
  */
 
-const STORAGE_KEY = 'pearl-tw.orders.v1'
+/** v2: drop seeded demo orders from v1 localStorage */
+const STORAGE_KEY = 'pearl-tw.orders.v2'
 
 /** @type {Order[] | null} */
 let cache = null
+
+function isDemoOrderId(id) {
+  return String(id).startsWith('ord-demo-')
+}
 
 function readAll() {
   if (cache) return cache
@@ -39,7 +42,14 @@ function readAll() {
       return cache
     }
     const parsed = JSON.parse(raw)
-    cache = Array.isArray(parsed) ? parsed : []
+    const list = Array.isArray(parsed) ? parsed : []
+    const cleaned = list.filter((o) => !isDemoOrderId(o?.id))
+    if (cleaned.length !== list.length) {
+      cache = cleaned
+      writeAll(cleaned)
+      return cache
+    }
+    cache = cleaned
   } catch {
     cache = []
   }
@@ -58,7 +68,6 @@ function writeAll(list) {
 
 /** Newest first. @returns {Order[]} */
 export function listOrders() {
-  ensureDemoOrders()
   return readAll()
     .slice()
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
@@ -66,7 +75,6 @@ export function listOrders() {
 
 /** @param {string} id */
 export function getOrder(id) {
-  ensureDemoOrders()
   return readAll().find((o) => o.id === id) || null
 }
 
@@ -118,85 +126,6 @@ export function orderStatusLabel(status) {
     default:
       return '處理中'
   }
-}
-
-/** Seed one sample order per tab status (idempotent by demo ids). */
-export function ensureDemoOrders() {
-  const demos = buildDemoOrders()
-  const withoutDemo = readAll().filter((o) => !String(o.id).startsWith('ord-demo-'))
-  writeAll([...demos, ...withoutDemo])
-}
-
-function buildDemoOrders() {
-  const now = Date.now()
-  const day = 24 * 60 * 60 * 1000
-  const addr = {
-    recipientName: '王小明',
-    recipientPhone: '0912-345-678',
-    recipientAddress: '台北市大安區忠孝東路四段 100 號 5 樓',
-  }
-  /** @type {Order[]} */
-  return [
-    {
-      id: 'ord-demo-making',
-      title: '捕夢網',
-      status: 'making',
-      amountTwd: 1025,
-      createdAt: now - day * 0.3,
-      paidAt: now - day * 0.3,
-      imageUrl: withBase('/plaza/pub-dca45881-9c67-4dd0-b6f7-c1fcfbe3bcf4.png'),
-      wristCm: 15.5,
-      beadsSubtotalTwd: 926,
-      designFeeTwd: 99,
-      shippingTwd: 0,
-      ...addr,
-    },
-    {
-      id: 'ord-demo-shipping',
-      title: '金色琉璃',
-      status: 'shipping',
-      amountTwd: 968,
-      createdAt: now - day * 2,
-      paidAt: now - day * 2,
-      imageUrl: withBase('/plaza/pub-e08d746d-a3c1-4af2-b999-affff7c64ac5.png'),
-      wristCm: 16.0,
-      beadsSubtotalTwd: 879,
-      designFeeTwd: 89,
-      shippingTwd: 0,
-      trackingNo: 'TW1234567890',
-      ...addr,
-    },
-    {
-      id: 'ord-demo-done',
-      title: '漸變',
-      status: 'done',
-      amountTwd: 1137,
-      createdAt: now - day * 7,
-      paidAt: now - day * 7,
-      imageUrl: withBase('/plaza/pub-029d61e7-facb-4963-9d7b-440fe70b8343.png'),
-      wristCm: 14.8,
-      beadsSubtotalTwd: 1118,
-      designFeeTwd: 19,
-      shippingTwd: 0,
-      trackingNo: 'TW9876543210',
-      ...addr,
-    },
-    {
-      id: 'ord-demo-cancelled',
-      title: '彩虹',
-      status: 'cancelled',
-      amountTwd: 860,
-      createdAt: now - day * 4,
-      paidAt: now - day * 4,
-      imageUrl: withBase('/plaza/pub-283e7097-b146-47db-82be-84a7b0ab7d3e.png'),
-      wristCm: 15.2,
-      beadsSubtotalTwd: 771,
-      designFeeTwd: 39,
-      shippingTwd: 50,
-      cancelReason: '買家取消',
-      ...addr,
-    },
-  ]
 }
 
 function newOrderId() {
