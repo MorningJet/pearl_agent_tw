@@ -7,6 +7,7 @@ import {
   showOrderGuidePage,
   showTab,
 } from '../../shared/nav.js'
+import { startNewDesign } from '../../shared/state/designStore.js'
 import { listHomePlazaFeed, plazaMediaTile } from './plazaData.js'
 import { bindTap } from '../../shared/ui/bindTap.js'
 import { withBase } from '../../shared/assetUrl.js'
@@ -273,6 +274,7 @@ function renderPlazaPlaceholders() {
 
 function bindActions() {
   document.getElementById('home-cta-bracelet')?.addEventListener('click', () => {
+    startNewDesign()
     showDiyPage()
   })
 
