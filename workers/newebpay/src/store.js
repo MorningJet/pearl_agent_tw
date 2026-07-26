@@ -203,3 +203,110 @@ export async function listShopifyOrderIndexByEmail(env, email) {
     return []
   }
 }
+
+/**
+ * Replace email → order index (Shopify Admin is source of truth).
+ * @param {any} env
+ * @param {string} email
+ * @param {object[]} rows
+ */
+export async function replaceShopifyOrderIndexByEmail(env, email, rows) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized || !normalized.includes('@')) return
+  const key = emailOrdersKey(normalized)
+  const list = (Array.isArray(rows) ? rows : [])
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => ({
+      shopifyOrderId: row.shopifyOrderId ? String(row.shopifyOrderId) : null,
+      shopifyOrderName: row.shopifyOrderName || null,
+      merchantOrderNo: row.merchantOrderNo ? String(row.merchantOrderNo) : null,
+      updatedAt: Number(row.updatedAt) || Date.now(),
+    }))
+    .filter((row) => row.shopifyOrderId || row.merchantOrderNo)
+    .slice(0, 80)
+  await kvPut(env, key, JSON.stringify(list))
+}
+
+/**
+ * Drop one order from every email index entry that matches its keys.
+ * @param {any} env
+ * @param {{ shopifyOrderId?: string, merchantOrderNo?: string, email?: string }} keys
+ */
+export async function removeShopifyOrderFromEmailIndex(env, keys) {
+  const shopifyOrderId = String(keys?.shopifyOrderId || '').trim()
+  const merchantOrderNo = String(keys?.merchantOrderNo || '').trim()
+  if (!shopifyOrderId && !merchantOrderNo) return
+
+  const email = String(keys?.email || '').trim().toLowerCase()
+  /** @type {string[]} */
+  const emails = email && email.includes('@') ? [email] : []
+
+  // If email unknown, try resolve from existing mirror then still need that key's index.
+  if (!emails.length && shopifyOrderId) {
+    const mirror = await getShopifyOrderMirror(env, { shopifyOrderId })
+    const mirroredEmail = String(mirror?.email || '').trim().toLowerCase()
+    if (mirroredEmail && mirroredEmail.includes('@')) emails.push(mirroredEmail)
+  }
+
+  for (const em of emails) {
+    const key = emailOrdersKey(em)
+    const raw = await kvGet(env, key)
+    if (!raw) continue
+    /** @type {object[]} */
+    let list = []
+    try {
+      const parsed = JSON.parse(raw)
+      list = Array.isArray(parsed) ? parsed : []
+    } catch {
+      continue
+    }
+    const next = list.filter((row) => {
+      if (!row || typeof row !== 'object') return false
+      if (shopifyOrderId && String(row.shopifyOrderId || '') === shopifyOrderId) return false
+      if (merchantOrderNo && String(row.merchantOrderNo || '') === merchantOrderNo) return false
+      return true
+    })
+    if (next.length !== list.length) {
+      await kvPut(env, key, JSON.stringify(next))
+    }
+  }
+}
+
+/**
+ * Delete Shopify order mirror keys (and email index entry).
+ * @param {any} env
+ * @param {{ shopifyOrderId?: string, shopifyOrderName?: string, merchantOrderNo?: string, email?: string }} keys
+ */
+export async function deleteShopifyOrderMirror(env, keys) {
+  let shopifyOrderId = String(keys?.shopifyOrderId || '').trim()
+  let shopifyOrderName = String(keys?.shopifyOrderName || '').trim()
+  let merchantOrderNo = String(keys?.merchantOrderNo || '').trim()
+  let email = String(keys?.email || '').trim().toLowerCase()
+
+  if (shopifyOrderId) {
+    const existing = await getShopifyOrderMirror(env, { shopifyOrderId })
+    if (existing) {
+      if (!email || !email.includes('@')) {
+        email = String(existing.email || '').trim().toLowerCase()
+      }
+      if (!shopifyOrderName) shopifyOrderName = String(existing.shopifyOrderName || '').trim()
+      if (!merchantOrderNo) merchantOrderNo = String(existing.merchantOrderNo || '').trim()
+    }
+  }
+
+  await removeShopifyOrderFromEmailIndex(env, {
+    shopifyOrderId,
+    merchantOrderNo,
+    email,
+  })
+
+  if (env.ORDERS) {
+    if (shopifyOrderId) await env.ORDERS.delete(shopifyIdKey(shopifyOrderId))
+    if (shopifyOrderName) await env.ORDERS.delete(shopifyNameKey(shopifyOrderName))
+    if (merchantOrderNo) await env.ORDERS.delete(shopifyMerchantKey(merchantOrderNo))
+  } else {
+    if (shopifyOrderId) memory.delete(shopifyIdKey(shopifyOrderId))
+    if (shopifyOrderName) memory.delete(shopifyNameKey(shopifyOrderName))
+    if (merchantOrderNo) memory.delete(shopifyMerchantKey(merchantOrderNo))
+  }
+}

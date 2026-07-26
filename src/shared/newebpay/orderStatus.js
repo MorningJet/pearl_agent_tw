@@ -9,6 +9,7 @@ import {
   normalizeStatus,
   orderIdFromKeys,
   patchOrderFromRemote,
+  reconcileOrdersForEmail,
   upsertOrder,
 } from '../state/ordersStore.js'
 
@@ -157,6 +158,10 @@ export async function syncOrdersFromServer() {
 
   const email = resolveMemberEmail()
   let remoteCount = 0
+  /** @type {string[] | null} */
+  let emailListShopifyIds = null
+  /** @type {string[] | null} */
+  let emailListMerchantNos = null
 
   if (email) {
     try {
@@ -167,10 +172,21 @@ export async function syncOrdersFromServer() {
       /** @type {any} */
       const data = await res.json().catch(() => null)
       if (res.ok && data?.ok && Array.isArray(data.orders)) {
+        emailListShopifyIds = []
+        emailListMerchantNos = []
         for (const remote of data.orders) {
           applyRemoteOrder(remote)
           remoteCount += 1
+          const sid = remote.shopifyOrderId != null ? String(remote.shopifyOrderId).trim() : ''
+          const mno = remote.merchantOrderNo != null ? String(remote.merchantOrderNo).trim() : ''
+          if (sid) emailListShopifyIds.push(sid)
+          if (mno) emailListMerchantNos.push(mno)
         }
+        // Shopify (via Worker) is source of truth — drop local ghosts for this email.
+        reconcileOrdersForEmail(email, {
+          shopifyOrderIds: emailListShopifyIds,
+          merchantOrderNos: emailListMerchantNos,
+        })
       }
     } catch (e) {
       console.warn('[orders-sync] email list failed', e)

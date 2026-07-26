@@ -411,6 +411,46 @@ export function patchOrderFromRemote(id, patch) {
 }
 
 /**
+ * Drop local orders for a buyer email that are no longer on Shopify / Worker.
+ * @param {string} email
+ * @param {{ shopifyOrderIds?: string[], merchantOrderNos?: string[] }} remoteKeys
+ * @returns {number} removed count
+ */
+export function reconcileOrdersForEmail(email, remoteKeys = {}) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized || !normalized.includes('@')) return 0
+
+  const remoteShopify = new Set(
+    (Array.isArray(remoteKeys.shopifyOrderIds) ? remoteKeys.shopifyOrderIds : [])
+      .map((id) => String(id || '').trim())
+      .filter(Boolean),
+  )
+  const remoteMerchant = new Set(
+    (Array.isArray(remoteKeys.merchantOrderNos) ? remoteKeys.merchantOrderNos : [])
+      .map((id) => String(id || '').trim())
+      .filter(Boolean),
+  )
+
+  const list = readAll().slice()
+  let removed = 0
+  const next = list.filter((o) => {
+    const orderEmail = String(o.email || '').trim().toLowerCase()
+    if (orderEmail !== normalized) return true
+
+    const sid = String(o.shopifyOrderId || '').trim()
+    const mno = String(o.merchantOrderNo || '').trim()
+    if (!sid && !mno) return true
+    if (sid && remoteShopify.has(sid)) return true
+    if (mno && remoteMerchant.has(mno)) return true
+    removed += 1
+    return false
+  })
+
+  if (removed) writeAll(next)
+  return removed
+}
+
+/**
  * @param {Order[]} list
  * @param {{ id: string, shopifyOrderId?: string | number | null, merchantOrderNo?: string | null }} keys
  */

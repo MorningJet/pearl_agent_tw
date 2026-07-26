@@ -8,7 +8,15 @@
  * Secret:   SHOPIFY_WEBHOOK_SECRET (= webhook signing secret)
  */
 
-import { getOrder, putOrder, getShopifyOrderMirror, putShopifyOrderMirror, listShopifyOrderIndexByEmail } from './store.js'
+import {
+  getOrder,
+  putOrder,
+  getShopifyOrderMirror,
+  putShopifyOrderMirror,
+  listShopifyOrderIndexByEmail,
+  replaceShopifyOrderIndexByEmail,
+  deleteShopifyOrderMirror,
+} from './store.js'
 import { isShopifyAuthConfigured, listShopifyOrdersByEmail } from './shopify.js'
 
 /** @typedef {'unpaid'|'scheduling'|'designing'|'shipping'|'pickup'|'done'|'closed'} H5OrderStatus */
@@ -42,6 +50,24 @@ export async function handleShopifyWebhook(request, env) {
     payload = JSON.parse(rawBody)
   } catch {
     return json({ ok: false, error: 'invalid json' }, 400)
+  }
+
+  // Deleted Shopify orders must leave H5 — do not keep KV ghosts.
+  if (topic === 'orders/delete') {
+    const shopifyOrderId = payload?.id != null ? String(payload.id) : ''
+    if (shopifyOrderId) {
+      await deleteShopifyOrderMirror(env, {
+        shopifyOrderId,
+        shopifyOrderName: payload?.name != null ? String(payload.name) : '',
+        email: String(payload?.email || ''),
+        merchantOrderNo:
+          readNoteAttr(payload, 'newebpay_merchant_order_no') ||
+          readNoteAttr(payload, 'pearl_merchant_order_no') ||
+          '',
+      })
+      console.log('[shopify-webhook]', { topic, id: shopifyOrderId, deleted: true })
+    }
+    return json({ ok: true, topic, deleted: true, shopifyOrderId }, 200)
   }
 
   const order = await resolveOrderPayload(topic, payload, env)
@@ -178,29 +204,12 @@ export async function handleH5OrdersByEmail(url, env, cors) {
   /** @type {Map<string, object>} */
   const byId = new Map()
 
-  const index = await listShopifyOrderIndexByEmail(env, email)
-  for (const row of index) {
-    const id = String(row?.shopifyOrderId || '').trim()
-    const mno = String(row?.merchantOrderNo || '').trim()
-    let mirror = null
-    if (id) mirror = await getShopifyOrderMirror(env, { shopifyOrderId: id })
-    if (!mirror && mno) mirror = await getShopifyOrderMirror(env, { merchantOrderNo: mno })
-    if (!mirror && mno) {
-      const record = await getOrder(env, mno)
-      if (record) {
-        byId.set(mno, { ...publicFromCheckoutRecord(record), email })
-      }
-      continue
-    }
-    if (mirror) {
-      const key = String(mirror.shopifyOrderId || mirror.merchantOrderNo || '')
-      if (key) byId.set(key, publicMirror(mirror))
-    }
-  }
-
+  // Shopify Admin is source of truth when configured — never return KV-only ghosts.
   if (isShopifyAuthConfigured(env)) {
     try {
       const adminOrders = await listShopifyOrdersByEmail(env, email, { limit: 50 })
+      /** @type {object[]} */
+      const indexRows = []
       for (const order of adminOrders) {
         const mirror = buildMirror(order, 'admin/list')
         const merged = await mergeMirrorPreservingBom(env, mirror)
@@ -223,19 +232,52 @@ export async function handleH5OrdersByEmail(url, env, cors) {
             }
           }
         }
+        if (!merged.email) merged.email = email
         await putShopifyOrderMirror(env, merged)
         const key = String(merged.shopifyOrderId || merged.merchantOrderNo || '')
         if (key) byId.set(key, publicMirror(merged))
+        indexRows.push({
+          shopifyOrderId: merged.shopifyOrderId || null,
+          shopifyOrderName: merged.shopifyOrderName || null,
+          merchantOrderNo: merged.merchantOrderNo || null,
+          updatedAt: merged.updatedAt || Date.now(),
+        })
       }
+      await replaceShopifyOrderIndexByEmail(env, email, indexRows)
+      const orders = [...byId.values()].sort(
+        (a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0),
+      )
+      return json({ ok: true, source: 'shopify', orders }, 200, cors)
     } catch (e) {
       console.warn('[h5-orders] admin list failed', e instanceof Error ? e.message : e)
+      // Fall through to KV index only when Admin is unavailable.
+    }
+  }
+
+  const index = await listShopifyOrderIndexByEmail(env, email)
+  for (const row of index) {
+    const id = String(row?.shopifyOrderId || '').trim()
+    const mno = String(row?.merchantOrderNo || '').trim()
+    let mirror = null
+    if (id) mirror = await getShopifyOrderMirror(env, { shopifyOrderId: id })
+    if (!mirror && mno) mirror = await getShopifyOrderMirror(env, { merchantOrderNo: mno })
+    if (!mirror && mno) {
+      const record = await getOrder(env, mno)
+      if (record) {
+        byId.set(mno, { ...publicFromCheckoutRecord(record), email })
+      }
+      continue
+    }
+    if (mirror) {
+      const key = String(mirror.shopifyOrderId || mirror.merchantOrderNo || '')
+      if (key) byId.set(key, publicMirror(mirror))
     }
   }
 
   const orders = [...byId.values()].sort(
     (a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0),
   )
-  return json({ ok: true, orders }, 200, cors)
+  return json({ ok: true, source: 'kv', orders }, 200, cors)
 }
 
 /**
