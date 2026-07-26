@@ -108,7 +108,7 @@ export async function createCheckoutFromBom(bom, meta) {
 
   const note = [
     `設計：${meta.designName || ''}`,
-    meta.wristCm ? `腕圍 ≈ ${meta.wristCm}cm` : '',
+    meta.wristCm ? `手圍 ≈ ${meta.wristCm}cm` : '',
     `珠款 NT$${beadsSubtotal}`,
     fee > 0 ? `設計費 NT$${fee}` : '',
     imageUrl ? `預覽：${imageUrl}` : '',

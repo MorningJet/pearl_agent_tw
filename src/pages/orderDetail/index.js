@@ -85,7 +85,7 @@ function detailHtml(o) {
   const total = Math.max(0, Math.round(Number(o.amountTwd) || 0))
   const wrist =
     typeof o.wristCm === 'number' && Number.isFinite(o.wristCm)
-      ? `腕圍 ≈ ${o.wristCm.toFixed(1)}cm`
+      ? `手圍 ≈ ${o.wristCm.toFixed(1)}cm`
       : ''
 
   const tracking =

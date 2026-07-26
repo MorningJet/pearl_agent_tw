@@ -967,8 +967,8 @@ function renderDetailsUnsafe() {
   if (wristEl) {
     const label = statusLabel(status)
     wristEl.textContent = label
-      ? `腕圍 ≈ ${formatCm(mm)}cm（${label}）`
-      : `腕圍 ≈ ${formatCm(mm)}cm`
+      ? `手圍 ≈ ${formatCm(mm)}cm（${label}）`
+      : `手圍 ≈ ${formatCm(mm)}cm`
   }
 
   const usesEl = document.getElementById('details-uses')
@@ -1030,7 +1030,7 @@ function renderDetailsUnsafe() {
   const feeList = document.getElementById('details-fee-summary')
   if (feeList && showFeeSummary) {
     const designFee = designFeeTwd
-    const wristLabel = `腕圍 ${formatCm(mm)}cm`
+    const wristLabel = `手圍 ${formatCm(mm)}cm`
     feeList.innerHTML =
       `
       <li class="flex items-start justify-between gap-3 py-2.5 text-sm">
