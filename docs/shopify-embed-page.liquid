@@ -5,10 +5,13 @@
   Checkout (Cloudflare) also hangs if it stays inside a short iframe.
 
   Setup:
-  1. Online Store → Themes → Edit code → Templates → Add a new template → page
+  1. Online Store → Themes → Edit code → Templates → Add template → page
   2. Name it e.g. "pearl-diy" and paste this file
   3. Create/open a Page, set Theme template → pearl-diy
-  4. Replace IFRAME_SRC with your GitHub Pages URL (?embed=1)
+  4. Do NOT put a second iframe in the Page body — this template is the embed
+
+  Cache: `v={{ 'now' | date: '%s' }}` auto-busts the iframe on each page load.
+  You do NOT need to edit this URL after every GitHub Pages deploy.
 {% endcomment %}
 {% layout none %}
 <!doctype html>
@@ -20,6 +23,7 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#ffffff" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>{{ page.title | default: shop.name }}</title>
     <style>
       html,
@@ -44,7 +48,7 @@
   <body>
     <iframe
       id="pearl-diy-frame"
-      src="https://morningjet.github.io/pearl_agent_tw/?embed=1&v=20260726c"
+      src="https://morningjet.github.io/pearl_agent_tw/?embed=1&v={{ 'now' | date: '%s' }}"
       title="Pearl Pearl DIY"
       allow="payment *"
       referrerpolicy="strict-origin-when-cross-origin"
