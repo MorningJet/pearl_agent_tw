@@ -49,7 +49,7 @@
  *   email?: string,
  *   bomDisplay?: 'fee' | 'sku',
  *   bom?: OrderBomLine[],
- *   shippingAddress?: import('../domain/shippingAddress.js').ShopifyShippingAddress | null,
+ *   paymentType?: string,
  * }} Order
  */
 
@@ -169,17 +169,8 @@ function normalizeOrder(raw) {
     email: String(o.email || ''),
     bomDisplay: o.bomDisplay === 'fee' || o.bomDisplay === 'sku' ? o.bomDisplay : undefined,
     bom: normalizeBomLines(o.bom),
-    shippingAddress: normalizeStoredShipping(o.shippingAddress),
+    paymentType: String(o.paymentType || ''),
   }
-}
-
-/**
- * @param {unknown} raw
- * @returns {import('../domain/shippingAddress.js').ShopifyShippingAddress | undefined}
- */
-function normalizeStoredShipping(raw) {
-  if (!raw || typeof raw !== 'object') return undefined
-  return /** @type {import('../domain/shippingAddress.js').ShopifyShippingAddress} */ (raw)
 }
 
 /**
@@ -300,7 +291,7 @@ export function upsertOrder(input) {
     email: input.email || '',
     bomDisplay: input.bomDisplay === 'fee' || input.bomDisplay === 'sku' ? input.bomDisplay : undefined,
     bom: normalizeBomLines(input.bom),
-    shippingAddress: input.shippingAddress || undefined,
+    paymentType: input.paymentType || '',
   }
   if (idx >= 0) {
     const prev = list[idx]
@@ -323,7 +314,7 @@ export function upsertOrder(input) {
       merchantOrderNo: next.merchantOrderNo || prev.merchantOrderNo || '',
       bomDisplay: next.bomDisplay || prev.bomDisplay,
       bom: next.bom?.length ? next.bom : prev.bom || [],
-      shippingAddress: next.shippingAddress || prev.shippingAddress,
+      paymentType: next.paymentType || prev.paymentType || '',
     }
     writeAll(list)
     return list[idx]
@@ -351,7 +342,7 @@ export function upsertOrder(input) {
  *   imageUrl?: string,
  *   bomDisplay?: 'fee' | 'sku',
  *   bom?: import('./ordersStore.js').OrderBomLine[],
- *   shippingAddress?: import('../domain/shippingAddress.js').ShopifyShippingAddress | null,
+ *   paymentType?: string,
  * }} patch
  */
 export function patchOrderFromRemote(id, patch) {
@@ -397,22 +388,19 @@ export function patchOrderFromRemote(id, patch) {
       patch.wristCm != null && Number.isFinite(Number(patch.wristCm))
         ? Number(patch.wristCm)
         : prev.wristCm,
-    imageUrl: patch.imageUrl ? String(patch.imageUrl) : prev.imageUrl,
+    imageUrl:
+      patch.imageUrl != null && String(patch.imageUrl).trim()
+        ? String(patch.imageUrl)
+        : prev.imageUrl,
     bomDisplay:
       patch.bomDisplay === 'fee' || patch.bomDisplay === 'sku'
         ? patch.bomDisplay
         : prev.bomDisplay,
     bom: bom.length ? bom : prev.bom || [],
-    shippingAddress: patch.shippingAddress || prev.shippingAddress,
-    recipientName: patch.recipientName
-      ? String(patch.recipientName)
-      : prev.recipientName,
-    recipientPhone: patch.recipientPhone
-      ? String(patch.recipientPhone)
-      : prev.recipientPhone,
-    recipientAddress: patch.recipientAddress
-      ? String(patch.recipientAddress)
-      : prev.recipientAddress,
+    paymentType:
+      patch.paymentType != null && String(patch.paymentType).trim()
+        ? String(patch.paymentType)
+        : prev.paymentType,
   }
   writeAll(list)
   return list[idx]

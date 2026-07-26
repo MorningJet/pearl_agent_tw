@@ -36,6 +36,7 @@ import {
  *     unitPrice?: number,
  *     lineTotal?: number,
  *   }>,
+ *   paymentType?: string,
  * }} RemoteOrder
  */
 
@@ -276,6 +277,7 @@ function applyRemoteOrder(remote) {
       imageUrl: remote.imageUrl,
       bomDisplay: remote.bomDisplay,
       bom: remote.bom,
+      paymentType: remote.paymentType,
     })
     return
   }
@@ -299,5 +301,6 @@ function applyRemoteOrder(remote) {
     email: String(remote.email || ''),
     bomDisplay: remote.bomDisplay,
     bom: remote.bom,
+    paymentType: remote.paymentType || '',
   })
 }

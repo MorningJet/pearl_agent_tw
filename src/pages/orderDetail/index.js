@@ -13,11 +13,6 @@ import {
   orderStatusLabel,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
-import {
-  formatShopifyShippingAddress,
-  normalizeShopifyShippingAddress,
-  shippingRecipientName,
-} from '../../shared/domain/shippingAddress.js'
 import { syncOneOrderFromServer } from '../../shared/newebpay/orderStatus.js'
 
 /** @type {string} */
@@ -77,6 +72,16 @@ export function refreshOrderDetailPage() {
   }
   empty.classList.add('hidden')
   body.innerHTML = detailHtml(order)
+  body.querySelectorAll('img[data-order-thumb]').forEach((el) => {
+    if (!(el instanceof HTMLImageElement)) return
+    el.addEventListener('error', () => {
+      const fallback = document.createElement('div')
+      fallback.className =
+        'flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400'
+      fallback.textContent = '設計圖'
+      el.replaceWith(fallback)
+    })
+  })
 }
 
 /**
@@ -84,9 +89,9 @@ export function refreshOrderDetailPage() {
  */
 function detailHtml(o) {
   const status = normalizeStatus(o.status)
-  const img = o.imageUrl ? withBase(o.imageUrl) : ''
+  const img = orderImageSrc(o.imageUrl)
   const media = img
-    ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
+    ? `<img data-order-thumb src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-xs text-stone-400">設計圖</div>`
 
   const fees = resolveOrderFees(o)
@@ -137,8 +142,17 @@ function detailHtml(o) {
           class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800 active:bg-stone-50"
         >申請退款</button>`
       : ''
+
+  // Unpaid: action button aligns with helper copy. Other statuses: with custom-goods note.
+  const unpaidActionRow =
+    status === 'unpaid' && actionBtn
+      ? `<div class="mt-3 flex items-center justify-between gap-2">
+      <p class="min-w-0 flex-1 text-sm leading-snug text-stone-500">請完成付款後開始排單製作。</p>
+      ${actionBtn}
+    </div>`
+      : ''
   const noteRefundRow =
-    showNote || actionBtn
+    status !== 'unpaid' && (showNote || actionBtn)
       ? `<div class="mt-3 flex items-center gap-2 ${
           showNote ? 'justify-between' : 'justify-end'
         }">
@@ -153,18 +167,13 @@ function detailHtml(o) {
     </div>`
       : ''
 
-  const hasAddress =
-    o.shippingAddress || o.recipientName || o.recipientPhone || o.recipientAddress
-  const shipAddr = normalizeShopifyShippingAddress(o.shippingAddress)
-  const recipientName = shippingRecipientName(shipAddr) || o.recipientName || '—'
-  const recipientPhone = shipAddr?.phone || o.recipientPhone || ''
-  const recipientAddress =
-    formatShopifyShippingAddress(shipAddr) || o.recipientAddress || ''
+  const hasAddress = o.recipientName || o.recipientPhone || o.recipientAddress
   const paidLabel = status === 'unpaid' ? '建立時間' : '付款時間'
   const paidValue =
     status === 'unpaid'
       ? formatTime(o.createdAt)
       : formatTime(o.paidAt || o.createdAt)
+  const paymentMethodLabel = formatPaymentMethod(o, status)
 
   return `
     <section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
@@ -174,7 +183,7 @@ function detailHtml(o) {
           formatTime(o.paidAt || o.createdAt),
         )}</p>
       </div>
-      ${statusProgressHtml(status)}
+      ${status === 'unpaid' ? unpaidActionRow : statusProgressHtml(status)}
       ${closedNote}
       ${tracking}
       ${noteRefundRow}
@@ -185,13 +194,13 @@ function detailHtml(o) {
         ? `<section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
       <p class="text-xs font-medium text-stone-400">收件資訊</p>
       <p class="mt-2 text-sm font-medium text-stone-900">
-        ${escapeHtml(recipientName)}
+        ${escapeHtml(o.recipientName || '—')}
         <span class="ml-2 font-normal tabular-nums text-stone-600">${escapeHtml(
-          recipientPhone,
+          o.recipientPhone || '',
         )}</span>
       </p>
       <p class="mt-1 text-sm leading-relaxed text-stone-600">${escapeHtml(
-        recipientAddress,
+        o.recipientAddress || '',
       )}</p>
     </section>`
         : ''
@@ -236,9 +245,7 @@ function detailHtml(o) {
         </li>
         <li class="flex items-start justify-between gap-3">
           <span class="shrink-0 text-stone-500">付款方式</span>
-          <span class="text-right text-stone-800">${
-            status === 'unpaid' ? '待付款' : '線上付款'
-          }</span>
+          <span class="text-right text-stone-800">${escapeHtml(paymentMethodLabel)}</span>
         </li>
       </ul>
     </section>
@@ -389,7 +396,8 @@ function statusProgressHtml(status) {
     return `<p class="mt-3 text-sm text-stone-500">此訂單已關閉。</p>`
   }
   if (status === 'unpaid') {
-    return `<p class="mt-3 text-sm text-stone-500">請完成付款後開始排單製作。</p>`
+    // Action row is rendered separately (button aligned with helper text).
+    return ''
   }
 
   const steps = [
@@ -426,6 +434,61 @@ function statusProgressHtml(status) {
         })
         .join('')}
     </ol>`
+}
+
+/**
+ * @param {string | undefined} url
+ */
+function orderImageSrc(url) {
+  const u = String(url || '').trim()
+  if (!u) return ''
+  if (/^(https?:|data:|blob:)/i.test(u)) return u
+  return withBase(u)
+}
+
+/**
+ * NewebPay PaymentType → Traditional Chinese label.
+ * @param {import('../../shared/state/ordersStore.js').Order} o
+ * @param {import('../../shared/state/ordersStore.js').OrderStatus} status
+ */
+function formatPaymentMethod(o, status) {
+  if (status === 'unpaid') return '待付款'
+  const raw = String(o.paymentType || '').trim()
+  if (!raw) return '線上付款'
+  switch (raw.toUpperCase()) {
+    case 'CREDIT':
+    case 'CREDITCARD':
+      return '信用卡'
+    case 'WEBATM':
+      return '網路ATM'
+    case 'VACC':
+      return 'ATM轉帳'
+    case 'CVS':
+      return '超商代碼繳費'
+    case 'BARCODE':
+      return '超商條碼繳費'
+    case 'LINEPAY':
+    case 'LINE_PAY':
+      return 'LINE Pay'
+    case 'ESUNWALLET':
+      return '玉山 Wallet'
+    case 'TAIWANPAY':
+      return '台灣 Pay'
+    case 'APPLEPAY':
+      return 'Apple Pay'
+    case 'GOOGLEPAY':
+      return 'Google Pay'
+    case 'SAMSUNGPAY':
+      return 'Samsung Pay'
+    case 'FULA':
+      return '全盈+PAY'
+    case 'BNPL':
+      return 'BNPL 先買後付'
+    case 'SIMULATE':
+      return '模擬付款'
+    default:
+      return raw
+  }
 }
 
 /** @param {number} ts */

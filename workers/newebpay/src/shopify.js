@@ -909,6 +909,11 @@ function buildNoteAttributes(record, pay, h5Status) {
     { name: 'pearl_shipping_twd', value: String(record.shipping ?? '') },
     { name: 'pearl_member_email', value: String(record.email || '') },
     { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
+    { name: 'newebpay_payment_type', value: String(pay?.paymentType || '') },
+    {
+      name: 'pearl_design_image_url',
+      value: String(record.designImageUrl || '').slice(0, 500),
+    },
   ].filter((a) => a.value)
 }
 

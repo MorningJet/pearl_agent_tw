@@ -220,6 +220,11 @@ function publicDesignImageUrl(url) {
   if (/^https?:\/\//i.test(u)) return u
   try {
     const base = new URL(import.meta.env.BASE_URL || '/', window.location.origin)
+    // Avoid double-prefix when caller already applied withBase()/BASE_URL.
+    const basePath = base.pathname.endsWith('/') ? base.pathname : `${base.pathname}/`
+    if (u.startsWith(basePath) || u.startsWith(base.href)) {
+      return new URL(u, window.location.origin).href
+    }
     return new URL(u.replace(/^\//, ''), base).href
   } catch {
     return u
