@@ -107,21 +107,31 @@ function detailHtml(o) {
         )}</p>`
       : ''
 
-  const customNote = showsCustomGoodsNote(status)
-    ? `<p class="mt-3 text-[0.65rem] leading-relaxed text-stone-400">${escapeHtml(
-        CUSTOM_GOODS_NOTE,
-      )}</p>`
-    : ''
-
-  const refund = canRequestRefund(status)
-    ? `<div class="mt-3 flex justify-end">
-        <button
+  const showNote = showsCustomGoodsNote(status)
+  const showRefund = canRequestRefund(status)
+  const noteRefundRow =
+    showNote || showRefund
+      ? `<div class="mt-3 flex items-center gap-2 ${
+          showNote ? 'justify-between' : 'justify-end'
+        }">
+      ${
+        showNote
+          ? `<p class="min-w-0 flex-1 text-[0.65rem] leading-snug text-stone-400">${escapeHtml(
+              CUSTOM_GOODS_NOTE,
+            )}</p>`
+          : ''
+      }
+      ${
+        showRefund
+          ? `<button
           type="button"
           data-refund-order="${escapeAttr(o.id)}"
-          class="rounded-full border border-stone-300 px-4 py-1.5 text-xs font-medium text-stone-800 active:bg-stone-50"
-        >申請退款</button>
-      </div>`
-    : ''
+          class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800 active:bg-stone-50"
+        >申請退款</button>`
+          : ''
+      }
+    </div>`
+      : ''
 
   const hasAddress = o.recipientName || o.recipientPhone || o.recipientAddress
   const paidLabel = status === 'unpaid' ? '建立時間' : '付款時間'
@@ -140,9 +150,8 @@ function detailHtml(o) {
       </div>
       ${statusProgressHtml(status)}
       ${closedNote}
-      ${customNote}
       ${tracking}
-      ${refund}
+      ${noteRefundRow}
     </section>
 
     ${

@@ -57,7 +57,7 @@ export const CUSTOM_NOTE_STATUSES = new Set([
 ])
 
 export const CUSTOM_GOODS_NOTE =
-  '（訂製商品不支援 7 日鑑賞期，如有品質問題退貨請聯繫客服處理）'
+  '訂製商品不適用七日鑑賞期，品質疑慮請洽客服'
 
 /** Filter tab order (excluding「全部」). */
 export const ORDER_STATUS_FILTERS = /** @type {const} */ ([

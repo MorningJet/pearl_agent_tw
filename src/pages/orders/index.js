@@ -97,19 +97,31 @@ function orderCardHtml(o) {
     ? `<img src="${escapeAttr(img)}" alt="" class="h-full w-full object-cover" />`
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400">設計圖</div>`
 
-  const refund = canRequestRefund(status)
-    ? `<button
+  const showNote = showsCustomGoodsNote(status)
+  const showRefund = canRequestRefund(status)
+  const footer =
+    showNote || showRefund
+      ? `<div class="mt-2 flex items-center gap-2 ${
+          showNote ? 'justify-between' : 'justify-end'
+        }">
+      ${
+        showNote
+          ? `<p class="min-w-0 flex-1 text-[0.58rem] leading-snug text-stone-400">${escapeHtml(
+              CUSTOM_GOODS_NOTE,
+            )}</p>`
+          : ''
+      }
+      ${
+        showRefund
+          ? `<button
         type="button"
         data-refund-id="${escapeAttr(o.id)}"
-        class="mt-2 rounded-full border border-stone-300 px-3 py-1 text-[0.7rem] font-medium text-stone-800 active:bg-stone-50"
+        class="shrink-0 rounded-full border border-stone-300 px-2.5 py-0.5 text-[0.65rem] font-medium text-stone-800 active:bg-stone-50"
       >申請退款</button>`
-    : ''
-
-  const note = showsCustomGoodsNote(status)
-    ? `<p class="mt-2 text-[0.65rem] leading-relaxed text-stone-400">${escapeHtml(
-        CUSTOM_GOODS_NOTE,
-      )}</p>`
-    : ''
+          : ''
+      }
+    </div>`
+      : ''
 
   return `
   <li>
@@ -137,8 +149,7 @@ function orderCardHtml(o) {
           </div>
         </div>
       </button>
-      ${note}
-      ${refund ? `<div class="mt-1 flex justify-end">${refund}</div>` : ''}
+      ${footer}
     </div>
   </li>`
 }
