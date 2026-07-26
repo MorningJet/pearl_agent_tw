@@ -17,6 +17,7 @@ import {
   setMemberIdFromEmail,
 } from '../../shared/state/userProfileStore.js'
 import { fetchLatestShippingAddress } from '../../shared/newebpay/shippingAddress.js'
+import { incrementDesignerCount } from '../../shared/state/designerCountStore.js'
 import {
   isTwMobilePhone,
   joinTwFullName,
@@ -26,6 +27,7 @@ import {
   normalizeTwPlaceName,
 } from '../../shared/data/twAddress.js'
 import { refreshMePage } from '../me/index.js'
+import { refreshMyDesignsPage } from '../myDesigns/index.js'
 
 /**
  * @typedef {{
@@ -414,6 +416,10 @@ async function submitCheckout() {
 
   try {
     draft.onBeforePay?.()
+    // Social-proof designer count: +1 per「立即付款」click.
+    void incrementDesignerCount().then(() => {
+      refreshMyDesignsPage()
+    })
 
     const result = await createNewebpayCheckout(draft.bom, {
       designName: draft.designName,

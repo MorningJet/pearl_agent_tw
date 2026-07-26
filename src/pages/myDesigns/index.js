@@ -28,6 +28,11 @@ import { resolvePlazaPreviewUrl, testPhotoTile } from '../home/plazaData.js'
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { withBase } from '../../shared/assetUrl.js'
+import {
+  fetchDesignerCount,
+  formatDesignerCount,
+  getDesignerCountLocal,
+} from '../../shared/state/designerCountStore.js'
 
 /** Legacy demo seeds that used empty “測試照片” previews. */
 const LEGACY_MIA_SEED_IDS = ['mia-p1', 'mia-p7']
@@ -291,11 +296,17 @@ function continueDesign(id) {
 function renderMyDesigns() {
   renderSavedRail()
   renderPublishedRail()
+  renderDesignerCountFooter(getDesignerCountLocal())
+  void fetchDesignerCount().then((count) => {
+    renderDesignerCountFooter(count)
+  })
+}
 
+/** @param {number} count */
+function renderDesignerCountFooter(count) {
   const footer = document.getElementById('my-designs-footer')
-  if (footer) {
-    footer.textContent = '已有 9,999 位設計師把靈感變成現實'
-  }
+  if (!footer) return
+  footer.textContent = `已有 ${formatDesignerCount(count)} 位設計師把靈感變成現實`
 }
 
 function renderSavedRail() {

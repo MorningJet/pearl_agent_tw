@@ -154,7 +154,7 @@ export function getPlazaUseCount(id, fallback = 0) {
 }
 
 /**
- * +1 use when visitor taps「立即購買」on plaza details.
+ * +1 use when visitor taps「立即下單」on plaza / plaza-edit details.
  * @param {string} id
  * @param {number} [fallback] seed/master count when not in publish store
  * @returns {{ id: string, useCount: number } | null}

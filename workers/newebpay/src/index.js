@@ -23,9 +23,10 @@
  *   POST /api/h5/order-status/batch
  *   GET  /api/h5/orders?email=
  *   GET  /api/h5/shipping-address?email=
+ *   GET/POST /api/h5/designer-count
  */
 
-import { getOrder, putOrder } from './store.js'
+import { getOrder, putOrder, getDesignerCount, incrementDesignerCount } from './store.js'
 import {
   createPaidShopifyOrder,
   createUnpaidShopifyOrder,
@@ -102,6 +103,16 @@ export default {
 
       if (url.pathname === '/api/h5/shipping-address' && request.method === 'GET') {
         return await handleH5ShippingAddress(url, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/designer-count' && request.method === 'GET') {
+        const count = await getDesignerCount(env)
+        return json({ ok: true, count }, 200, cors)
+      }
+
+      if (url.pathname === '/api/h5/designer-count' && request.method === 'POST') {
+        const count = await incrementDesignerCount(env)
+        return json({ ok: true, count }, 200, cors)
       }
 
       if (url.pathname === '/api/h5/order-status/batch' && request.method === 'POST') {

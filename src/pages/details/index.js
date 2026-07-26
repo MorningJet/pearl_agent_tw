@@ -512,6 +512,11 @@ function buyNow() {
 
   buyInFlight = true
   try {
+    // Plaza use count: +1 when tapping「立即下單」(not on payment).
+    if (detailsMode === 'plaza' || detailsMode === 'plaza-edit') {
+      recordPlazaUseOnOrderClick()
+    }
+
     openCheckout({
       bom,
       designName: getDesignName(),
@@ -530,7 +535,7 @@ function buyNow() {
       amountTwd,
       onBeforePay: isPlaza
         ? () => {
-            recordPlazaPurchaseUse({ silent: true })
+            recordPlazaEarningsOnPay()
           }
         : undefined,
     })
@@ -541,35 +546,42 @@ function buyNow() {
 }
 
 /**
- * 「立即下單」確認付款時計 1 次使用，並為設計師建立收益訂單（製作中）.
- * @param {{ silent?: boolean }} [opts]
+ * 「立即下單」：廣場設計使用次數 +1.
  */
-function recordPlazaPurchaseUse(opts = {}) {
+function recordPlazaUseOnOrderClick() {
   const pub = plazaViewPub
-  if (!pub?.id) {
-    if (!opts.silent) showToast('無法記錄使用次數')
-    return
-  }
-  const next = incrementPlazaUseCount(pub.id, pub.useCount || 0)
-  const useCount = next?.useCount ?? (pub.useCount || 0) + 1
-  plazaViewPub = { ...pub, useCount }
-  void syncPlazaUseCount(pub.id, useCount)
+  const id = String(pub?.id || getAppliedPlazaPublishId() || '').trim()
+  if (!id) return
 
-  const designerId = String(pub.designerId || '').trim()
-  if (designerId) {
-    createEarningsOrder({
-      publishId: pub.id,
-      designTitle: pub.title,
-      unitPriceTwd: pub.usePriceTwd || 0,
-      designerId,
-      buyerMemberId: getMemberId(),
-    })
+  const fallback = pub?.useCount || 0
+  const next = incrementPlazaUseCount(id, fallback)
+  const useCount = next?.useCount ?? fallback + 1
+  if (pub?.id === id) {
+    plazaViewPub = { ...pub, useCount }
   }
-
+  void syncPlazaUseCount(id, useCount)
   renderDetails()
   refreshPlazaPage()
   refreshHomePlaza()
-  if (!opts.silent) showToast('已記錄使用')
+}
+
+/**
+ * 「立即付款」：為設計師建立收益訂單（製作中）.
+ */
+function recordPlazaEarningsOnPay() {
+  const pub = plazaViewPub
+  if (!pub?.id) return
+
+  const designerId = String(pub.designerId || '').trim()
+  if (!designerId) return
+
+  createEarningsOrder({
+    publishId: pub.id,
+    designTitle: pub.title,
+    unitPriceTwd: pub.usePriceTwd || 0,
+    designerId,
+    buyerMemberId: getMemberId(),
+  })
 }
 
 /** Load plaza template onto DIY canvas; keep design-use fee. */

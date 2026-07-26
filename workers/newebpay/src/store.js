@@ -49,6 +49,39 @@ async function kvGet(env, key) {
   return memory.get(key) || null
 }
 
+const DESIGNER_COUNT_KEY = 'stats:designer-count'
+const DESIGNER_COUNT_BASE = 2000
+
+/**
+ * Absolute designer social-proof count (min base 2000).
+ * @param {any} env
+ * @returns {Promise<number>}
+ */
+export async function getDesignerCount(env) {
+  const raw = await kvGet(env, DESIGNER_COUNT_KEY)
+  if (raw == null || raw === '') return DESIGNER_COUNT_BASE
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= DESIGNER_COUNT_BASE
+    ? Math.floor(n)
+    : DESIGNER_COUNT_BASE
+}
+
+/**
+ * +1 designer count (each「立即付款」click).
+ * @param {any} env
+ * @returns {Promise<number>}
+ */
+export async function incrementDesignerCount(env) {
+  const next = (await getDesignerCount(env)) + 1
+  // No TTL — permanent counter.
+  if (env.ORDERS) {
+    await env.ORDERS.put(DESIGNER_COUNT_KEY, String(next))
+  } else {
+    memory.set(DESIGNER_COUNT_KEY, String(next))
+  }
+  return next
+}
+
 /**
  * @param {any} env
  * @param {string} merchantOrderNo
