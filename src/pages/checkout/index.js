@@ -55,6 +55,8 @@ let submitInFlight = false
  * @param {HTMLElement} host
  */
 export function initCheckoutPage(host) {
+  // Replace any prior mount (HMR / double-init) so getElementById hits fresh markup.
+  document.getElementById('page-checkout')?.remove()
   mountFragment(checkoutHtml, host)
   document.getElementById('checkout-back')?.addEventListener('click', () => {
     showDetailsPage()
@@ -85,20 +87,29 @@ function renderDraft() {
   const price = document.getElementById('checkout-product-price')
   const media = document.getElementById('checkout-product-media')
   const bomEl = document.getElementById('checkout-bom')
+  const submitBtn = document.getElementById('checkout-submit')
+
+  // Always force current CTA copy (survives stale cached markup).
+  if (submitBtn) submitBtn.textContent = '立即付款'
 
   const beadsSubtotal = Math.max(0, Math.round(Number(draft.beadsSubtotalTwd) || 0))
   const designFee = Math.max(0, Math.round(Number(draft.designFeeTwd) || 0))
   const shippingTwd = Math.max(
     0,
     Math.round(
-      Number(draft.shippingTwd) ||
-        Math.max(0, Math.round(Number(draft.amountTwd) || 0) - beadsSubtotal - designFee),
+      Number.isFinite(Number(draft.shippingTwd))
+        ? Number(draft.shippingTwd)
+        : Math.max(0, Math.round(Number(draft.amountTwd) || 0) - beadsSubtotal - designFee),
     ),
   )
   const mode = String(draft.detailsMode || 'normal')
+  // Prefer explicit flag from details; also treat plaza publish / design fee as fee layout.
   const showFeeSummary =
     draft.bomDisplay === 'fee' ||
-    (!draft.bomDisplay && (mode === 'plaza' || mode === 'plaza-edit'))
+    mode === 'plaza' ||
+    mode === 'plaza-edit' ||
+    Boolean(String(draft.plazaPublishId || '').trim()) ||
+    (draft.bomDisplay !== 'sku' && designFee > 0)
 
   if (title) title.textContent = draft.designName || '手鍊設計'
   if (wrist) {
@@ -106,7 +117,6 @@ function renderDraft() {
   }
   if (price) {
     const badge = shippingTwd === 0 ? '（包郵）' : ''
-    // Match details header: bracelet (beads) price; fee rows below.
     price.textContent = `NT$${formatPrice(beadsSubtotal)}${badge}`
   }
   if (media) {
