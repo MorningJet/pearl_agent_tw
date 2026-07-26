@@ -7,6 +7,11 @@
 @source '../../index.html';
 
 @layer components {
+  /* DIY shelf tabs — rem only (never hard px; must follow uiScale). */
+  .shelf-tab {
+    @apply text-sm;
+  }
+
   .shelf-tab-active {
     @apply font-semibold text-stone-900 shadow-[inset_0_-2px_0_#1c1917];
   }
