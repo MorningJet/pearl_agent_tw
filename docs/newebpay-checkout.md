@@ -1,19 +1,39 @@
-# 藍新金流 MPG + Shopify Admin 回寫（方案 B）
+# 藍新金流 MPG + Shopify Admin 回寫
 
 H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在 [`workers/newebpay`](../workers/newebpay)。
 
-## 架構
+## 架構（對齊訂單流轉示意圖）
 
 ```text
-立即購買
-  → POST /api/checkout（Worker 存 pending 訂單 + AES 加簽）
+收貨資訊「立即付款」
+  → POST /api/checkout
+       ① Shopify Admin 建立「未付款」訂單（financial_status=pending, pearl:unpaid）
+       ② Worker KV 存 pending + AES 加簽
   → 瀏覽器 POST 表單 → 藍新 MPG
-  → NotifyURL / ReturnURL
-  → 驗簽 → 標記 paid → Shopify Admin API 建立「已付款」訂單（冪等）
+  → 支付成功 NotifyURL / ReturnURL
+       → 驗簽 → 既有 Shopify 單標記已付款 + pearl:scheduling（排單中）
+  → 支付失敗 / 取消
+       → Shopify 單維持未付款（pending / pearl:unpaid）
+  → 後續履約（後台 tag / 出貨）
+       → 設計中 → 運送中 → 待提貨 → 已完成 → 已關閉
 ```
 
 金額 = 珠款小計 + 設計費 + 運費（珠款 ≥ NT$1000 免運，否則 NT$50）。  
 **不經 Shopify Checkout**，一般不產生 Shopify 第三方結帳手續費。
+
+## 建單欄位（立即付款時寫入 Shopify）
+
+| 欄位 | 寫入位置 |
+|------|----------|
+| 客戶 email | `order.email` + `pearl_member_email` |
+| 商品（每種珠子顆數） | `line_items`（title / sku=`productId` / qty / price，與目錄 SKU 對應） |
+| 總計 | 藍新 `Amt` = 珠款 + 設計費 + 運費 |
+| 支付狀態 | 初值 `financial_status=pending`；藍新成功後改 paid |
+| H5 狀態 | `pearl_h5_status` + tag `pearl:unpaid` → 成功後 `pearl:scheduling` |
+| 商品編碼 | `pearl_bead_product_code`：串珠順序配件 id，以 `+` 連接 |
+| 手圍 | `pearl_wrist_cm`（note 亦寫「手圍 ≈ xcm」） |
+
+狀態對照與 Webhook 見 [shopify-order-webhooks.md](shopify-order-webhooks.md)。
 
 ## Shopify Admin（Dev Dashboard — 新店唯一方式）
 
@@ -44,16 +64,16 @@ Worker 會用 [client_credentials](https://shopify.dev/docs/apps/build/authentic
 
 ```bash
 cp workers/newebpay/.dev.vars.example workers/newebpay/.dev.vars
-# 填 HashKey/HashIV + SHOPIFY_ADMIN_TOKEN
+# 填 HashKey/HashIV + Shopify 憑證
 
 npm run newebpay:dev   # :8787
 npm run dev            # :5173  且 .env 有 VITE_NEWEBPAY_API_BASE=/newebpay-api
 ```
 
-### 藍新尚未過審時：模擬付款 → 測 Shopify 寫回
+### 藍新尚未過審時：模擬付款 → 測「未付款 → 排單中」
 
-1. 在詳情頁點「立即購買」（會跳藍新並可能顯示「查無商店代號」——可忽略）  
-2. 看 Worker 日誌裡的 `merchantOrderNo`（或對 `/api/checkout` 自己打一筆拿回單號）  
+1. 在詳情頁點「立即購買」→ 收貨資訊填寫 →「立即付款」  
+2. Worker 應已在 Shopify 建立 **未付款** 單；日誌有 `unpaid order created` 與 `merchantOrderNo`  
 3. 模擬付款成功：
 
 ```bash
@@ -62,26 +82,26 @@ curl -sS -X POST http://127.0.0.1:8787/api/dev/simulate-paid \
   -d '{"merchantOrderNo":"P你的單號"}'
 ```
 
-4. 到 Shopify Admin → **訂單** 應出現已付款單（tag: `newebpay`）  
+4. 到 Shopify Admin → **訂單** 應變為已付款，tag 含 `pearl:scheduling`  
 5. 查狀態：`GET http://127.0.0.1:8787/api/order/P你的單號`
 
-也可只打 checkout API 拿單號（不必真的跳藍新）：
+也可只打 checkout API（不必真的跳藍新）：
 
 ```bash
 curl -sS -X POST http://127.0.0.1:8787/api/checkout \
   -H 'Content-Type: application/json' \
-  -d '{"bom":[{"productId":"hmn_agt_6","name":"紅瑪瑙","diameterMm":6,"qty":1,"unitPrice":69,"lineTotal":69}],"designName":"同步測試","beadsSubtotalTwd":69,"designFeeTwd":0}'
+  -d '{"bom":[{"productId":"hmn_agt_6","name":"紅瑪瑙","diameterMm":6,"qty":1,"unitPrice":69,"lineTotal":69}],"designName":"同步測試","beadsSubtotalTwd":69,"designFeeTwd":0,"email":"test@example.com","beadProductCode":"hmn_agt_6","wristCm":"16"}'
 ```
 
 ## 上線
 
 1. 建立 KV：`npx wrangler kv namespace create pearl-newebpay-orders`（及 `--preview`），把 id 填进 `wrangler.toml`  
 2. `PUBLIC_API_BASE` = Worker 公網網址；`ALLOW_DEV_SIMULATE` 正式請改 `"0"`  
-3. Secrets：藍新三組 + `SHOPIFY_ADMIN_TOKEN`（建議再加 `ADMIN_SYNC_SECRET`）  
+3. Secrets：藍新三組 + Shopify 憑證（建議再加 `ADMIN_SYNC_SECRET`）  
 4. `npm run newebpay:deploy`  
 5. GitHub Secret `VITE_NEWEBPAY_API_BASE` = Worker 網址，觸發 Pages 建置  
 
-建單失敗可重試：
+若付款成功但 Shopify 標記失敗可重試：
 
 ```bash
 curl -X POST https://YOUR_WORKER/api/admin/retry-sync \
@@ -94,7 +114,7 @@ curl -X POST https://YOUR_WORKER/api/admin/retry-sync \
 
 - HashKey / HashIV / Admin Token / **Webhook Secret** 只放 Secrets / `.dev.vars`，勿進 git、勿 `VITE_*`  
 - 正式關閉 `ALLOW_DEV_SIMULATE`  
-- Notify 驗 `TradeSha`；Shopify 建單以 `shopifyOrderId` 冪等  
+- Notify 驗 `TradeSha`；付款標記以 `status=shopify_synced` + `h5Status=scheduling` 冪等  
 
 ## Shopify 訂單狀態 →「我的訂單」
 

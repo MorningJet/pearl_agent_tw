@@ -503,7 +503,7 @@ function buyNow() {
   const mm = totalCircumferenceMm(beads)
   const wristCm = formatCm(mm)
   const wristCmNum = Number((mm / 10).toFixed(1))
-  const beadProductCode = beads.map((b) => b.productId).filter(Boolean).join('-')
+  const beadProductCode = beads.map((b) => b.productId).filter(Boolean).join('+')
   const isPlaza = detailsMode === 'plaza'
   const isPlazaEdit = detailsMode === 'plaza-edit'
   const pub = plazaViewPub

@@ -1,5 +1,10 @@
 /**
- * Pearl Pearl — NewebPay MPG + Shopify Admin order sync (scheme B).
+ * Pearl Pearl — NewebPay MPG + Shopify Admin order sync.
+ *
+ * Flow:
+ *   立即付款 → create unpaid Shopify order + NewebPay MPG
+ *   支付成功 → mark Shopify paid → H5 排單中 (pearl:scheduling)
+ *   支付失敗 → Shopify 維持未付款
  *
  * Secrets (.dev.vars / wrangler secret):
  *   NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV
@@ -19,7 +24,12 @@
  */
 
 import { getOrder, putOrder } from './store.js'
-import { createPaidShopifyOrder, isShopifyAuthConfigured } from './shopify.js'
+import {
+  createPaidShopifyOrder,
+  createUnpaidShopifyOrder,
+  isShopifyAuthConfigured,
+  markShopifyOrderPaid,
+} from './shopify.js'
 import {
   handleH5OrderStatus,
   handleH5OrderStatusBatch,
@@ -179,6 +189,7 @@ async function handleCheckout(request, env, cors) {
   const record = {
     merchantOrderNo,
     status: 'pending',
+    h5Status: 'unpaid',
     amountTwd: amt,
     beadsSubtotal,
     designFee,
@@ -208,6 +219,29 @@ async function handleCheckout(request, env, cors) {
     shopifyOrderName: null,
     shopifyError: null,
     newebpay: null,
+  }
+
+  // 立即付款：先在 Shopify 建立「未付款」訂單，再導向藍新。
+  if (isShopifyAuthConfigured(env)) {
+    try {
+      const created = await createUnpaidShopifyOrder(env, record)
+      record.shopifyOrderId = created.id
+      record.shopifyOrderName = created.name
+      record.shopifyAdminUrl = created.adminUrl
+      record.shopifyError = null
+      record.h5Status = 'unpaid'
+      console.log('[shopify] unpaid order created', created)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('[shopify] unpaid create failed', msg)
+      return json(
+        { ok: false, error: `Shopify 建立未付款訂單失敗：${msg}` },
+        502,
+        cors,
+      )
+    }
+  } else {
+    console.warn('[shopify] auth not configured — skip unpaid order at checkout')
   }
 
   await putOrder(env, merchantOrderNo, record)
@@ -254,6 +288,9 @@ async function handleCheckout(request, env, cors) {
       merchantOrderNo,
       amountTwd: amt,
       breakdown: { beadsSubtotal, designFee, shipping },
+      shopifyOrderId: record.shopifyOrderId,
+      shopifyOrderName: record.shopifyOrderName,
+      h5Status: record.h5Status || 'unpaid',
     },
     200,
     cors,
@@ -371,10 +408,14 @@ async function handleRetrySync(request, env, cors) {
   }
   const record = await getOrder(env, merchantOrderNo)
   if (!record) return json({ ok: false, error: '找不到訂單' }, 404, cors)
-  if (record.shopifyOrderId) {
+  if (record.status === 'shopify_synced' && record.h5Status === 'scheduling') {
     return json({ ok: true, order: publicOrderView(record), skipped: true }, 200, cors)
   }
-  if (record.status !== 'paid' && record.status !== 'shopify_failed') {
+  if (
+    record.status !== 'paid' &&
+    record.status !== 'shopify_failed' &&
+    record.status !== 'shopify_synced'
+  ) {
     return json(
       { ok: false, error: `訂單狀態不可重試：${record.status}` },
       400,
@@ -397,6 +438,7 @@ async function markPaidAndSyncShopify(env, merchantOrderNo, pay) {
     record = {
       merchantOrderNo,
       status: 'paid',
+      h5Status: 'unpaid',
       amountTwd: Math.round(Number(pay.amt) || 0),
       beadsSubtotal: 0,
       designFee: 0,
@@ -412,7 +454,8 @@ async function markPaidAndSyncShopify(env, merchantOrderNo, pay) {
     await putOrder(env, merchantOrderNo, record)
   }
 
-  if (record.shopifyOrderId) {
+  // Already marked paid + Shopify updated → idempotent.
+  if (record.status === 'shopify_synced' && record.h5Status === 'scheduling') {
     return record
   }
 
@@ -439,13 +482,13 @@ async function markPaidAndSyncShopify(env, merchantOrderNo, pay) {
 }
 
 /**
+ * After NewebPay SUCCESS: mark existing unpaid Shopify order paid → 排單中.
+ * Fallback: create paid order if unpaid create was skipped (legacy / no auth at checkout).
  * @param {any} env
  * @param {object} record
  * @param {object} pay
  */
 async function syncShopifyFromRecord(env, record, pay) {
-  if (record.shopifyOrderId) return record
-
   if (!isShopifyAuthConfigured(env)) {
     record.status = 'shopify_failed'
     record.shopifyError =
@@ -456,15 +499,28 @@ async function syncShopifyFromRecord(env, record, pay) {
   }
 
   try {
-    const created = await createPaidShopifyOrder(env, record, pay)
-    record.shopifyOrderId = created.id
-    record.shopifyOrderName = created.name
-    record.shopifyAdminUrl = created.adminUrl
-    record.shopifyError = null
-    record.status = 'shopify_synced'
-    record.syncedAt = Date.now()
-    await putOrder(env, record.merchantOrderNo, record)
-    console.log('[shopify] order created', created)
+    if (record.shopifyOrderId) {
+      const updated = await markShopifyOrderPaid(env, record.shopifyOrderId, record, pay)
+      record.shopifyOrderName = updated.name || record.shopifyOrderName
+      record.shopifyAdminUrl = updated.adminUrl || record.shopifyAdminUrl
+      record.h5Status = 'scheduling'
+      record.shopifyError = null
+      record.status = 'shopify_synced'
+      record.syncedAt = Date.now()
+      await putOrder(env, record.merchantOrderNo, record)
+      console.log('[shopify] order marked paid → scheduling', updated)
+    } else {
+      const created = await createPaidShopifyOrder(env, record, pay)
+      record.shopifyOrderId = created.id
+      record.shopifyOrderName = created.name
+      record.shopifyAdminUrl = created.adminUrl
+      record.h5Status = 'scheduling'
+      record.shopifyError = null
+      record.status = 'shopify_synced'
+      record.syncedAt = Date.now()
+      await putOrder(env, record.merchantOrderNo, record)
+      console.log('[shopify] paid order created (fallback)', created)
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     record.status = 'shopify_failed'

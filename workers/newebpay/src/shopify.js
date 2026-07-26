@@ -1,5 +1,9 @@
 /**
- * Create a paid Shopify order via Admin REST API (outside Checkout → no 3P checkout fee).
+ * Shopify Admin order sync for NewebPay MPG.
+ *
+ * Flow:
+ *   1. Checkout click → createUnpaidShopifyOrder (financial_status: pending, H5: unpaid)
+ *   2. NewebPay SUCCESS → markShopifyOrderPaid (transaction + H5: scheduling)
  *
  * Auth (Dev Dashboard apps — preferred):
  *   SHOPIFY_CLIENT_ID + SHOPIFY_CLIENT_SECRET → client_credentials (token ~24h, auto-refresh)
@@ -11,12 +15,134 @@
 let cachedToken = null
 
 /**
+ * Create an unpaid Shopify order at「立即付款」(before NewebPay redirect).
  * @param {any} env
  * @param {object} record — pending order from KV
+ * @returns {Promise<{ id: number, name: string, adminUrl: string }>}
+ */
+export async function createUnpaidShopifyOrder(env, record) {
+  return createShopifyOrder(env, record, {
+    financialStatus: 'pending',
+    h5Status: 'unpaid',
+    pay: null,
+  })
+}
+
+/**
+ * Legacy / fallback: create an already-paid order (when unpaid create was skipped).
+ * @param {any} env
+ * @param {object} record
  * @param {{ tradeNo?: string, paymentType?: string, payTime?: string, amt?: number|string }} pay
  * @returns {Promise<{ id: number, name: string, adminUrl: string }>}
  */
 export async function createPaidShopifyOrder(env, record, pay = {}) {
+  return createShopifyOrder(env, record, {
+    financialStatus: 'paid',
+    h5Status: 'scheduling',
+    pay,
+  })
+}
+
+/**
+ * Mark an existing unpaid Shopify order as paid after NewebPay SUCCESS.
+ * @param {any} env
+ * @param {number|string} shopifyOrderId
+ * @param {object} record
+ * @param {{ tradeNo?: string, paymentType?: string, payTime?: string, amt?: number|string }} pay
+ * @returns {Promise<{ id: number, name: string, adminUrl: string }>}
+ */
+export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}) {
+  const domain = shopDomain(env)
+  const token = await getAdminAccessToken(env)
+  const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
+  const id = String(shopifyOrderId || '').trim()
+  if (!domain) throw new Error('未設定 SHOPIFY_STORE_DOMAIN')
+  if (!id) throw new Error('缺少 shopifyOrderId')
+
+  const amt = Math.round(Number(pay.amt || record.amountTwd) || 0)
+  if (amt < 1) throw new Error('訂單金額無效')
+
+  // 1) Capture payment via sale transaction (moves pending → paid).
+  const txUrl = `https://${domain}/admin/api/${version}/orders/${id}/transactions.json`
+  const txRes = await fetch(txUrl, {
+    method: 'POST',
+    headers: adminHeaders(token),
+    body: JSON.stringify({
+      transaction: {
+        kind: 'sale',
+        status: 'success',
+        amount: amt.toFixed(2),
+        currency: 'TWD',
+        gateway: 'NewebPay',
+        source_name: 'newebpay_mpg',
+        authorization: String(pay.tradeNo || record.merchantOrderNo || ''),
+      },
+    }),
+  })
+  const txText = await txRes.text()
+  if (!txRes.ok) {
+    // Idempotent: already paid / duplicate transaction — still update H5 status below.
+    const soft =
+      /already been paid|order is already paid|Transaction error/i.test(txText) ||
+      txRes.status === 422
+    if (!soft) {
+      throw new Error(`Shopify 標記付款失敗（${txRes.status}）：${clip(txText, 400)}`)
+    }
+    console.warn('[shopify] transaction soft-fail (likely already paid)', clip(txText, 200))
+  }
+
+  // 2) Refresh note / tags → 排單中
+  const noteParts = buildNoteParts(record, pay)
+  const noteAttributes = buildNoteAttributes(record, pay, 'scheduling')
+  const putUrl = `https://${domain}/admin/api/${version}/orders/${id}.json`
+  const putRes = await fetch(putUrl, {
+    method: 'PUT',
+    headers: adminHeaders(token),
+    body: JSON.stringify({
+      order: {
+        id: Number(id) || id,
+        tags: 'newebpay,pearl-diy,headless,pearl:scheduling',
+        note: noteParts.join('\n'),
+        note_attributes: noteAttributes,
+      },
+    }),
+  })
+  const putText = await putRes.text()
+  /** @type {any} */
+  let putJson
+  try {
+    putJson = JSON.parse(putText)
+  } catch {
+    throw new Error(`Shopify 更新訂單非 JSON（${putRes.status}）：${clip(putText, 200)}`)
+  }
+  if (!putRes.ok) {
+    const msg =
+      putJson?.errors != null
+        ? typeof putJson.errors === 'string'
+          ? putJson.errors
+          : JSON.stringify(putJson.errors)
+        : putText
+    throw new Error(`Shopify 更新訂單失敗（${putRes.status}）：${clip(String(msg), 400)}`)
+  }
+
+  const updated = putJson?.order
+  return {
+    id: Number(updated?.id || id),
+    name: updated?.name || String(updated?.id || id),
+    adminUrl: `https://${domain}/admin/orders/${updated?.id || id}`,
+  }
+}
+
+/**
+ * @param {any} env
+ * @param {object} record
+ * @param {{
+ *   financialStatus: 'pending' | 'paid',
+ *   h5Status: 'unpaid' | 'scheduling',
+ *   pay: { tradeNo?: string, paymentType?: string, payTime?: string, amt?: number|string } | null,
+ * }} opts
+ */
+async function createShopifyOrder(env, record, opts) {
   const domain = shopDomain(env)
   const token = await getAdminAccessToken(env)
   const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
@@ -24,56 +150,33 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
     throw new Error('未設定 SHOPIFY_STORE_DOMAIN')
   }
 
+  const pay = opts.pay || {}
   const amt = Math.round(Number(pay.amt || record.amountTwd) || 0)
   if (amt < 1) throw new Error('訂單金額無效')
 
   const lineItems = buildLineItems(record)
   if (!lineItems.length) throw new Error('沒有可寫入的商品列')
 
-  const noteParts = [
-    `藍新訂單：${record.merchantOrderNo}`,
-    pay.tradeNo ? `藍新交易號：${pay.tradeNo}` : '',
-    pay.paymentType ? `付款方式：${pay.paymentType}` : '',
-    record.designName ? `設計：${record.designName}` : '',
-    record.wristCm ? `腕圍 ≈ ${record.wristCm}cm` : '',
-    record.beadProductCode ? `商品編碼：${clip(record.beadProductCode, 400)}` : '',
-    record.recipe ? `配方：${clip(record.recipe, 400)}` : '',
-  ].filter(Boolean)
-
-  const wristValue =
-    record.wristCmNum != null && Number.isFinite(Number(record.wristCmNum))
-      ? String(Number(record.wristCmNum))
-      : String(record.wristCm || '')
-
-  const noteAttributes = [
-    { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
-    { name: 'newebpay_trade_no', value: String(pay.tradeNo || '') },
-    { name: 'pearl_design_name', value: String(record.designName || '') },
-    { name: 'pearl_wrist_cm', value: wristValue },
-    { name: 'pearl_bead_product_code', value: String(record.beadProductCode || '') },
-    { name: 'pearl_details_mode', value: String(record.detailsMode || '') },
-    { name: 'pearl_design_id', value: String(record.designId || '') },
-    { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
-    { name: 'pearl_designer_id', value: String(record.designerId || '') },
-    { name: 'pearl_beads_subtotal_twd', value: String(record.beadsSubtotal || 0) },
-    { name: 'pearl_design_fee_twd', value: String(record.designFee || 0) },
-    { name: 'pearl_shipping_twd', value: String(record.shipping || 0) },
-    { name: 'pearl_member_email', value: String(record.email || '') },
-  ].filter((a) => a.value)
+  const noteParts = buildNoteParts(record, pay)
+  const noteAttributes = buildNoteAttributes(record, pay, opts.h5Status)
+  const pearlTag = opts.h5Status === 'scheduling' ? 'pearl:scheduling' : 'pearl:unpaid'
 
   /** @type {Record<string, unknown>} */
   const order = {
     email: record.email || undefined,
     currency: 'TWD',
-    financial_status: 'paid',
+    financial_status: opts.financialStatus,
     send_receipt: false,
     send_fulfillment_receipt: false,
     taxes_included: true,
-    tags: 'newebpay,pearl-diy,headless',
+    tags: `newebpay,pearl-diy,headless,${pearlTag}`,
     note: noteParts.join('\n'),
     note_attributes: noteAttributes,
     line_items: lineItems,
-    transactions: [
+  }
+
+  if (opts.financialStatus === 'paid') {
+    order.transactions = [
       {
         kind: 'sale',
         status: 'success',
@@ -83,7 +186,7 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
         source_name: 'newebpay_mpg',
         authorization: String(pay.tradeNo || record.merchantOrderNo || ''),
       },
-    ],
+    ]
   }
 
   if (record.shippingAddress && typeof record.shippingAddress === 'object') {
@@ -93,11 +196,7 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
   const url = `https://${domain}/admin/api/${version}/orders.json`
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-Shopify-Access-Token': token,
-    },
+    headers: adminHeaders(token),
     body: JSON.stringify({ order }),
   })
 
@@ -200,6 +299,8 @@ export function isShopifyAuthConfigured(env) {
 }
 
 /**
+ * BOM rows map 1:1 to Shopify catalog SKUs (productId = SKU).
+ * Custom line items keep price/qty when Admin inventory linking is not required.
  * @param {object} record
  * @returns {Array<{ title: string, price: string, quantity: number, sku?: string, requires_shipping?: boolean, taxable?: boolean }>}
  */
@@ -252,6 +353,61 @@ function buildLineItems(record) {
   }
 
   return lines
+}
+
+/**
+ * @param {object} record
+ * @param {{ tradeNo?: string, paymentType?: string, payTime?: string }} pay
+ */
+function buildNoteParts(record, pay = {}) {
+  return [
+    `藍新訂單：${record.merchantOrderNo}`,
+    pay.tradeNo ? `藍新交易號：${pay.tradeNo}` : '',
+    pay.paymentType ? `付款方式：${pay.paymentType}` : '',
+    record.designName ? `設計：${record.designName}` : '',
+    record.wristCm ? `手圍 ≈ ${record.wristCm}cm` : '',
+    record.beadProductCode ? `商品編碼：${clip(record.beadProductCode, 400)}` : '',
+    record.recipe ? `配方：${clip(record.recipe, 400)}` : '',
+  ].filter(Boolean)
+}
+
+/**
+ * @param {object} record
+ * @param {{ tradeNo?: string }} pay
+ * @param {'unpaid' | 'scheduling' | string} h5Status
+ */
+function buildNoteAttributes(record, pay, h5Status) {
+  const wristValue =
+    record.wristCmNum != null && Number.isFinite(Number(record.wristCmNum))
+      ? String(Number(record.wristCmNum))
+      : String(record.wristCm || '')
+
+  return [
+    { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
+    { name: 'newebpay_trade_no', value: String(pay?.tradeNo || '') },
+    { name: 'pearl_h5_status', value: String(h5Status || 'unpaid') },
+    { name: 'pearl_design_name', value: String(record.designName || '') },
+    { name: 'pearl_wrist_cm', value: wristValue },
+    { name: 'pearl_bead_product_code', value: String(record.beadProductCode || '') },
+    { name: 'pearl_details_mode', value: String(record.detailsMode || '') },
+    { name: 'pearl_design_id', value: String(record.designId || '') },
+    { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
+    { name: 'pearl_designer_id', value: String(record.designerId || '') },
+    { name: 'pearl_beads_subtotal_twd', value: String(record.beadsSubtotal || 0) },
+    { name: 'pearl_design_fee_twd', value: String(record.designFee || 0) },
+    { name: 'pearl_shipping_twd', value: String(record.shipping || 0) },
+    { name: 'pearl_member_email', value: String(record.email || '') },
+    { name: 'pearl_payment_status', value: h5Status === 'scheduling' ? 'paid' : 'unpaid' },
+  ].filter((a) => a.value)
+}
+
+/** @param {string} token */
+function adminHeaders(token) {
+  return {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Shopify-Access-Token': token,
+  }
 }
 
 /** @param {any} env */

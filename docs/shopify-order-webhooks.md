@@ -87,7 +87,9 @@ npx wrangler secret put SHOPIFY_WEBHOOK_SECRET --config workers/newebpay/wrangle
 
 ## 與藍新單關聯
 
-建 Shopify 單時已寫入 `note_attributes.newebpay_merchant_order_no`。  
+「立即付款」時即建立 Shopify **未付款** 單，並寫入 `note_attributes.newebpay_merchant_order_no` + `pearl_h5_status=unpaid`。  
+藍新支付成功後同單標記 paid，並改為 `pearl_h5_status=scheduling` / tag `pearl:scheduling`。
+
 Webhook 收到後會：
 
 1. 寫入 KV 鏡像 `shopify-order:{id}`  
