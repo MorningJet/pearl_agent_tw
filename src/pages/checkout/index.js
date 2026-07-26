@@ -144,7 +144,7 @@ function bindTwAddressSelects() {
   if (!cityEl || !districtEl) return
 
   cityEl.innerHTML =
-    `<option value="">請選擇縣市</option>` +
+    `<option value="">請選擇</option>` +
     listTwCities()
       .map((name) => `<option value="${escapeAttr(name)}">${escapeHtml(name)}</option>`)
       .join('')
@@ -172,7 +172,7 @@ function fillDistrictOptions(city, selectedDistrict) {
 
   const districts = city ? listTwDistricts(city) : []
   if (!city) {
-    districtEl.innerHTML = `<option value="">請先選擇縣市</option>`
+    districtEl.innerHTML = `<option value="">請選擇</option>`
     districtEl.disabled = true
     return
   }
@@ -180,7 +180,7 @@ function fillDistrictOptions(city, selectedDistrict) {
   districtEl.disabled = false
   const want = normalizeTwPlaceName(selectedDistrict)
   districtEl.innerHTML =
-    `<option value="">請選擇鄉鎮市區</option>` +
+    `<option value="">請選擇</option>` +
     districts
       .map((d) => {
         const selected = normalizeTwPlaceName(d.name) === want ? ' selected' : ''

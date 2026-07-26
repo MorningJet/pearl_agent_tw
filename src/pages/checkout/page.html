@@ -113,43 +113,42 @@
             />
           </label>
 
-          <div class="grid grid-cols-2 gap-2">
-            <label class="block">
+          <div class="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.2fr)_4.75rem] gap-2">
+            <label class="block min-w-0">
               <span class="text-xs font-medium text-stone-600">縣市 <span class="text-rose-500">*</span></span>
               <select
                 id="checkout-city"
                 autocomplete="address-level1"
-                class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+                class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-2 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
               >
-                <option value="">請選擇縣市</option>
+                <option value="">請選擇</option>
               </select>
             </label>
-            <label class="block">
+            <label class="block min-w-0">
               <span class="text-xs font-medium text-stone-600">鄉鎮市區 <span class="text-rose-500">*</span></span>
               <select
                 id="checkout-district"
                 autocomplete="address-level2"
-                class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+                class="mt-1.5 w-full rounded-lg border border-stone-200 bg-white px-2 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
               >
-                <option value="">請先選擇縣市</option>
+                <option value="">請選擇</option>
               </select>
             </label>
+            <label class="block min-w-0">
+              <span class="text-xs font-medium text-stone-600">郵遞區號</span>
+              <input
+                id="checkout-zip"
+                type="text"
+                inputmode="numeric"
+                maxlength="3"
+                readonly
+                tabindex="-1"
+                autocomplete="postal-code"
+                placeholder="—"
+                class="mt-1.5 w-full cursor-default rounded-lg border border-stone-200 bg-stone-50 px-1.5 py-2 text-center text-sm tabular-nums text-stone-700 outline-none"
+              />
+            </label>
           </div>
-
-          <label class="block">
-            <span class="text-xs font-medium text-stone-600">郵遞區號 <span class="text-rose-500">*</span></span>
-            <input
-              id="checkout-zip"
-              type="text"
-              inputmode="numeric"
-              maxlength="3"
-              readonly
-              tabindex="-1"
-              autocomplete="postal-code"
-              placeholder="依縣市／鄉鎮市區自動帶出"
-              class="mt-1.5 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm tabular-nums text-stone-700 outline-none"
-            />
-          </label>
 
           <label class="block">
             <span class="text-xs font-medium text-stone-600">地址 <span class="text-rose-500">*</span></span>
