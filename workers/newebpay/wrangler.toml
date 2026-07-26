@@ -19,12 +19,12 @@ workers_dev = true
 
 [[kv_namespaces]]
 binding = "ORDERS"
-id = "00000000000000000000000000000000"
-preview_id = "00000000000000000000000000000001"
+id = "46766556425b4480a0d0e18aa67c00d1"
+preview_id = "eba7cee8bcef4ad19731c47bec26bd00"
 
 [vars]
 NEWEBPAY_ENV = "sandbox"
-PUBLIC_API_BASE = ""
+PUBLIC_API_BASE = "https://pearl-newebpay.pearl-diy.workers.dev"
 H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"
 CORS_ORIGINS = "*"
 SHOPIFY_STORE_DOMAIN = "pearl-diy.myshopify.com"
