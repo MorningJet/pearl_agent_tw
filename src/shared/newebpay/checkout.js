@@ -10,6 +10,8 @@ const STANDARD_SHIPPING_TWD = 50
  * @typedef {{
  *   designName: string,
  *   wristCm: string,
+ *   wristCmNum?: number,
+ *   beadProductCode?: string,
  *   detailsMode: string,
  *   designId?: string,
  *   plazaPublishId?: string,
@@ -18,6 +20,7 @@ const STANDARD_SHIPPING_TWD = 50
  *   designImageUrl?: string,
  *   beadsSubtotalTwd?: number,
  *   email?: string,
+ *   shippingAddress?: Record<string, unknown> | null,
  * }} CheckoutMeta
  */
 
@@ -60,6 +63,11 @@ export async function createNewebpayCheckout(bom, meta) {
         bom,
         designName: meta.designName || '',
         wristCm: meta.wristCm || '',
+        wristCmNum:
+          meta.wristCmNum != null && Number.isFinite(Number(meta.wristCmNum))
+            ? Number(meta.wristCmNum)
+            : undefined,
+        beadProductCode: meta.beadProductCode || '',
         detailsMode: meta.detailsMode || 'normal',
         designId: meta.designId || '',
         plazaPublishId: meta.plazaPublishId || '',
@@ -70,6 +78,7 @@ export async function createNewebpayCheckout(bom, meta) {
         designImageUrl: publicDesignImageUrl(meta.designImageUrl || ''),
         recipe: formatRecipe(bom),
         email: meta.email || '',
+        shippingAddress: meta.shippingAddress || null,
       }),
     })
     /** @type {any} */

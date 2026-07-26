@@ -43,6 +43,9 @@ function hideStudioPages() {
   details?.classList.add('hidden')
   details?.classList.remove('flex')
   if (details) details.style.display = ''
+  const checkout = document.getElementById('page-checkout')
+  checkout?.classList.add('hidden')
+  checkout?.classList.remove('flex')
 }
 
 function hideMeSubPages() {
@@ -153,6 +156,9 @@ export function showDiyPage() {
   const details = document.getElementById('page-details')
   details?.classList.add('hidden')
   details?.classList.remove('flex')
+  const checkout = document.getElementById('page-checkout')
+  checkout?.classList.add('hidden')
+  checkout?.classList.remove('flex')
   const diy = document.getElementById('page-diy')
   diy?.classList.remove('hidden')
   diy?.classList.add('flex')
@@ -170,6 +176,9 @@ export function showDetailsPage() {
   const diy = document.getElementById('page-diy')
   diy?.classList.add('hidden')
   diy?.classList.remove('flex')
+  const checkout = document.getElementById('page-checkout')
+  checkout?.classList.add('hidden')
+  checkout?.classList.remove('flex')
   const details = document.getElementById('page-details')
   if (details) {
     details.classList.remove('hidden')
@@ -177,6 +186,26 @@ export function showDetailsPage() {
     details.style.display = 'flex'
   }
   const scroll = document.getElementById('details-scroll')
+  if (scroll) scroll.scrollTop = 0
+}
+
+export function showCheckoutPage() {
+  hideAllTabs()
+  hideMeSubPages()
+  hideTabBar()
+  const diy = document.getElementById('page-diy')
+  diy?.classList.add('hidden')
+  diy?.classList.remove('flex')
+  const details = document.getElementById('page-details')
+  details?.classList.add('hidden')
+  details?.classList.remove('flex')
+  if (details) details.style.display = ''
+  const checkout = document.getElementById('page-checkout')
+  if (checkout) {
+    checkout.classList.remove('hidden')
+    checkout.classList.add('flex')
+  }
+  const scroll = document.getElementById('checkout-scroll')
   if (scroll) scroll.scrollTop = 0
 }
 

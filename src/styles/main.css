@@ -96,6 +96,7 @@ body {
 
 #page-diy,
 #page-details,
+#page-checkout,
 #page-home,
 #page-plaza,
 #page-my-designs,
@@ -119,6 +120,7 @@ body {
 /* Hard show/hide so page navigation works even if utility CSS fails to load. */
 #page-diy.hidden,
 #page-details.hidden,
+#page-checkout.hidden,
 #page-home.hidden,
 #page-plaza.hidden,
 #page-my-designs.hidden,
@@ -135,6 +137,7 @@ body {
 
 #page-diy.flex,
 #page-details.flex,
+#page-checkout.flex,
 #page-home.flex,
 #page-plaza.flex,
 #page-my-designs.flex,

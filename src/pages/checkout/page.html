@@ -1,0 +1,118 @@
+<div id="page-checkout" class="hidden h-full w-full flex-col overflow-hidden bg-[#f7f7f7]">
+  <header class="page-header">
+    <button type="button" id="checkout-back" class="page-header-side rounded-full" aria-label="返回">
+      <img src="/icons/back.svg" alt="" class="h-5 w-5" width="20" height="20" />
+    </button>
+    <h1 class="page-header-title">收貨資訊</h1>
+    <span class="page-header-side" aria-hidden="true"></span>
+  </header>
+
+  <div id="checkout-scroll" class="min-h-0 flex-1 overflow-y-auto px-3 pb-28 pt-3">
+    <section class="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-stone-100">
+      <div class="flex gap-3">
+        <div
+          id="checkout-product-media"
+          class="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-stone-50"
+        ></div>
+        <div class="min-w-0 flex-1">
+          <p id="checkout-product-title" class="truncate text-sm font-medium text-stone-900">手鍊設計</p>
+          <p id="checkout-product-wrist" class="mt-1 text-xs text-stone-500"></p>
+          <p id="checkout-product-price" class="mt-2 text-sm font-semibold tabular-nums text-stone-900"></p>
+        </div>
+      </div>
+      <div class="mt-3 border-t border-stone-100 pt-3">
+        <p class="text-xs font-medium text-stone-400">商品明細</p>
+        <ul id="checkout-bom" class="mt-2 space-y-1.5 text-sm text-stone-700"></ul>
+      </div>
+    </section>
+
+    <form id="checkout-form" class="mt-3 space-y-3" novalidate>
+      <section class="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-stone-100">
+        <p class="text-sm font-semibold text-stone-900">收件資料</p>
+        <div class="mt-3 space-y-3">
+          <label class="block">
+            <span class="text-xs font-medium text-stone-600">電子信箱 <span class="text-rose-500">*</span></span>
+            <input
+              id="checkout-email"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              maxlength="80"
+              placeholder="用於訂單通知與會員識別"
+              class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+            />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-stone-600">國家／地區 <span class="text-rose-500">*</span></span>
+            <input
+              id="checkout-country"
+              type="text"
+              value="台灣"
+              maxlength="40"
+              autocomplete="country-name"
+              class="mt-1.5 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+            />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-stone-600">收貨姓名 <span class="text-rose-500">*</span></span>
+            <input
+              id="checkout-name"
+              type="text"
+              maxlength="40"
+              autocomplete="name"
+              class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+            />
+          </label>
+          <label class="block">
+            <span class="text-xs font-medium text-stone-600">收貨地址 <span class="text-rose-500">*</span></span>
+            <textarea
+              id="checkout-address"
+              rows="2"
+              maxlength="160"
+              autocomplete="street-address"
+              placeholder="縣市、鄉鎮市區、街道門牌"
+              class="mt-1.5 w-full resize-none rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+            ></textarea>
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="block">
+              <span class="text-xs font-medium text-stone-600">郵政編碼 <span class="text-rose-500">*</span></span>
+              <input
+                id="checkout-zip"
+                type="text"
+                inputmode="numeric"
+                maxlength="10"
+                autocomplete="postal-code"
+                class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+              />
+            </label>
+            <label class="block">
+              <span class="text-xs font-medium text-stone-600">手機號碼 <span class="text-rose-500">*</span></span>
+              <input
+                id="checkout-phone"
+                type="tel"
+                inputmode="tel"
+                maxlength="12"
+                autocomplete="tel"
+                placeholder="09xxxxxxxx"
+                class="mt-1.5 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-400"
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+    </form>
+  </div>
+
+  <div
+    class="shrink-0 border-t border-stone-200 bg-white px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))]"
+  >
+    <button
+      type="button"
+      id="checkout-submit"
+      class="w-full rounded-full bg-stone-900 py-2.5 text-sm font-semibold text-white active:opacity-90"
+    >
+      確認下單並付款
+    </button>
+  </div>
+</div>

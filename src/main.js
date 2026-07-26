@@ -12,6 +12,7 @@ import { initOrderDetailPage } from './pages/orderDetail/index.js'
 import { initOrderGuidePage } from './pages/orderGuide/index.js'
 import { initDesignerRulesPage } from './pages/designerRules/index.js'
 import { initAddressPage } from './pages/address/index.js'
+import { initCheckoutPage } from './pages/checkout/index.js'
 import { initDiyPage } from './pages/diy/index.js'
 import {
   initDetailsPage,
@@ -38,6 +39,7 @@ function boot() {
   initOrderGuidePage(app)
   initDesignerRulesPage(app)
   initAddressPage(app)
+  initCheckoutPage(app)
   initTabBar(app, { onTabChange: showTab })
 
   setAfterShowTab((tab) => {

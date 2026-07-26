@@ -36,14 +36,21 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
     pay.paymentType ? `付款方式：${pay.paymentType}` : '',
     record.designName ? `設計：${record.designName}` : '',
     record.wristCm ? `腕圍 ≈ ${record.wristCm}cm` : '',
+    record.beadProductCode ? `商品編碼：${clip(record.beadProductCode, 400)}` : '',
     record.recipe ? `配方：${clip(record.recipe, 400)}` : '',
   ].filter(Boolean)
+
+  const wristValue =
+    record.wristCmNum != null && Number.isFinite(Number(record.wristCmNum))
+      ? String(Number(record.wristCmNum))
+      : String(record.wristCm || '')
 
   const noteAttributes = [
     { name: 'newebpay_merchant_order_no', value: String(record.merchantOrderNo || '') },
     { name: 'newebpay_trade_no', value: String(pay.tradeNo || '') },
     { name: 'pearl_design_name', value: String(record.designName || '') },
-    { name: 'pearl_wrist_cm', value: String(record.wristCm || '') },
+    { name: 'pearl_wrist_cm', value: wristValue },
+    { name: 'pearl_bead_product_code', value: String(record.beadProductCode || '') },
     { name: 'pearl_details_mode', value: String(record.detailsMode || '') },
     { name: 'pearl_design_id', value: String(record.designId || '') },
     { name: 'pearl_plaza_publish_id', value: String(record.plazaPublishId || '') },
@@ -51,6 +58,7 @@ export async function createPaidShopifyOrder(env, record, pay = {}) {
     { name: 'pearl_beads_subtotal_twd', value: String(record.beadsSubtotal || 0) },
     { name: 'pearl_design_fee_twd', value: String(record.designFee || 0) },
     { name: 'pearl_shipping_twd', value: String(record.shipping || 0) },
+    { name: 'pearl_member_email', value: String(record.email || '') },
   ].filter((a) => a.value)
 
   /** @type {Record<string, unknown>} */
@@ -258,19 +266,20 @@ function shopDomain(env) {
  * @param {Record<string, string>} addr
  */
 function mapAddress(addr) {
+  const address1 = clip(
+    addr.address1 ||
+      [addr.city, addr.district, addr.detail].filter(Boolean).join('') ||
+      '',
+    120,
+  )
   return {
     first_name: clip(addr.name || addr.first_name || 'Customer', 40),
     phone: clip(addr.phone || '', 20) || undefined,
-    address1: clip(
-      [addr.city, addr.district, addr.detail].filter(Boolean).join('') ||
-        addr.address1 ||
-        '',
-      120,
-    ),
+    address1,
     city: clip(addr.city || '', 40) || undefined,
-    province: clip(addr.city || addr.province || '', 40) || undefined,
-    country: 'TW',
-    country_code: 'TW',
+    province: clip(addr.province || addr.city || '', 40) || undefined,
+    country: 'Taiwan',
+    country_code: clip(addr.country_code || 'TW', 2) || 'TW',
     zip: clip(addr.zip || '', 12) || undefined,
   }
 }

@@ -1,12 +1,13 @@
 /**
- * Current signed-in member profile (MVP: localStorage).
- * `memberId` is the canonical designer ID on Design Plaza (= 會員編號 on「我的」).
+ * Current member profile (MVP: localStorage).
+ * `memberId` = buyer email after first order (會員編號). Empty until first checkout.
  */
 
 const STORAGE_KEY = 'pearl-tw.userProfile.v1'
 
-/** Demo account shown on「我的」. */
-export const DEFAULT_MEMBER_ID = '912525'
+/** Legacy demo id — treated as unbound. */
+const LEGACY_DEMO_MEMBER_ID = '912525'
+
 export const DEFAULT_DISPLAY_NAME = 'Mia'
 
 /**
@@ -28,10 +29,14 @@ function read() {
     if (raw) {
       const parsed = JSON.parse(raw)
       if (parsed && typeof parsed === 'object') {
+        const rawId = String(parsed.memberId || '').trim()
         cache = {
-          memberId: String(parsed.memberId || DEFAULT_MEMBER_ID),
-          displayName: String(parsed.displayName || DEFAULT_DISPLAY_NAME).trim() || DEFAULT_DISPLAY_NAME,
-          avatarDataUrl: typeof parsed.avatarDataUrl === 'string' ? parsed.avatarDataUrl : '',
+          memberId: normalizeStoredMemberId(rawId),
+          displayName:
+            String(parsed.displayName || DEFAULT_DISPLAY_NAME).trim() ||
+            DEFAULT_DISPLAY_NAME,
+          avatarDataUrl:
+            typeof parsed.avatarDataUrl === 'string' ? parsed.avatarDataUrl : '',
         }
         return cache
       }
@@ -40,7 +45,7 @@ function read() {
     /* ignore */
   }
   cache = {
-    memberId: DEFAULT_MEMBER_ID,
+    memberId: '',
     displayName: DEFAULT_DISPLAY_NAME,
     avatarDataUrl: '',
   }
@@ -58,9 +63,38 @@ function write(next) {
   }
 }
 
-/** @returns {string} 會員編號 — used as plaza designer ID */
+/** @param {string} id */
+function normalizeStoredMemberId(id) {
+  const s = String(id || '').trim()
+  if (!s || s === LEGACY_DEMO_MEMBER_ID) return ''
+  return s
+}
+
+/** @returns {string} 會員編號 — email after first order; empty before */
 export function getMemberId() {
   return read().memberId
+}
+
+/** @param {string} value */
+export function isEmailMemberId(value) {
+  const s = String(value || '').trim().toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)
+}
+
+/**
+ * Bind member id to checkout email (unique buyer key).
+ * @param {string} email
+ * @returns {{ ok: true, memberId: string } | { ok: false, error: string }}
+ */
+export function setMemberIdFromEmail(email) {
+  const next = String(email || '').trim().toLowerCase()
+  if (!isEmailMemberId(next)) {
+    return { ok: false, error: '電子信箱格式不正確' }
+  }
+  const prev = read()
+  const ok = write({ ...prev, memberId: next })
+  if (!ok) return { ok: false, error: '儲存失敗，請稍後再試' }
+  return { ok: true, memberId: next }
 }
 
 /** @returns {string} Account display name on「我的」(may differ from plaza nickname) */
@@ -99,7 +133,6 @@ export function setAvatarDataUrl(dataUrl) {
   const prev = read()
   const next = { ...prev, avatarDataUrl: url }
   if (write(next)) return { ok: true }
-  // Retry with a smaller payload if quota exceeded.
   return { ok: false, error: '頭像過大，請換一張較小的圖片' }
 }
 

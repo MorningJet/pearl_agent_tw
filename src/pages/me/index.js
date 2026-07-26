@@ -49,7 +49,10 @@ function renderProfile() {
   const avatarUrl = getAvatarDataUrl()
 
   if (nameEl) nameEl.textContent = name
-  if (idEl) idEl.textContent = `會員編號：${getMemberId()}`
+  if (idEl) {
+    const mid = getMemberId()
+    idEl.textContent = mid ? `會員編號：${mid}` : '會員編號：尚未綁定'
+  }
 
   if (avatarUrl && imgEl && letterEl) {
     imgEl.src = avatarUrl

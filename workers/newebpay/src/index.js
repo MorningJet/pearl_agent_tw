@@ -158,6 +158,12 @@ async function handleCheckout(request, env, cors) {
     clip(String(body?.email || env.NEWEBPAY_DEFAULT_EMAIL || ''), 50) ||
     'buyer@pearl-diy.local'
   const recipe = clip(String(body?.recipe || formatRecipe(bom)), 500)
+  const beadProductCode = clip(String(body?.beadProductCode || ''), 2000)
+  const wristCmRaw = body?.wristCmNum != null ? body.wristCmNum : body?.wristCm
+  const wristCmNum = Number(wristCmRaw)
+  const wristCm = Number.isFinite(wristCmNum)
+    ? String(Math.round(wristCmNum * 10) / 10)
+    : clip(String(body?.wristCm || ''), 32)
 
   /** @type {object} */
   const record = {
@@ -168,7 +174,9 @@ async function handleCheckout(request, env, cors) {
     designFee,
     shipping,
     designName,
-    wristCm: clip(String(body?.wristCm || ''), 32),
+    wristCm,
+    wristCmNum: Number.isFinite(wristCmNum) ? wristCmNum : null,
+    beadProductCode,
     detailsMode: clip(String(body?.detailsMode || 'normal'), 32),
     designId: clip(String(body?.designId || ''), 64),
     plazaPublishId: clip(String(body?.plazaPublishId || ''), 64),

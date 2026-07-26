@@ -28,7 +28,7 @@ import {
   totalCircumferenceMm,
 } from '../../shared/domain/sizing.js'
 import { showToast } from '../../shared/ui/toast.js'
-import { showDiyPage, showDetailsPage, showTab } from '../../shared/nav.js'
+import { showDiyPage, showDetailsPage, showTab, showCheckoutPage } from '../../shared/nav.js'
 import { mountFragment } from '../../shared/mount.js'
 import detailsHtml from './page.html?raw'
 import {
@@ -45,11 +45,8 @@ import { getSeedPlazaAsPublished, resolvePlazaPreviewUrl } from '../home/plazaDa
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
-import {
-  createNewebpayCheckout,
-  isNewebpayConfigured,
-  submitNewebpayForm,
-} from '../../shared/newebpay/checkout.js'
+import { isNewebpayConfigured } from '../../shared/newebpay/checkout.js'
+import { openCheckout } from '../checkout/index.js'
 
 /** @type {string} */
 let designImageUrl = ''
@@ -488,18 +485,18 @@ function bindActions() {
   })
 }
 
-/** Prevent double-submit while NewebPay checkout is creating. */
+/** Prevent double-open while preparing checkout draft. */
 let buyInFlight = false
 
 /**
- * All three details modes: BOM = underlying beads → NewebPay MPG (not Shopify Checkout).
+ * All three details modes → 收貨資訊 → NewebPay MPG.
  * Plaza UI may hide SKU rows, but checkout still expands the bead set.
  */
-async function buyNow() {
+function buyNow() {
   if (buyInFlight) return
   const beads = getResolvedBeads()
   if (!beads.length) {
-    showToast('請先加入珠子再購買')
+    showToast('請先加入珠子再下單')
     return
   }
   if (!isNewebpayConfigured()) {
@@ -509,6 +506,9 @@ async function buyNow() {
 
   const bom = buildBom(beads)
   const mm = totalCircumferenceMm(beads)
+  const wristCm = formatCm(mm)
+  const wristCmNum = Number((mm / 10).toFixed(1))
+  const beadProductCode = beads.map((b) => b.productId).filter(Boolean).join('-')
   const isPlaza = detailsMode === 'plaza'
   const isPlazaEdit = detailsMode === 'plaza-edit'
   const pub = plazaViewPub
@@ -517,52 +517,40 @@ async function buyNow() {
     : isPlazaEdit
       ? getAppliedDesignFeeTwd()
       : 0
+  const beadsSubtotalTwd = totalPrice(beads)
+  const shipping = resolveShipping(beadsSubtotalTwd)
+  const amountTwd = beadsSubtotalTwd + designFee + shipping.amount
 
   buyInFlight = true
-  const btn = document.getElementById('details-buy')
-  const prevLabel = btn?.textContent
-  if (btn) {
-    btn.setAttribute('disabled', 'true')
-    btn.textContent = '前往付款…'
-  }
-
   try {
-    if (isPlaza) {
-      recordPlazaPurchaseUse({ silent: true })
-    }
-
-    const result = await createNewebpayCheckout(bom, {
+    openCheckout({
+      bom,
       designName: getDesignName(),
-      wristCm: formatCm(mm),
+      wristCm,
+      wristCmNum,
+      beadProductCode,
       detailsMode,
       designId: getActiveDesignId() || '',
       plazaPublishId: pub?.id || getAppliedPlazaPublishId() || '',
       designerId: isPlaza ? String(pub?.designerId || '').trim() : '',
       designFeeTwd: designFee,
       designImageUrl,
-      beadsSubtotalTwd: totalPrice(beads),
+      beadsSubtotalTwd,
+      amountTwd,
+      onBeforePay: isPlaza
+        ? () => {
+            recordPlazaPurchaseUse({ silent: true })
+          }
+        : undefined,
     })
-
-    if (!result.ok) {
-      showToast(result.error)
-      return
-    }
-    // Form target=_top leaves the Shopify iframe.
-    submitNewebpayForm(result)
-  } catch (err) {
-    console.error('[details] buy failed', err)
-    showToast(`下單失敗：${shortErr(err)}`)
+    showCheckoutPage()
   } finally {
     buyInFlight = false
-    if (btn) {
-      btn.removeAttribute('disabled')
-      if (prevLabel) btn.textContent = prevLabel
-    }
   }
 }
 
 /**
- * 「立即購買」計 1 次使用，並為設計師建立收益訂單（製作中）.
+ * 「立即下單」確認付款時計 1 次使用，並為設計師建立收益訂單（製作中）.
  * @param {{ silent?: boolean }} [opts]
  */
 function recordPlazaPurchaseUse(opts = {}) {
