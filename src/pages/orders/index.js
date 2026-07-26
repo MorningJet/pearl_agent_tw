@@ -6,6 +6,7 @@ import { withBase } from '../../shared/assetUrl.js'
 import { showToast } from '../../shared/ui/toast.js'
 import {
   CUSTOM_GOODS_NOTE,
+  canContinuePayment,
   canRequestRefund,
   listOrders,
   normalizeStatus,
@@ -35,6 +36,14 @@ export function initOrdersPage(host) {
     renderOrders()
   })
   document.getElementById('orders-list')?.addEventListener('click', (e) => {
+    const payBtn =
+      e.target instanceof Element ? e.target.closest('[data-pay-id]') : null
+    if (payBtn instanceof HTMLElement) {
+      e.preventDefault()
+      e.stopPropagation()
+      showToast('請完成付款後開始排單製作')
+      return
+    }
     const refundBtn =
       e.target instanceof Element ? e.target.closest('[data-refund-id]') : null
     if (refundBtn instanceof HTMLElement) {
@@ -98,9 +107,23 @@ function orderCardHtml(o) {
     : `<div class="flex h-full w-full items-center justify-center bg-stone-100 text-[0.65rem] text-stone-400">設計圖</div>`
 
   const showNote = showsCustomGoodsNote(status)
+  const showPay = canContinuePayment(status)
   const showRefund = canRequestRefund(status)
+  const actionBtn = showPay
+    ? `<button
+        type="button"
+        data-pay-id="${escapeAttr(o.id)}"
+        class="shrink-0 rounded-full border border-stone-300 px-2.5 py-0.5 text-[0.65rem] font-medium text-stone-800 active:bg-stone-50"
+      >繼續付款</button>`
+    : showRefund
+      ? `<button
+        type="button"
+        data-refund-id="${escapeAttr(o.id)}"
+        class="shrink-0 rounded-full border border-stone-300 px-2.5 py-0.5 text-[0.65rem] font-medium text-stone-800 active:bg-stone-50"
+      >申請退款</button>`
+      : ''
   const footer =
-    showNote || showRefund
+    showNote || actionBtn
       ? `<div class="mt-2 flex items-center gap-2 ${
           showNote ? 'justify-between' : 'justify-end'
         }">
@@ -111,15 +134,7 @@ function orderCardHtml(o) {
             )}</p>`
           : ''
       }
-      ${
-        showRefund
-          ? `<button
-        type="button"
-        data-refund-id="${escapeAttr(o.id)}"
-        class="shrink-0 rounded-full border border-stone-300 px-2.5 py-0.5 text-[0.65rem] font-medium text-stone-800 active:bg-stone-50"
-      >申請退款</button>`
-          : ''
-      }
+      ${actionBtn}
     </div>`
       : ''
 
@@ -135,7 +150,7 @@ function orderCardHtml(o) {
         <div class="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
           <div class="flex items-start justify-between gap-2">
             <p class="truncate text-sm font-medium text-stone-900">${escapeHtml(o.title)}</p>
-            <span class="shrink-0 text-[0.65rem] font-medium text-stone-500">${escapeHtml(
+            <span class="shrink-0 text-xs font-semibold text-stone-900">${escapeHtml(
               orderStatusLabel(status),
             )}</span>
           </div>

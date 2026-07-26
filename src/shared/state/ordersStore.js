@@ -41,11 +41,11 @@ const STORAGE_KEY = 'pearl-tw.orders.v3'
 /** @type {Order[] | null} */
 let cache = null
 
-/** Statuses that may apply for refund. */
-export const REFUNDABLE_STATUSES = /** @type {const} */ (['unpaid', 'scheduling'])
+/** Paid / 排單中 — may request refund. */
+export const REFUNDABLE_STATUSES = /** @type {const} */ (['scheduling'])
 
 /**
- * Custom-goods note (排單中 → 已完成).
+ * Custom-goods note（排單中 → 已完成；已關閉無）。
  * @type {ReadonlySet<OrderStatus>}
  */
 export const CUSTOM_NOTE_STATUSES = new Set([
@@ -226,7 +226,12 @@ export function orderStatusLabel(status) {
 /** @param {string} status */
 export function canRequestRefund(status) {
   const s = normalizeStatus(status)
-  return REFUNDABLE_STATUSES.includes(/** @type {'unpaid' | 'scheduling'} */ (s))
+  return REFUNDABLE_STATUSES.includes(/** @type {'scheduling'} */ (s))
+}
+
+/** @param {string} status */
+export function canContinuePayment(status) {
+  return normalizeStatus(status) === 'unpaid'
 }
 
 /** @param {string} status */

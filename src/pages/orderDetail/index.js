@@ -6,6 +6,7 @@ import { formatPrice } from '../../shared/domain/pricing.js'
 import { withBase } from '../../shared/assetUrl.js'
 import {
   CUSTOM_GOODS_NOTE,
+  canContinuePayment,
   canRequestRefund,
   getOrder,
   normalizeStatus,
@@ -25,6 +26,12 @@ export function initOrderDetailPage(host) {
     showOrdersPage()
   })
   document.getElementById('order-detail-body')?.addEventListener('click', (e) => {
+    const payBtn =
+      e.target instanceof Element ? e.target.closest('[data-pay-order]') : null
+    if (payBtn instanceof HTMLElement) {
+      showToast('請完成付款後開始排單製作')
+      return
+    }
     const refundBtn =
       e.target instanceof Element ? e.target.closest('[data-refund-order]') : null
     if (refundBtn instanceof HTMLElement) {
@@ -108,9 +115,23 @@ function detailHtml(o) {
       : ''
 
   const showNote = showsCustomGoodsNote(status)
+  const showPay = canContinuePayment(status)
   const showRefund = canRequestRefund(status)
+  const actionBtn = showPay
+    ? `<button
+          type="button"
+          data-pay-order="${escapeAttr(o.id)}"
+          class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800 active:bg-stone-50"
+        >繼續付款</button>`
+    : showRefund
+      ? `<button
+          type="button"
+          data-refund-order="${escapeAttr(o.id)}"
+          class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800 active:bg-stone-50"
+        >申請退款</button>`
+      : ''
   const noteRefundRow =
-    showNote || showRefund
+    showNote || actionBtn
       ? `<div class="mt-3 flex items-center gap-2 ${
           showNote ? 'justify-between' : 'justify-end'
         }">
@@ -121,15 +142,7 @@ function detailHtml(o) {
             )}</p>`
           : ''
       }
-      ${
-        showRefund
-          ? `<button
-          type="button"
-          data-refund-order="${escapeAttr(o.id)}"
-          class="shrink-0 rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-800 active:bg-stone-50"
-        >申請退款</button>`
-          : ''
-      }
+      ${actionBtn}
     </div>`
       : ''
 
