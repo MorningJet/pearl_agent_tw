@@ -37,6 +37,8 @@ import { refreshMePage } from '../me/index.js'
  *   designerId?: string,
  *   designFeeTwd?: number,
  *   shippingTwd?: number,
+ *   /** Match details page: fee summary (plaza) vs SKU BOM (normal). */
+ *   bomDisplay?: 'fee' | 'sku',
  *   designImageUrl?: string,
  *   beadsSubtotalTwd?: number,
  *   amountTwd: number,
@@ -95,7 +97,9 @@ function renderDraft() {
     ),
   )
   const mode = String(draft.detailsMode || 'normal')
-  const showFeeSummary = mode === 'plaza' || mode === 'plaza-edit'
+  const showFeeSummary =
+    draft.bomDisplay === 'fee' ||
+    (!draft.bomDisplay && (mode === 'plaza' || mode === 'plaza-edit'))
 
   if (title) title.textContent = draft.designName || '手鍊設計'
   if (wrist) {

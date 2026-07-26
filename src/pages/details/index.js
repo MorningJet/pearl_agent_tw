@@ -515,6 +515,7 @@ function buyNow() {
   const beadsSubtotalTwd = totalPrice(beads)
   const shipping = resolveShipping(beadsSubtotalTwd)
   const amountTwd = beadsSubtotalTwd + designFee + shipping.amount
+  const bomDisplay = isPlaza || isPlazaEdit ? 'fee' : 'sku'
 
   buyInFlight = true
   try {
@@ -525,6 +526,7 @@ function buyNow() {
       wristCmNum,
       beadProductCode,
       detailsMode,
+      bomDisplay,
       designId: getActiveDesignId() || '',
       plazaPublishId: pub?.id || getAppliedPlazaPublishId() || '',
       designerId: isPlaza ? String(pub?.designerId || '').trim() : '',
