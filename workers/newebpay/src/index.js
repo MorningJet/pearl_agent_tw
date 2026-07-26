@@ -228,10 +228,6 @@ function checkoutBridgeHtml(env) {
         try {
           var u = new URL(origin);
           if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-          if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return true;
-          if (u.hostname.endsWith('.github.io')) return true;
-          if (u.hostname.endsWith('.myshopify.com')) return true;
-          if (u.hostname === 'pearl-diy.myshopify.com') return true;
           return true;
         } catch (e) {
           return false;
@@ -245,7 +241,8 @@ function checkoutBridgeHtml(env) {
         hint.textContent = '請稍候，不要關閉此視窗';
         var form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/checkout-browser';
+        // Relative action keeps Shopify App Proxy prefix (/apps/pearl-pay/api/...).
+        form.action = 'checkout-browser';
         form.acceptCharset = 'UTF-8';
         var input = document.createElement('input');
         input.type = 'hidden';
@@ -255,6 +252,23 @@ function checkoutBridgeHtml(env) {
         document.body.appendChild(form);
         form.submit();
       }
+
+      function consumeWindowName() {
+        try {
+          var raw = String(window.name || '');
+          if (!raw || raw.indexOf('pearl-checkout') === -1) return false;
+          var data = JSON.parse(raw);
+          window.name = '';
+          if (!data || data.type !== 'pearl-checkout' || data.payload == null) return false;
+          submitPayload(data.payload);
+          return true;
+        } catch (e) {
+          try { window.name = ''; } catch (err) {}
+          return false;
+        }
+      }
+
+      if (consumeWindowName()) return;
 
       window.addEventListener('message', function (e) {
         if (!allowOrigin(e.origin)) return;
@@ -293,7 +307,6 @@ function checkoutBridgeHtml(env) {
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
-      // Allow H5 iframe/opener to talk to this bridge.
       'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self' https://ccore.newebpay.com https://core.newebpay.com; base-uri 'none'",
     },
   })

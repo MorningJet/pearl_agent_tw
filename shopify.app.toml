@@ -1,0 +1,39 @@
+# Shopify app config for Pearl NewebPay Worker (order_update).
+# App Proxy lets the buyer browser reach checkout via myshopify.com
+# (workers.dev is often blocked / challenged on local networks).
+
+client_id = "f1cfe3a61af606a1acdf89f1c5743f88"
+name = "order_update"
+# Must be a URL Shopify / buyers can reach (workers.dev is often blocked).
+application_url = "https://morningjet.github.io/pearl_agent_tw/"
+embedded = false
+
+[access_scopes]
+# Keep aligned with the currently installed token; expanding scopes needs re-auth.
+scopes = "write_orders"
+
+[auth]
+redirect_urls = [
+  "https://morningjet.github.io/pearl_agent_tw/",
+]
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [
+    "orders/updated",
+    "orders/create",
+    "orders/paid",
+    "orders/cancelled",
+    "orders/fulfilled",
+    "orders/partially_fulfilled",
+  ]
+  uri = "https://pearl-newebpay.pearl-diy.workers.dev/api/webhooks/shopify"
+
+[app_proxy]
+url = "https://pearl-newebpay.pearl-diy.workers.dev"
+subpath = "pearl-pay"
+prefix = "apps"
+
+[build]

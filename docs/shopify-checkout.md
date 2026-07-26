@@ -53,11 +53,14 @@ DIY 接單手作建議珠款與「設計費用」開啟 **Continue selling when 
 
 「設計費用」若追蹤庫存，數量需 ≥ 設計費金額（例如 NT$59 → 至少 59 件）。
 
-## 嵌入與「立即付款」卡在 Cloudflare
+## 嵌入與「立即付款」卡在 Cloudflare / workers.dev
 
 H5 若嵌在 Shopify Page 的 **iframe** 裡：
 
 1. **底部留白**：iframe 高度必須是 `100dvh`（或 fixed 铺满），且 Page 用 `{% layout none %}` 去掉主題頭尾。見 [`shopify-embed-page.liquid`](shopify-embed-page.liquid)。
-2. **人機驗證**：`workers.dev` 的 Cloudflare / Turnstile 在 iframe 內常會永遠轉圈且**看不到驗證框**。點「立即付款」時 H5 會同步開啟**可見的新視窗**，把 `/api/checkout-browser` POST 到該視窗；彈窗被擋則改 `_top` 離開商店頁。請允許彈出視窗，並在新視窗完成驗證後繼續藍新。
+2. **結帳 API**：正式環境 `VITE_NEWEBPAY_API_BASE` 應為 Shopify App Proxy  
+   `https://pearl-diy.myshopify.com/apps/pearl-pay`  
+   （瀏覽器直連 `*.workers.dev` 常被劫持／人機驗證卡住，導致停在「前往付款」且後台無單。）
+3. 點「立即付款」會開同域 `pay-bridge.html`，再經 App Proxy 建單並導向藍新。
 
 勿再使用 README 舊版的 `min-height:80vh` 嵌入方式。

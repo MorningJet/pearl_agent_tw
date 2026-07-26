@@ -29,11 +29,12 @@
       .muted {
         color: #78716c;
         font-size: 0.8rem;
+        word-break: break-all;
       }
       a,
       button {
         display: inline-block;
-        margin-top: 1rem;
+        margin-top: 0.75rem;
         padding: 0.65rem 1.2rem;
         border-radius: 999px;
         border: 0;
@@ -44,7 +45,8 @@
         text-decoration: none;
         cursor: pointer;
       }
-      a.secondary {
+      a.secondary,
+      button.secondary {
         background: #fff;
         color: #292524;
         border: 1px solid #d6d3d1;
@@ -60,41 +62,147 @@
       <p id="title">正在準備付款…</p>
       <p class="muted" id="hint">請稍候，不要關閉此視窗</p>
       <div id="actions">
-        <button type="button" id="retry" hidden>重試送出</button>
+        <button type="button" id="retry">重試</button>
         <a class="secondary" id="back" href="./">返回商店</a>
       </div>
     </div>
     <script>
       (function () {
         var received = false
+        var busy = false
         var lastAction = ''
         var lastPayload = null
         var title = document.getElementById('title')
         var hint = document.getElementById('hint')
         var actions = document.getElementById('actions')
-        var retryBtn = document.getElementById('retry')
 
-        function submitCheckout(action, payload) {
-          if (!action || payload == null) return
+        function showError(msg, detail) {
+          title.textContent = msg
+          hint.textContent = detail || ''
+          actions.style.display = 'block'
+          busy = false
+        }
+
+        function toJsonCheckoutUrl(action) {
+          try {
+            var u = new URL(action, location.href)
+            u.pathname = u.pathname.replace(/\/api\/checkout-browser\/?$/, '/api/checkout')
+            if (!/\/api\/checkout$/.test(u.pathname)) {
+              u.pathname = u.pathname.replace(/\/?$/, '') + '/api/checkout'
+            }
+            return u.href
+          } catch (e) {
+            return ''
+          }
+        }
+
+        function toBridgeUrl(action) {
+          try {
+            var u = new URL(action, location.href)
+            u.pathname = u.pathname.replace(
+              /\/api\/checkout-browser\/?$/,
+              '/api/checkout-bridge',
+            )
+            if (!/\/api\/checkout-bridge$/.test(u.pathname)) {
+              u.pathname = u.pathname.replace(/\/?$/, '') + '/api/checkout-bridge'
+            }
+            u.search = ''
+            u.hash = ''
+            return u.href
+          } catch (e) {
+            return ''
+          }
+        }
+
+        function submitNewebpay(data) {
+          var form = document.createElement('form')
+          form.method = 'POST'
+          form.action = data.gatewayUrl
+          form.acceptCharset = 'UTF-8'
+          ;['MerchantID', 'TradeInfo', 'TradeSha', 'Version'].forEach(function (name) {
+            var input = document.createElement('input')
+            input.type = 'hidden'
+            input.name = name
+            input.value = String(
+              name === 'Version' ? data.Version || '2.0' : data[name] || '',
+            )
+            form.appendChild(input)
+          })
+          document.body.appendChild(form)
+          form.submit()
+        }
+
+        function handoffViaGetBridge(action, payload) {
+          var bridge = toBridgeUrl(action)
+          if (!bridge) {
+            showError('付款服務網址無效', String(action || ''))
+            return
+          }
+          try {
+            window.name = JSON.stringify({
+              type: 'pearl-checkout',
+              payload: payload,
+              ts: Date.now(),
+            })
+          } catch (e) {
+            showError('無法暫存訂單資料', String(e && e.message ? e.message : e))
+            return
+          }
+          title.textContent = '正在前往付款服務…'
+          hint.textContent = '若出現人機驗證，請在本視窗完成後繼續'
+          location.replace(bridge)
+        }
+
+        async function submitCheckout(action, payload) {
+          if (!action || payload == null || busy) return
+          busy = true
           received = true
           lastAction = String(action)
           lastPayload = payload
-          title.textContent = '正在前往付款服務…'
-          hint.textContent = '若出現人機驗證，請在本視窗完成後繼續'
-          var form = document.createElement('form')
-          form.method = 'POST'
-          form.action = lastAction
-          form.acceptCharset = 'UTF-8'
-          var input = document.createElement('input')
-          input.type = 'hidden'
-          input.name = 'payload'
-          input.value =
-            typeof lastPayload === 'string'
-              ? lastPayload
-              : JSON.stringify(lastPayload)
-          form.appendChild(input)
-          document.body.appendChild(form)
-          form.submit()
+          title.textContent = '正在建立訂單…'
+          hint.textContent = '請稍候，不要關閉此視窗'
+          actions.style.display = 'none'
+
+          var jsonUrl = toJsonCheckoutUrl(action)
+          if (jsonUrl) {
+            var controller = new AbortController()
+            var timer = setTimeout(function () {
+              controller.abort()
+            }, 12000)
+            try {
+              var res = await fetch(jsonUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+              })
+              var data = await res.json().catch(function () {
+                return null
+              })
+              clearTimeout(timer)
+              if (res.ok && data && data.ok && data.paymentReady && data.gatewayUrl) {
+                title.textContent = '正在前往藍新金流…'
+                hint.textContent = '請稍候'
+                submitNewebpay(data)
+                return
+              }
+              if (res.ok && data && data.ok && data.paymentReady === false) {
+                showError(
+                  '訂單已建立，但藍新付款尚未就緒',
+                  String(data.paymentError || data.merchantOrderNo || ''),
+                )
+                return
+              }
+              // Fall through to GET bridge (better for Cloudflare challenges).
+              console.warn('[pay-bridge] json checkout failed', res.status, data)
+            } catch (err) {
+              clearTimeout(timer)
+              console.warn('[pay-bridge] json checkout error', err)
+            }
+          }
+
+          // Top-level GET into Worker so Cloudflare challenge UI can appear.
+          handoffViaGetBridge(action, payload)
         }
 
         function onPayload(data, source, origin) {
@@ -102,14 +210,16 @@
           if (data.payload == null || !data.checkoutAction) return
           try {
             if (source)
-              source.postMessage({ type: 'pearl-checkout-received' }, origin || '*')
+              source.postMessage(
+                { type: 'pearl-checkout-received' },
+                origin || '*',
+              )
           } catch (e) {}
           submitCheckout(data.checkoutAction, data.payload)
         }
 
         window.addEventListener('message', function (e) {
           if (received) return
-          // Prefer opener / same-origin H5.
           if (window.opener && e.source && e.source !== window.opener) return
           onPayload(e.data, e.source, e.origin)
         })
@@ -131,27 +241,21 @@
 
         setTimeout(function () {
           if (received) return
-          title.textContent = '尚未收到訂單資料'
-          hint.textContent =
-            '請回到上一頁再次點擊「立即付款」，並允許彈出視窗。'
-          actions.style.display = 'block'
-          if (lastAction && lastPayload != null) {
-            retryBtn.hidden = false
-          }
+          showError(
+            '尚未收到訂單資料',
+            '請回到上一頁再次點擊「立即付款」，並允許彈出視窗。',
+          )
         }, 8000)
 
-        retryBtn.addEventListener('click', function () {
+        document.getElementById('retry').addEventListener('click', function () {
           if (lastAction && lastPayload != null) {
             received = false
+            busy = false
             submitCheckout(lastAction, lastPayload)
+          } else {
+            location.href = './'
           }
         })
-
-        // Manual recovery: stay useful if opener never messages.
-        setTimeout(function () {
-          if (received) return
-          actions.style.display = 'block'
-        }, 2500)
       })()
     </script>
   </body>
