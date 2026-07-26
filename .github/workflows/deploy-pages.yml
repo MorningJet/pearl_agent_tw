@@ -40,6 +40,8 @@ jobs:
           VITE_SHOPIFY_API_VERSION: ${{ vars.VITE_SHOPIFY_API_VERSION }}
           VITE_SHOPIFY_DESIGN_FEE_UNIT_VARIANT_GID: ${{ secrets.VITE_SHOPIFY_DESIGN_FEE_UNIT_VARIANT_GID }}
           VITE_NEWEBPAY_API_BASE: ${{ secrets.VITE_NEWEBPAY_API_BASE }}
+          # Stamp HTML + version.json so iframe can detect stale caches
+          GITHUB_SHA: ${{ github.sha }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

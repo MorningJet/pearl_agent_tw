@@ -1,13 +1,14 @@
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import { plazaSyncPlugin } from './vite.plaza-sync.js'
+import { pearlBuildIdPlugin } from './vite.pearl-build.js'
 
 /** GitHub Pages project site needs `/<repo>/`; local/Vercel keep `/`. */
 const base = process.env.VITE_BASE || '/'
 
 export default defineConfig({
   base,
-  plugins: [tailwindcss(), plazaSyncPlugin()],
+  plugins: [tailwindcss(), plazaSyncPlugin(), pearlBuildIdPlugin()],
   server: {
     host: true,
     port: 5173,

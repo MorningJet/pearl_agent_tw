@@ -15,16 +15,45 @@
     <link rel="apple-touch-icon" href="/favicon.png?v=3" />
     <title>Pearl Pearl - DIY 客製手鍊（台灣）</title>
     <script>
-      /* Avoid studio flash in Shopify iframe / ?embed=1 */
+      /**
+       * Embed / Shopify iframe:
+       * 1) mark embed-app early (avoid studio flash)
+       * 2) compare local HTML build stamp vs fresh version.json (cache:no-store)
+       *    If stale, reload once with ?v=<remoteBuild> so CDN/browser miss old index.html.
+       * After this ships once, you should NOT need to manually edit Shopify iframe URLs.
+       */
       (function () {
         try {
           var q = new URLSearchParams(location.search)
           if (q.get('studio') === '1') return
-          if (q.get('embed') === '1' || q.get('app') === '1' || window.self !== window.top) {
-            document.documentElement.classList.add('embed-app')
-          }
+          var inEmbed =
+            q.get('embed') === '1' || q.get('app') === '1' || window.self !== window.top
+          if (inEmbed) document.documentElement.classList.add('embed-app')
+          if (!inEmbed) return
+          if (q.get('nocache') === '0') return
+
+          var localBuild = '%PEARL_BUILD%'
+          var versionUrl = new URL('version.json', location.href)
+          versionUrl.searchParams.set('t', String(Date.now()))
+
+          fetch(versionUrl.toString(), { cache: 'no-store' })
+            .then(function (r) {
+              return r.ok ? r.json() : null
+            })
+            .then(function (remote) {
+              if (!remote || !remote.build) return
+              if (String(remote.build) === String(localBuild)) return
+              // Stale cached HTML — force a document reload with a new cache key.
+              q.set('v', String(remote.build))
+              location.replace(
+                location.pathname + '?' + q.toString() + (location.hash || ''),
+              )
+            })
+            .catch(function () {})
         } catch (e) {
-          document.documentElement.classList.add('embed-app')
+          try {
+            document.documentElement.classList.add('embed-app')
+          } catch (_) {}
         }
       })()
     </script>
