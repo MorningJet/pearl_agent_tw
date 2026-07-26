@@ -7,3 +7,13 @@ PUBLIC_API_BASE=http://127.0.0.1:8787
 H5_RETURN_URL=http://127.0.0.1:5173/?embed=1
 NEWEBPAY_DEFAULT_EMAIL=
 CORS_ORIGINS=*
+
+# Shopify Admin（付款成功後建「已付款」訂單）
+SHOPIFY_STORE_DOMAIN=pearl-diy.myshopify.com
+SHOPIFY_ADMIN_TOKEN=
+SHOPIFY_API_VERSION=2025-01
+
+# 藍新過審前可用 /api/dev/simulate-paid 測 Shopify 寫回
+ALLOW_DEV_SIMULATE=1
+# 正式環境建議設定後，用 Header X-Admin-Sync-Secret 呼叫 /api/admin/retry-sync
+ADMIN_SYNC_SECRET=

@@ -1,74 +1,94 @@
-# 藍新金流 MPG（立即購買 → Cloudflare Worker → 藍新）
+# 藍新金流 MPG + Shopify Admin 回寫（方案 B）
 
-H5 **不**存放 HashKey / HashIV。加簽與回傳只在 [`workers/newebpay`](../workers/newebpay)。
+H5 **不**存放 HashKey / HashIV / Admin Token。加簽、Notify、建單只在 [`workers/newebpay`](../workers/newebpay)。
 
 ## 架構
 
 ```text
-立即購買 → POST {VITE_NEWEBPAY_API_BASE}/api/checkout
-         → Worker AES 加密 TradeInfo
-         → 瀏覽器 POST 表單 → 藍新 MPG
-         → NotifyURL / ReturnURL → Worker
+立即購買
+  → POST /api/checkout（Worker 存 pending 訂單 + AES 加簽）
+  → 瀏覽器 POST 表單 → 藍新 MPG
+  → NotifyURL / ReturnURL
+  → 驗簽 → 標記 paid → Shopify Admin API 建立「已付款」訂單（冪等）
 ```
 
-金額 = 珠款小計 + 設計費 + 運費（珠款 ≥ NT$1000 免運，否則 NT$50）。
+金額 = 珠款小計 + 設計費 + 運費（珠款 ≥ NT$1000 免運，否則 NT$50）。  
+**不經 Shopify Checkout**，一般不產生 Shopify 第三方結帳手續費。
+
+## Shopify Admin Token（藍新過審前可先做好）
+
+1. Shopify Admin → **設定** → **應用程式和銷售管道** → **開發應用程式** → 建立 App  
+2. Admin API 權限至少勾選：`write_orders`、`read_orders`（建議再加 `write_order_edits` 視需求）  
+3. 安裝 App，複製 **Admin API access token**  
+4. 寫入本機 `workers/newebpay/.dev.vars`：
+
+```bash
+SHOPIFY_STORE_DOMAIN=pearl-diy.myshopify.com
+SHOPIFY_ADMIN_TOKEN=shpat_xxx
+SHOPIFY_API_VERSION=2025-01
+ALLOW_DEV_SIMULATE=1
+```
+
+正式環境用：
+
+```bash
+npx wrangler secret put SHOPIFY_ADMIN_TOKEN
+```
+
+並在 `wrangler.toml` `[vars]` 設定 `SHOPIFY_STORE_DOMAIN`。
 
 ## 本機
 
-1. 複製 Worker 密鑰檔：
-
 ```bash
 cp workers/newebpay/.dev.vars.example workers/newebpay/.dev.vars
+# 填 HashKey/HashIV + SHOPIFY_ADMIN_TOKEN
+
+npm run newebpay:dev   # :8787
+npm run dev            # :5173  且 .env 有 VITE_NEWEBPAY_API_BASE=/newebpay-api
 ```
 
-填入 `NEWEBPAY_MERCHANT_ID`、`NEWEBPAY_HASH_KEY`、`NEWEBPAY_HASH_IV`。  
-`PUBLIC_API_BASE=http://127.0.0.1:8787`（本機 Notify 僅在你有公網 tunnel 時可被藍新打到；本機主要測加簽與跳轉）。
+### 藍新尚未過審時：模擬付款 → 測 Shopify 寫回
 
-2. 根目錄 `.env`：
+1. 在詳情頁點「立即購買」（會跳藍新並可能顯示「查無商店代號」——可忽略）  
+2. 看 Worker 日誌裡的 `merchantOrderNo`（或對 `/api/checkout` 自己打一筆拿回單號）  
+3. 模擬付款成功：
 
 ```bash
-VITE_NEWEBPAY_API_BASE=/newebpay-api
+curl -sS -X POST http://127.0.0.1:8787/api/dev/simulate-paid \
+  -H 'Content-Type: application/json' \
+  -d '{"merchantOrderNo":"P你的單號"}'
 ```
 
-3. 兩個終端：
+4. 到 Shopify Admin → **訂單** 應出現已付款單（tag: `newebpay`）  
+5. 查狀態：`GET http://127.0.0.1:8787/api/order/P你的單號`
+
+也可只打 checkout API 拿單號（不必真的跳藍新）：
 
 ```bash
-npm run newebpay:dev
-npm run dev
+curl -sS -X POST http://127.0.0.1:8787/api/checkout \
+  -H 'Content-Type: application/json' \
+  -d '{"bom":[{"productId":"hmn_agt_6","name":"紅瑪瑙","diameterMm":6,"qty":1,"unitPrice":69,"lineTotal":69}],"designName":"同步測試","beadsSubtotalTwd":69,"designFeeTwd":0}'
 ```
 
-4. 點「立即購買」應跳轉藍新（測試閘道 `ccore.newebpay.com`，需 `NEWEBPAY_ENV=sandbox` 且使用**測試商店**金鑰）。
+## 上線
 
-## 上線（Cloudflare Workers）
+1. 建立 KV：`npx wrangler kv namespace create pearl-newebpay-orders`（及 `--preview`），把 id 填进 `wrangler.toml`  
+2. `PUBLIC_API_BASE` = Worker 公網網址；`ALLOW_DEV_SIMULATE` 正式請改 `"0"`  
+3. Secrets：藍新三組 + `SHOPIFY_ADMIN_TOKEN`（建議再加 `ADMIN_SYNC_SECRET`）  
+4. `npm run newebpay:deploy`  
+5. GitHub Secret `VITE_NEWEBPAY_API_BASE` = Worker 網址，觸發 Pages 建置  
+
+建單失敗可重試：
 
 ```bash
-cd workers/newebpay
-npx wrangler login
-npx wrangler secret put NEWEBPAY_MERCHANT_ID
-npx wrangler secret put NEWEBPAY_HASH_KEY
-npx wrangler secret put NEWEBPAY_HASH_IV
+curl -X POST https://YOUR_WORKER/api/admin/retry-sync \
+  -H 'Content-Type: application/json' \
+  -H 'X-Admin-Sync-Secret: 你的SECRET' \
+  -d '{"merchantOrderNo":"P…"}'
 ```
-
-編輯 [`wrangler.toml`](../workers/newebpay/wrangler.toml)：
-
-- `NEWEBPAY_ENV = "production"`（正式）或 `sandbox`
-- `PUBLIC_API_BASE = "https://pearl-newebpay.<你的>.workers.dev"`（部署後填真實網址再部署一次）
-- `H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"`
-- `CORS_ORIGINS` 建議鎖 GitHub Pages 與 Shopify 網域
-
-```bash
-npm run newebpay:deploy
-```
-
-GitHub Actions / 本機建置 H5 時設定：
-
-```bash
-VITE_NEWEBPAY_API_BASE=https://pearl-newebpay.<你的>.workers.dev
-```
-
-（Pages 的 Secret 同名即可。）
 
 ## 安全
 
-- 不要把 HashKey / HashIV 貼進聊天、Issue、前端、`VITE_*`
-- 若金鑰曾外洩，到藍新後台輪換後再 `wrangler secret put`
+- HashKey / HashIV / Admin Token 只放 Secrets / `.dev.vars`，勿進 git、勿 `VITE_*`  
+- 正式關閉 `ALLOW_DEV_SIMULATE`  
+- Notify 驗 `TradeSha`；Shopify 建單以 `shopifyOrderId` 冪等

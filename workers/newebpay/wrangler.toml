@@ -4,14 +4,29 @@ compatibility_date = "2025-01-01"
 workers_dev = true
 
 # Local: copy .dev.vars.example → .dev.vars (gitignored)
-# Production secrets:
+# Secrets:
 #   npx wrangler secret put NEWEBPAY_MERCHANT_ID
 #   npx wrangler secret put NEWEBPAY_HASH_KEY
 #   npx wrangler secret put NEWEBPAY_HASH_IV
+#   npx wrangler secret put SHOPIFY_ADMIN_TOKEN
+#   npx wrangler secret put ADMIN_SYNC_SECRET
+#
+# KV (production):
+#   npx wrangler kv namespace create pearl-newebpay-orders
+#   npx wrangler kv namespace create pearl-newebpay-orders --preview
+# then paste ids below.
+
+[[kv_namespaces]]
+binding = "ORDERS"
+id = "00000000000000000000000000000000"
+preview_id = "00000000000000000000000000000001"
 
 [vars]
 NEWEBPAY_ENV = "sandbox"
-# After first deploy, set PUBLIC_API_BASE to your workers.dev URL and redeploy
 PUBLIC_API_BASE = ""
 H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"
 CORS_ORIGINS = "*"
+SHOPIFY_STORE_DOMAIN = "pearl-diy.myshopify.com"
+SHOPIFY_API_VERSION = "2025-01"
+# Set to "1" only while NewebPay is pending review (disable in production)
+ALLOW_DEV_SIMULATE = "1"

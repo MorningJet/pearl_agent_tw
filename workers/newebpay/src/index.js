@@ -1,15 +1,19 @@
 /**
- * Pearl Pearl — NewebPay MPG payment worker.
+ * Pearl Pearl — NewebPay MPG + Shopify Admin order sync (scheme B).
  *
- * Secrets (wrangler secret / .dev.vars):
+ * Secrets (.dev.vars / wrangler secret):
  *   NEWEBPAY_MERCHANT_ID, NEWEBPAY_HASH_KEY, NEWEBPAY_HASH_IV
+ *   SHOPIFY_ADMIN_TOKEN
  * Vars:
- *   NEWEBPAY_ENV=sandbox|production
- *   PUBLIC_API_BASE=https://your-worker.workers.dev
- *   H5_RETURN_URL=https://morningjet.github.io/pearl_agent_tw/?embed=1
- *   NEWEBPAY_DEFAULT_EMAIL=optional@example.com
- *   CORS_ORIGINS=comma-separated origins (optional; * in dev)
+ *   NEWEBPAY_ENV, PUBLIC_API_BASE, H5_RETURN_URL, CORS_ORIGINS
+ *   SHOPIFY_STORE_DOMAIN, SHOPIFY_API_VERSION
+ *   ALLOW_DEV_SIMULATE=1  → enables POST /api/dev/simulate-paid (pre-NewebPay QA)
+ * Bindings:
+ *   ORDERS (KV) — optional locally (falls back to memory)
  */
+
+import { getOrder, putOrder } from './store.js'
+import { createPaidShopifyOrder } from './shopify.js'
 
 const GATEWAYS = {
   sandbox: 'https://ccore.newebpay.com/MPG/mpg_gateway',
@@ -23,7 +27,7 @@ const STANDARD_SHIPPING_TWD = 50
 export default {
   /**
    * @param {Request} request
-   * @param {Record<string, string>} env
+   * @param {any} env
    */
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -35,7 +39,18 @@ export default {
 
     try {
       if (url.pathname === '/health') {
-        return json({ ok: true }, 200, cors)
+        return json(
+          {
+            ok: true,
+            shopifyConfigured: Boolean(
+              shopDomain(env) && String(env.SHOPIFY_ADMIN_TOKEN || '').trim(),
+            ),
+            ordersKv: Boolean(env.ORDERS),
+            allowDevSimulate: isDevSimulateEnabled(env),
+          },
+          200,
+          cors,
+        )
       }
 
       if (url.pathname === '/api/checkout' && request.method === 'POST') {
@@ -53,6 +68,21 @@ export default {
         return await handleReturn(request, env)
       }
 
+      const orderMatch = url.pathname.match(/^\/api\/order\/([^/]+)\/?$/)
+      if (orderMatch && request.method === 'GET') {
+        const record = await getOrder(env, decodeURIComponent(orderMatch[1]))
+        if (!record) return json({ ok: false, error: '找不到訂單' }, 404, cors)
+        return json({ ok: true, order: publicOrderView(record) }, 200, cors)
+      }
+
+      if (url.pathname === '/api/dev/simulate-paid' && request.method === 'POST') {
+        return await handleSimulatePaid(request, env, cors)
+      }
+
+      if (url.pathname === '/api/admin/retry-sync' && request.method === 'POST') {
+        return await handleRetrySync(request, env, cors)
+      }
+
       return json({ ok: false, error: 'Not found' }, 404, cors)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -64,11 +94,11 @@ export default {
 
 /**
  * @param {Request} request
- * @param {Record<string, string>} env
+ * @param {any} env
  * @param {Record<string, string>} cors
  */
 async function handleCheckout(request, env, cors) {
-  assertSecrets(env)
+  assertNewebpaySecrets(env)
   /** @type {any} */
   const body = await request.json()
   const bom = Array.isArray(body?.bom) ? body.bom : []
@@ -105,6 +135,42 @@ async function handleCheckout(request, env, cors) {
   const email =
     clip(String(body?.email || env.NEWEBPAY_DEFAULT_EMAIL || ''), 50) ||
     'buyer@pearl-diy.local'
+  const recipe = clip(String(body?.recipe || formatRecipe(bom)), 500)
+
+  /** @type {object} */
+  const record = {
+    merchantOrderNo,
+    status: 'pending',
+    amountTwd: amt,
+    beadsSubtotal,
+    designFee,
+    shipping,
+    designName,
+    wristCm: clip(String(body?.wristCm || ''), 32),
+    detailsMode: clip(String(body?.detailsMode || 'normal'), 32),
+    designId: clip(String(body?.designId || ''), 64),
+    plazaPublishId: clip(String(body?.plazaPublishId || ''), 64),
+    designerId: clip(String(body?.designerId || ''), 64),
+    designImageUrl: clip(String(body?.designImageUrl || ''), 500),
+    recipe,
+    email,
+    bom: bom.map((row) => ({
+      productId: String(row.productId || ''),
+      name: String(row.name || ''),
+      diameterMm: Number(row.diameterMm) || 0,
+      qty: Math.max(1, Math.round(Number(row.qty) || 1)),
+      unitPrice: Number(row.unitPrice) || 0,
+      lineTotal: Number(row.lineTotal) || 0,
+    })),
+    shippingAddress: body?.shippingAddress || null,
+    createdAt: Date.now(),
+    shopifyOrderId: null,
+    shopifyOrderName: null,
+    shopifyError: null,
+    newebpay: null,
+  }
+
+  await putOrder(env, merchantOrderNo, record)
 
   const tradePlain = {
     MerchantID: env.NEWEBPAY_MERCHANT_ID,
@@ -119,20 +185,15 @@ async function handleCheckout(request, env, cors) {
     NotifyURL: `${publicBase}/api/notify`,
     ClientBackURL: String(env.H5_RETURN_URL || publicBase),
     CREDIT: '1',
-    // Optional channels — NewebPay ignores if not enabled on the merchant
     VACC: '1',
     CVS: '1',
     LINEPAY: '1',
   }
 
-  // Order comment for merchant (not all envs support; keep short in ItemDesc)
-  const recipe = clip(String(body?.recipe || formatRecipe(bom)), 200)
-
   const tradeInfo = await encryptTradeInfo(tradePlain, env)
   const tradeSha = await tradeShaOf(tradeInfo, env)
   const envName = String(env.NEWEBPAY_ENV || 'sandbox').toLowerCase()
-  const gatewayUrl =
-    GATEWAYS[envName] || GATEWAYS.sandbox
+  const gatewayUrl = GATEWAYS[envName] || GATEWAYS.sandbox
 
   console.log('[newebpay] checkout', {
     merchantOrderNo,
@@ -140,7 +201,6 @@ async function handleCheckout(request, env, cors) {
     beadsSubtotal,
     designFee,
     shipping,
-    recipe: recipe.slice(0, 80),
   })
 
   return json(
@@ -162,10 +222,10 @@ async function handleCheckout(request, env, cors) {
 
 /**
  * @param {Request} request
- * @param {Record<string, string>} env
+ * @param {any} env
  */
 async function handleNotify(request, env) {
-  assertSecrets(env)
+  assertNewebpaySecrets(env)
   const form = await request.formData()
   const tradeInfo = String(form.get('TradeInfo') || '')
   const tradeSha = String(form.get('TradeSha') || '')
@@ -189,15 +249,28 @@ async function handleNotify(request, env) {
     return new Response('FAIL', { status: 400 })
   }
 
+  const result = payload?.Result || {}
+  const merchantOrderNo = String(result.MerchantOrderNo || '')
+  const status = String(payload?.Status || '')
+
   console.log('[newebpay] notify', {
-    Status: payload?.Status,
-    MerchantOrderNo: payload?.Result?.MerchantOrderNo,
-    TradeNo: payload?.Result?.TradeNo,
-    Amt: payload?.Result?.Amt,
-    PaymentType: payload?.Result?.PaymentType,
+    Status: status,
+    MerchantOrderNo: merchantOrderNo,
+    TradeNo: result.TradeNo,
+    Amt: result.Amt,
+    PaymentType: result.PaymentType,
   })
 
-  // MVP: acknowledge only. Persist via KV/DB later if needed.
+  if (status === 'SUCCESS' && merchantOrderNo) {
+    await markPaidAndSyncShopify(env, merchantOrderNo, {
+      tradeNo: String(result.TradeNo || ''),
+      paymentType: String(result.PaymentType || ''),
+      payTime: String(result.PayTime || ''),
+      amt: result.Amt,
+    })
+  }
+
+  // Always OK after valid signature so NewebPay stops retrying.
   return new Response('OK', {
     status: 200,
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -205,17 +278,175 @@ async function handleNotify(request, env) {
 }
 
 /**
+ * Dev-only: pretend NewebPay paid (for Shopify sync QA before merchant approval).
  * @param {Request} request
- * @param {Record<string, string>} env
+ * @param {any} env
+ * @param {Record<string, string>} cors
+ */
+async function handleSimulatePaid(request, env, cors) {
+  if (!isDevSimulateEnabled(env)) {
+    return json({ ok: false, error: 'DEV simulate 未開啟' }, 403, cors)
+  }
+  /** @type {any} */
+  const body = await request.json().catch(() => ({}))
+  const merchantOrderNo = String(body?.merchantOrderNo || '').trim()
+  if (!merchantOrderNo) {
+    return json({ ok: false, error: '缺少 merchantOrderNo' }, 400, cors)
+  }
+  const synced = await markPaidAndSyncShopify(env, merchantOrderNo, {
+    tradeNo: `SIM-${Date.now()}`,
+    paymentType: 'SIMULATE',
+    payTime: new Date().toISOString(),
+    amt: body?.amt,
+  })
+  return json({ ok: true, order: publicOrderView(synced) }, 200, cors)
+}
+
+/**
+ * Retry Shopify sync for a paid order that failed earlier.
+ * @param {Request} request
+ * @param {any} env
+ * @param {Record<string, string>} cors
+ */
+async function handleRetrySync(request, env, cors) {
+  const secret = String(env.ADMIN_SYNC_SECRET || '').trim()
+  if (secret) {
+    const got = request.headers.get('X-Admin-Sync-Secret') || ''
+    if (got !== secret) {
+      return json({ ok: false, error: '未授權' }, 401, cors)
+    }
+  } else if (!isDevSimulateEnabled(env)) {
+    return json(
+      { ok: false, error: '請設定 ADMIN_SYNC_SECRET 或 ALLOW_DEV_SIMULATE' },
+      403,
+      cors,
+    )
+  }
+
+  /** @type {any} */
+  const body = await request.json().catch(() => ({}))
+  const merchantOrderNo = String(body?.merchantOrderNo || '').trim()
+  if (!merchantOrderNo) {
+    return json({ ok: false, error: '缺少 merchantOrderNo' }, 400, cors)
+  }
+  const record = await getOrder(env, merchantOrderNo)
+  if (!record) return json({ ok: false, error: '找不到訂單' }, 404, cors)
+  if (record.shopifyOrderId) {
+    return json({ ok: true, order: publicOrderView(record), skipped: true }, 200, cors)
+  }
+  if (record.status !== 'paid' && record.status !== 'shopify_failed') {
+    return json(
+      { ok: false, error: `訂單狀態不可重試：${record.status}` },
+      400,
+      cors,
+    )
+  }
+  const synced = await syncShopifyFromRecord(env, record, record.newebpay || {})
+  return json({ ok: true, order: publicOrderView(synced) }, 200, cors)
+}
+
+/**
+ * @param {any} env
+ * @param {string} merchantOrderNo
+ * @param {{ tradeNo?: string, paymentType?: string, payTime?: string, amt?: number|string }} pay
+ */
+async function markPaidAndSyncShopify(env, merchantOrderNo, pay) {
+  let record = await getOrder(env, merchantOrderNo)
+  if (!record) {
+    console.error('[newebpay] paid but no pending record', merchantOrderNo)
+    record = {
+      merchantOrderNo,
+      status: 'paid',
+      amountTwd: Math.round(Number(pay.amt) || 0),
+      beadsSubtotal: 0,
+      designFee: 0,
+      shipping: 0,
+      designName: '未知設計',
+      bom: [],
+      email: '',
+      createdAt: Date.now(),
+      shopifyOrderId: null,
+      shopifyError: 'checkout record missing',
+      newebpay: pay,
+    }
+    await putOrder(env, merchantOrderNo, record)
+  }
+
+  if (record.shopifyOrderId) {
+    return record
+  }
+
+  const paidAmt = Math.round(Number(pay.amt != null ? pay.amt : record.amountTwd) || 0)
+  if (paidAmt && record.amountTwd && paidAmt !== record.amountTwd) {
+    console.warn('[newebpay] amount mismatch', {
+      expected: record.amountTwd,
+      paid: paidAmt,
+      merchantOrderNo,
+    })
+  }
+
+  record.status = 'paid'
+  record.newebpay = {
+    tradeNo: pay.tradeNo || '',
+    paymentType: pay.paymentType || '',
+    payTime: pay.payTime || '',
+    amt: paidAmt || record.amountTwd,
+  }
+  record.paidAt = Date.now()
+  await putOrder(env, merchantOrderNo, record)
+
+  return syncShopifyFromRecord(env, record, record.newebpay)
+}
+
+/**
+ * @param {any} env
+ * @param {object} record
+ * @param {object} pay
+ */
+async function syncShopifyFromRecord(env, record, pay) {
+  if (record.shopifyOrderId) return record
+
+  if (!shopDomain(env) || !String(env.SHOPIFY_ADMIN_TOKEN || '').trim()) {
+    record.status = 'shopify_failed'
+    record.shopifyError = '未設定 Shopify Admin（SHOPIFY_STORE_DOMAIN / TOKEN）'
+    await putOrder(env, record.merchantOrderNo, record)
+    console.error('[shopify]', record.shopifyError)
+    return record
+  }
+
+  try {
+    const created = await createPaidShopifyOrder(env, record, pay)
+    record.shopifyOrderId = created.id
+    record.shopifyOrderName = created.name
+    record.shopifyAdminUrl = created.adminUrl
+    record.shopifyError = null
+    record.status = 'shopify_synced'
+    record.syncedAt = Date.now()
+    await putOrder(env, record.merchantOrderNo, record)
+    console.log('[shopify] order created', created)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    record.status = 'shopify_failed'
+    record.shopifyError = msg
+    await putOrder(env, record.merchantOrderNo, record)
+    console.error('[shopify] sync failed', msg)
+  }
+  return record
+}
+
+/**
+ * @param {Request} request
+ * @param {any} env
  */
 async function handleReturn(request, env) {
   const h5 = String(env.H5_RETURN_URL || '/').trim() || '/'
   let status = 'unknown'
   let orderNo = ''
   let amt = ''
+  let shopifyName = ''
 
   try {
-    assertSecrets(env)
+    assertNewebpaySecrets(env)
     let tradeInfo = ''
     let tradeSha = ''
     if (request.method === 'POST') {
@@ -235,6 +466,16 @@ async function handleReturn(request, env) {
         status = payload?.Status === 'SUCCESS' ? 'success' : 'failed'
         orderNo = String(payload?.Result?.MerchantOrderNo || '')
         amt = String(payload?.Result?.Amt || '')
+        if (status === 'success' && orderNo) {
+          // Best-effort sync if notify is slow (idempotent).
+          const synced = await markPaidAndSyncShopify(env, orderNo, {
+            tradeNo: String(payload?.Result?.TradeNo || ''),
+            paymentType: String(payload?.Result?.PaymentType || ''),
+            payTime: String(payload?.Result?.PayTime || ''),
+            amt: payload?.Result?.Amt,
+          })
+          shopifyName = synced?.shopifyOrderName || ''
+        }
       } else {
         status = 'bad_signature'
       }
@@ -244,8 +485,6 @@ async function handleReturn(request, env) {
     status = 'error'
   }
 
-  const dest = new URL(h5, 'https://example.invalid')
-  // If H5_RETURN_URL is absolute, URL() keeps it; if relative, fall back below.
   let redirectTo = h5
   try {
     if (/^https?:\/\//i.test(h5)) {
@@ -253,6 +492,7 @@ async function handleReturn(request, env) {
       u.searchParams.set('pay', status)
       if (orderNo) u.searchParams.set('order', orderNo)
       if (amt) u.searchParams.set('amt', amt)
+      if (shopifyName) u.searchParams.set('shopify', shopifyName)
       redirectTo = u.toString()
     }
   } catch {
@@ -268,8 +508,10 @@ a{display:inline-block;margin-top:1rem;padding:.75rem 1.25rem;background:#1c1917
   }</h1>
 <p style="margin:0;font-size:.875rem;color:#78716c">${
     status === 'success'
-      ? `訂單 ${escapeHtml(orderNo)}｜NT$${escapeHtml(amt)}`
-      : '若已扣款，請稍後在「我的訂單」確認，或聯繫客服。'
+      ? `訂單 ${escapeHtml(orderNo)}${
+          shopifyName ? `｜Shopify ${escapeHtml(shopifyName)}` : ''
+        }｜NT$${escapeHtml(amt)}`
+      : '若已扣款，請稍後在訂單列表確認，或聯繫客服。'
   }</p>
 <a href="${escapeHtml(redirectTo)}">返回商店</a>
 <script>setTimeout(function(){location.replace(${JSON.stringify(
@@ -283,8 +525,42 @@ a{display:inline-block;margin-top:1rem;padding:.75rem 1.25rem;background:#1c1917
   })
 }
 
-/** @param {Record<string, string>} env */
-function assertSecrets(env) {
+/** @param {object} record */
+function publicOrderView(record) {
+  return {
+    merchantOrderNo: record.merchantOrderNo,
+    status: record.status,
+    amountTwd: record.amountTwd,
+    beadsSubtotal: record.beadsSubtotal,
+    designFee: record.designFee,
+    shipping: record.shipping,
+    designName: record.designName,
+    shopifyOrderId: record.shopifyOrderId,
+    shopifyOrderName: record.shopifyOrderName,
+    shopifyAdminUrl: record.shopifyAdminUrl,
+    shopifyError: record.shopifyError,
+    newebpay: record.newebpay,
+    createdAt: record.createdAt,
+    paidAt: record.paidAt,
+    syncedAt: record.syncedAt,
+  }
+}
+
+/** @param {any} env */
+function isDevSimulateEnabled(env) {
+  return String(env.ALLOW_DEV_SIMULATE || '') === '1'
+}
+
+/** @param {any} env */
+function shopDomain(env) {
+  return String(env.SHOPIFY_STORE_DOMAIN || '')
+    .trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+}
+
+/** @param {any} env */
+function assertNewebpaySecrets(env) {
   if (!env.NEWEBPAY_MERCHANT_ID || !env.NEWEBPAY_HASH_KEY || !env.NEWEBPAY_HASH_IV) {
     throw new Error('缺少 NEWEBPAY_MERCHANT_ID / HASH_KEY / HASH_IV')
   }
@@ -292,7 +568,7 @@ function assertSecrets(env) {
 
 /**
  * @param {Record<string, string>} fields
- * @param {Record<string, string>} env
+ * @param {any} env
  */
 async function encryptTradeInfo(fields, env) {
   const query = Object.entries(fields)
@@ -311,7 +587,7 @@ async function encryptTradeInfo(fields, env) {
 
 /**
  * @param {string} tradeInfoHex
- * @param {Record<string, string>} env
+ * @param {any} env
  */
 async function decryptTradeInfo(tradeInfoHex, env) {
   const key = await importAesKey(env.NEWEBPAY_HASH_KEY)
@@ -326,7 +602,7 @@ async function decryptTradeInfo(tradeInfoHex, env) {
 
 /**
  * @param {string} tradeInfo
- * @param {Record<string, string>} env
+ * @param {any} env
  */
 async function tradeShaOf(tradeInfo, env) {
   const raw = `HashKey=${env.NEWEBPAY_HASH_KEY}&${tradeInfo}&HashIV=${env.NEWEBPAY_HASH_IV}`
@@ -401,7 +677,7 @@ function hexToBuffer(hex) {
 
 /**
  * @param {Request} request
- * @param {Record<string, string>} env
+ * @param {any} env
  */
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin') || ''
@@ -417,7 +693,7 @@ function corsHeaders(request, env) {
   return {
     'Access-Control-Allow-Origin': value,
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type,X-Admin-Sync-Secret',
     'Access-Control-Max-Age': '86400',
   }
 }

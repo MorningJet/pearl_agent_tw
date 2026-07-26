@@ -22,7 +22,7 @@ Unless the user explicitly says **不要推送 / don't push**, finish the task b
 |--------|-----------|
 | H5 UI / checkout / CSS / pages (`src/`, `index.html`, `public/`) | Commit + push → Pages |
 | Checkout / Storefront env | Also ensure GitHub **Secrets/Vars** match (domain, token, design-fee GID, `VITE_NEWEBPAY_API_BASE`) |
-| NewebPay Worker (`workers/newebpay/`) | Deploy with `npm run newebpay:deploy`; put HashKey/HashIV in **Wrangler secrets** only; set `PUBLIC_API_BASE` |
+| NewebPay Worker (`workers/newebpay/`) | Deploy with `npm run newebpay:deploy`; put HashKey/HashIV + `SHOPIFY_ADMIN_TOKEN` in Wrangler secrets; set `PUBLIC_API_BASE` + real KV ids; disable `ALLOW_DEV_SIMULATE` in production |
 | Product CSV (`other/shopify_products_import.csv`) | Commit CSV + remind Admin **Products → Import** (or bulk edit) |
 | Theme embed (`docs/shopify-embed-page.liquid`) | Commit + remind Admin paste into theme Page template (`{% layout none %}`) |
 | Catalog Excel / `new_input/` | `npm run sync:catalog` then commit generated assets; Shopify products still need CSV/Admin update if SKUs change |
