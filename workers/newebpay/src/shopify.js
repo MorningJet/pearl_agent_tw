@@ -218,7 +218,7 @@ async function createShopifyOrder(env, record, opts) {
     send_receipt: false,
     send_fulfillment_receipt: false,
     taxes_included: true,
-    inventory_behaviour: 'decrement_obeying_policy',
+    inventory_behaviour: 'bypass',
     tags: buildTags(opts.h5Status),
     note,
     note_attributes: noteAttributes,

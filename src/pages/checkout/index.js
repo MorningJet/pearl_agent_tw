@@ -469,6 +469,7 @@ async function submitCheckout() {
 
     if (result.paymentReady) {
       if (btn) btn.textContent = '前往付款…'
+      // Keep button disabled while navigating to NewebPay.
       submitNewebpayForm(result)
       return
     }
@@ -486,6 +487,11 @@ async function submitCheckout() {
     const msg = err instanceof Error ? err.message : String(err || '未知錯誤')
     showToast(`下單失敗：${msg}`)
   } finally {
+    // Don't re-enable if we already handed off to NewebPay (page is navigating).
+    if (document.getElementById('checkout-submit')?.textContent === '前往付款…') {
+      submitInFlight = false
+      return
+    }
     submitInFlight = false
     if (btn) {
       btn.removeAttribute('disabled')

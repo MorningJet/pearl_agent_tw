@@ -79,31 +79,40 @@ export async function createNewebpayCheckout(bom, meta) {
     beadsSubtotal >= FREE_SHIPPING_MIN_TWD ? 0 : STANDARD_SHIPPING_TWD
 
   try {
-    const res = await fetch(`${base}/api/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        bom,
-        designName: meta.designName || '',
-        wristCm: meta.wristCm || '',
-        wristCmNum:
-          meta.wristCmNum != null && Number.isFinite(Number(meta.wristCmNum))
-            ? Number(meta.wristCmNum)
-            : undefined,
-        beadProductCode: meta.beadProductCode || '',
-        detailsMode: meta.detailsMode || 'normal',
-        designId: meta.designId || '',
-        plazaPublishId: meta.plazaPublishId || '',
-        designerId: meta.designerId || '',
-        designFeeTwd: designFee,
-        beadsSubtotalTwd: beadsSubtotal,
-        shippingTwd: shipping,
-        designImageUrl: publicDesignImageUrl(meta.designImageUrl || ''),
-        recipe: formatRecipe(bom),
-        email: meta.email || '',
-        shippingAddress: meta.shippingAddress || null,
-      }),
-    })
+    const controller = new AbortController()
+    const timeoutMs = 25000
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs)
+    let res
+    try {
+      res = await fetch(`${base}/api/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bom,
+          designName: meta.designName || '',
+          wristCm: meta.wristCm || '',
+          wristCmNum:
+            meta.wristCmNum != null && Number.isFinite(Number(meta.wristCmNum))
+              ? Number(meta.wristCmNum)
+              : undefined,
+          beadProductCode: meta.beadProductCode || '',
+          detailsMode: meta.detailsMode || 'normal',
+          designId: meta.designId || '',
+          plazaPublishId: meta.plazaPublishId || '',
+          designerId: meta.designerId || '',
+          designFeeTwd: designFee,
+          beadsSubtotalTwd: beadsSubtotal,
+          shippingTwd: shipping,
+          designImageUrl: publicDesignImageUrl(meta.designImageUrl || ''),
+          recipe: formatRecipe(bom),
+          email: meta.email || '',
+          shippingAddress: meta.shippingAddress || null,
+        }),
+        signal: controller.signal,
+      })
+    } finally {
+      window.clearTimeout(timer)
+    }
     /** @type {any} */
     const data = await res.json().catch(() => null)
     if (!res.ok || !data?.ok) {
@@ -150,6 +159,9 @@ export async function createNewebpayCheckout(bom, meta) {
       ...baseOrder,
     }
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { ok: false, error: '建立訂單逾時，請稍後再試' }
+    }
     const msg = e instanceof Error ? e.message : String(e || '網路錯誤')
     return { ok: false, error: `無法連接結帳服務：${msg}` }
   }
