@@ -45,7 +45,6 @@ import { getSeedPlazaAsPublished, resolvePlazaPreviewUrl } from '../home/plazaDa
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
-import { isNewebpayConfigured } from '../../shared/newebpay/checkout.js'
 import { openCheckout } from '../checkout/index.js'
 
 /** @type {string} */

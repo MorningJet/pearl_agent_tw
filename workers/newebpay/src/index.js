@@ -50,10 +50,20 @@ export default {
 
     try {
       if (url.pathname === '/health') {
+        const domain = String(env.SHOPIFY_STORE_DOMAIN || '')
+          .trim()
+          .replace(/^https?:\/\//, '')
+          .replace(/\/$/, '')
         return json(
           {
             ok: true,
             shopifyConfigured: isShopifyAuthConfigured(env),
+            shopify: {
+              hasDomain: Boolean(domain),
+              hasAdminToken: Boolean(String(env.SHOPIFY_ADMIN_TOKEN || '').trim()),
+              hasClientId: Boolean(String(env.SHOPIFY_CLIENT_ID || '').trim()),
+              hasClientSecret: Boolean(String(env.SHOPIFY_CLIENT_SECRET || '').trim()),
+            },
             shopifyWebhookConfigured: Boolean(String(env.SHOPIFY_WEBHOOK_SECRET || '').trim()),
             ordersKv: Boolean(env.ORDERS),
             allowDevSimulate: isDevSimulateEnabled(env),
