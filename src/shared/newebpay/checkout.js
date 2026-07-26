@@ -183,57 +183,109 @@ function needsCheckoutBreakout() {
 }
 
 /**
- * Open a visible top-level window so Cloudflare Turnstile / JS challenge can render.
- * Must run synchronously inside the click handler (user gesture).
- * @returns {Window | null}
+ * Absolute API base (relative `/newebpay-api` must resolve against the H5 origin).
+ * @returns {string}
  */
-function openCheckoutBreakoutWindow() {
-  let win = null
+function newebpayApiBase() {
+  const raw = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
+    .trim()
+    .replace(/\/$/, '')
+  if (!raw) return ''
   try {
-    win = window.open('about:blank', CHECKOUT_WINDOW_NAME)
+    return new URL(raw, window.location.href).href.replace(/\/$/, '')
   } catch {
-    win = null
+    return raw
   }
-  if (!win || win.closed) return null
-
-  try {
-    win.document.open()
-    win.document.write(`<!doctype html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>前往付款</title>
-  <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#292524;padding:1.25rem;text-align:center}
-    p{margin:0.4rem 0;font-size:0.95rem;line-height:1.5}
-    .muted{color:#78716c;font-size:0.8rem}
-  </style>
-</head>
-<body>
-  <div>
-    <p>正在前往付款頁…</p>
-    <p class="muted">若出現人機驗證，請在本視窗完成驗證後繼續</p>
-  </div>
-</body>
-</html>`)
-    win.document.close()
-  } catch {
-    /* cross-origin or restricted document — form target still works by name */
-  }
-  try {
-    win.focus()
-  } catch {
-    /* ignore */
-  }
-  return win
 }
 
 /**
- * Start NewebPay checkout by navigating a top-level browsing context to the Worker.
- * Fetching / posting to workers.dev from inside the Shopify iframe hangs on Cloudflare
- * challenges (verification UI never appears). Prefer a named popup opened on click;
- * fall back to `_top` when popups are blocked.
+ * @param {string} actionUrl
+ * @param {Record<string, unknown>} payload
+ * @param {string} target
+ */
+function postCheckoutForm(actionUrl, payload, target) {
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = actionUrl
+  form.acceptCharset = 'UTF-8'
+  form.style.display = 'none'
+  form.target = target
+
+  const input = document.createElement('input')
+  input.type = 'hidden'
+  input.name = 'payload'
+  input.value = JSON.stringify(payload)
+  form.appendChild(input)
+  document.body.appendChild(form)
+  form.submit()
+  window.setTimeout(() => {
+    try {
+      form.remove()
+    } catch {
+      /* ignore */
+    }
+  }, 0)
+}
+
+/**
+ * Keep posting payload until the workers.dev bridge page acknowledges
+ * (bridge may load only after the user finishes a Cloudflare challenge).
+ * @param {Window} win
+ * @param {string} apiOrigin
+ * @param {Record<string, unknown>} payload
+ */
+function beginBridgeHandshake(win, apiOrigin, payload) {
+  let done = false
+  /** @type {ReturnType<typeof window.setInterval> | null} */
+  let timer = null
+
+  const cleanup = () => {
+    done = true
+    window.removeEventListener('message', onMsg)
+    if (timer != null) {
+      window.clearInterval(timer)
+      timer = null
+    }
+  }
+
+  const send = () => {
+    if (done) return
+    try {
+      if (!win || win.closed) {
+        cleanup()
+        return
+      }
+      win.postMessage({ type: 'pearl-checkout-payload', payload }, apiOrigin)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** @param {MessageEvent} e */
+  const onMsg = (e) => {
+    if (e.origin !== apiOrigin) return
+    const type = /** @type {{ type?: string }} */ (e.data || {}).type
+    if (type === 'pearl-checkout-bridge-ready') {
+      send()
+      return
+    }
+    if (type === 'pearl-checkout-received') {
+      cleanup()
+    }
+  }
+
+  window.addEventListener('message', onMsg)
+  send()
+  timer = window.setInterval(send, 400)
+  window.setTimeout(cleanup, 120000)
+}
+
+/**
+ * Start NewebPay checkout in a top-level browsing context.
+ *
+ * Inside Shopify iframe: open workers.dev `/api/checkout-bridge` (so Cloudflare
+ * challenges can render), then postMessage the order payload. Never leave the
+ * user on a blank about:blank placeholder that never navigates.
  *
  * @param {Array<{ productId: string, name: string, diameterMm: number, qty: number, unitPrice?: number, lineTotal?: number }>} bom
  * @param {CheckoutMeta} meta
@@ -247,14 +299,19 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
   if (!bom?.length) {
     return { ok: false, error: '設計中沒有珠子，無法下單' }
   }
-  const base = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
-    .trim()
-    .replace(/\/$/, '')
+  const base = newebpayApiBase()
   if (!base) {
     return {
       ok: false,
       error: '尚未設定結帳服務（VITE_NEWEBPAY_API_BASE）',
     }
+  }
+
+  let apiOrigin = ''
+  try {
+    apiOrigin = new URL(base).origin
+  } catch {
+    return { ok: false, error: '結帳服務網址無效' }
   }
 
   const beadsSubtotal = resolveBeadsSubtotal(bom, meta)
@@ -284,46 +341,35 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
     shippingAddress: meta.shippingAddress || null,
   }
 
-  /** @type {'popup' | 'top' | 'self'} */
-  let mode = 'self'
-  /** @type {Window | null} */
-  let checkoutWindow = null
+  const checkoutAction = `${base}/api/checkout-browser`
+  const bridgeUrl = `${base}/api/checkout-bridge`
 
   if (needsCheckoutBreakout()) {
-    checkoutWindow = openCheckoutBreakoutWindow()
-    if (checkoutWindow) {
-      mode = 'popup'
-    } else {
-      // Popup blocked — leave the Shopify iframe so CF can render on the parent tab.
-      mode = 'top'
+    /** @type {Window | null} */
+    let checkoutWindow = null
+    try {
+      checkoutWindow = window.open(bridgeUrl, CHECKOUT_WINDOW_NAME)
+    } catch {
+      checkoutWindow = null
     }
+
+    if (checkoutWindow && !checkoutWindow.closed) {
+      beginBridgeHandshake(checkoutWindow, apiOrigin, payload)
+      try {
+        checkoutWindow.focus()
+      } catch {
+        /* ignore */
+      }
+      return { ok: true, mode: 'popup', checkoutWindow }
+    }
+
+    // Popup blocked — leave the Shopify page entirely.
+    postCheckoutForm(checkoutAction, payload, '_top')
+    return { ok: true, mode: 'top', checkoutWindow: null }
   }
 
-  const form = document.createElement('form')
-  form.method = 'POST'
-  form.action = `${base}/api/checkout-browser`
-  form.acceptCharset = 'UTF-8'
-  form.style.display = 'none'
-  form.target =
-    mode === 'popup' ? CHECKOUT_WINDOW_NAME : mode === 'top' ? '_top' : '_self'
-
-  const input = document.createElement('input')
-  input.type = 'hidden'
-  input.name = 'payload'
-  input.value = JSON.stringify(payload)
-  form.appendChild(input)
-  document.body.appendChild(form)
-  form.submit()
-  // Form can be removed after submit queues navigation.
-  window.setTimeout(() => {
-    try {
-      form.remove()
-    } catch {
-      /* ignore */
-    }
-  }, 0)
-
-  return { ok: true, mode, checkoutWindow }
+  postCheckoutForm(checkoutAction, payload, '_self')
+  return { ok: true, mode: 'self', checkoutWindow: null }
 }
 
 /**

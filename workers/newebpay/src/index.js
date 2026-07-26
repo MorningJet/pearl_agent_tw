@@ -124,6 +124,11 @@ export default {
         return await handleCheckout(request, env, cors, ctx)
       }
 
+      // Top-level GET bridge: CF challenge can render here, then postMessage payload → checkout.
+      if (url.pathname === '/api/checkout-bridge' && request.method === 'GET') {
+        return checkoutBridgeHtml(env)
+      }
+
       // Browser form POST from H5 (breaks out of Shopify iframe — CF challenges hang in iframes).
       if (url.pathname === '/api/checkout-browser' && request.method === 'POST') {
         return await handleCheckoutBrowser(request, env, ctx)
@@ -178,6 +183,120 @@ async function handleCheckout(request, env, cors, ctx) {
     return json({ ok: false, error: result.error }, result.status || 400, cors)
   }
   return json(result.body, 200, cors)
+}
+
+/**
+ * Visible top-level page on workers.dev so Cloudflare bot checks can render.
+ * H5 opens this via window.open, then postMessages the checkout payload.
+ * @param {any} env
+ */
+function checkoutBridgeHtml(env) {
+  const h5 = String(env.H5_RETURN_URL || '').trim() || 'https://morningjet.github.io/pearl_agent_tw/?embed=1'
+  const html = `<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>前往付款</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#292524;padding:1.25rem;text-align:center}
+    .card{max-width:22rem}
+    p{margin:0.45rem 0;font-size:0.95rem;line-height:1.5}
+    .muted{color:#78716c;font-size:0.8rem}
+    a,button{display:inline-block;margin-top:1rem;padding:0.65rem 1.2rem;border-radius:999px;border:0;background:#292524;color:#fff;font-size:0.875rem;font-weight:600;text-decoration:none;cursor:pointer}
+    a.secondary,button.secondary{background:#fff;color:#292524;border:1px solid #d6d3d1}
+    #actions{display:none;margin-top:0.5rem}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p id="title">正在準備付款…</p>
+    <p class="muted" id="hint">若本頁出現人機驗證，請先完成驗證</p>
+    <div id="actions">
+      <a class="secondary" href="${escapeAttr(h5)}">返回商店</a>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var received = false;
+      var title = document.getElementById('title');
+      var hint = document.getElementById('hint');
+      var actions = document.getElementById('actions');
+
+      function allowOrigin(origin) {
+        if (!origin) return false;
+        try {
+          var u = new URL(origin);
+          if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+          if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') return true;
+          if (u.hostname.endsWith('.github.io')) return true;
+          if (u.hostname.endsWith('.myshopify.com')) return true;
+          if (u.hostname === 'pearl-diy.myshopify.com') return true;
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function submitPayload(payload) {
+        if (received) return;
+        received = true;
+        title.textContent = '正在前往藍新金流…';
+        hint.textContent = '請稍候，不要關閉此視窗';
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/api/checkout-browser';
+        form.acceptCharset = 'UTF-8';
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'payload';
+        input.value = typeof payload === 'string' ? payload : JSON.stringify(payload);
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+      }
+
+      window.addEventListener('message', function (e) {
+        if (!allowOrigin(e.origin)) return;
+        var data = e.data || {};
+        if (data.type !== 'pearl-checkout-payload' || data.payload == null) return;
+        try {
+          if (e.source) e.source.postMessage({ type: 'pearl-checkout-received' }, e.origin);
+        } catch (err) {}
+        submitPayload(data.payload);
+      });
+
+      function announceReady() {
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({ type: 'pearl-checkout-bridge-ready' }, '*');
+          }
+        } catch (err) {}
+      }
+      announceReady();
+      setInterval(function () {
+        if (!received) announceReady();
+      }, 500);
+
+      setTimeout(function () {
+        if (received) return;
+        title.textContent = '仍在等待訂單資料…';
+        hint.textContent = '請回到上一頁確認已點擊「立即付款」。若出現人機驗證，請先在本視窗完成。';
+        actions.style.display = 'block';
+      }, 8000);
+    })();
+  </script>
+</body>
+</html>`
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      // Allow H5 iframe/opener to talk to this bridge.
+      'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self' https://ccore.newebpay.com https://core.newebpay.com; base-uri 'none'",
+    },
+  })
 }
 
 /**

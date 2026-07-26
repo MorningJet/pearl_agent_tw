@@ -463,7 +463,7 @@ async function submitCheckout() {
     if (nav.mode === 'popup') {
       showPayBreakoutOverlay({
         title: '請在新視窗完成付款',
-        body: '付款頁已在新視窗開啟。若出現人機驗證（Cloudflare），請在該視窗完成驗證後繼續前往藍新金流。',
+        body: '已開啟付款視窗。請先在該視窗完成人機驗證（若有），驗證通過後會自動前往藍新金流。',
       })
       // Keep CTA usable if the popup was closed or blocked mid-flight.
       submitRecoverTimer = window.setTimeout(() => {
