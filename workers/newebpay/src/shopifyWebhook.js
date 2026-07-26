@@ -51,7 +51,7 @@ export async function handleShopifyWebhook(request, env) {
   }
 
   const mirror = buildMirror(order, topic)
-  await putShopifyOrderMirror(env, mirror)
+  await putShopifyOrderMirror(env, await mergeMirrorPreservingBom(env, mirror))
 
   // Keep NewebPay checkout record in sync when we can resolve merchant order no
   if (mirror.merchantOrderNo) {
@@ -102,21 +102,7 @@ export async function handleH5OrderStatus(url, env, cors) {
         return json(
           {
             ok: true,
-            order: {
-              merchantOrderNo: record.merchantOrderNo,
-              shopifyOrderId: record.shopifyOrderId || null,
-              shopifyOrderName: record.shopifyOrderName || null,
-              h5Status: record.h5Status || mapNewebpayRecordStatus(record),
-              trackingNo: record.trackingNo || '',
-              amountTwd: record.amountTwd,
-              beadsSubtotalTwd: record.beadsSubtotal ?? null,
-              designFeeTwd: record.designFee ?? null,
-              shippingTwd: record.shipping ?? null,
-              wristCm: record.wristCmNum ?? null,
-              title: record.designName || '',
-              imageUrl: record.designImageUrl || '',
-              updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
-            },
+            order: publicFromCheckoutRecord(record),
           },
           200,
           cors,
@@ -163,21 +149,7 @@ export async function handleH5OrderStatusBatch(request, env, cors) {
     if (!m) {
       const record = await getOrder(env, no)
       if (record) {
-        orders.push({
-          merchantOrderNo: record.merchantOrderNo,
-          shopifyOrderId: record.shopifyOrderId || null,
-          shopifyOrderName: record.shopifyOrderName || null,
-          h5Status: record.h5Status || mapNewebpayRecordStatus(record),
-          trackingNo: record.trackingNo || '',
-          amountTwd: record.amountTwd,
-          beadsSubtotalTwd: record.beadsSubtotal ?? null,
-          designFeeTwd: record.designFee ?? null,
-          shippingTwd: record.shipping ?? null,
-          wristCm: record.wristCmNum ?? null,
-          title: record.designName || '',
-          imageUrl: record.designImageUrl || '',
-          updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
-        })
+        orders.push(publicFromCheckoutRecord(record))
       }
       continue
     }
@@ -216,22 +188,7 @@ export async function handleH5OrdersByEmail(url, env, cors) {
     if (!mirror && mno) {
       const record = await getOrder(env, mno)
       if (record) {
-        byId.set(mno, {
-          merchantOrderNo: record.merchantOrderNo,
-          shopifyOrderId: record.shopifyOrderId || null,
-          shopifyOrderName: record.shopifyOrderName || null,
-          h5Status: record.h5Status || mapNewebpayRecordStatus(record),
-          trackingNo: record.trackingNo || '',
-          title: record.designName || '',
-          amountTwd: record.amountTwd,
-          beadsSubtotalTwd: record.beadsSubtotal ?? null,
-          designFeeTwd: record.designFee ?? null,
-          shippingTwd: record.shipping ?? null,
-          wristCm: record.wristCmNum ?? null,
-          email,
-          updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
-          imageUrl: record.designImageUrl || '',
-        })
+        byId.set(mno, { ...publicFromCheckoutRecord(record), email })
       }
       continue
     }
@@ -246,9 +203,29 @@ export async function handleH5OrdersByEmail(url, env, cors) {
       const adminOrders = await listShopifyOrdersByEmail(env, email, { limit: 50 })
       for (const order of adminOrders) {
         const mirror = buildMirror(order, 'admin/list')
-        await putShopifyOrderMirror(env, mirror)
-        const key = String(mirror.shopifyOrderId || mirror.merchantOrderNo || '')
-        if (key) byId.set(key, publicMirror(mirror))
+        const merged = await mergeMirrorPreservingBom(env, mirror)
+        // Prefer checkout record BOM when Admin list has no line breakdown
+        if ((!merged.bom || !merged.bom.length) && merged.merchantOrderNo) {
+          const record = await getOrder(env, merged.merchantOrderNo)
+          if (record && Array.isArray(record.bom) && record.bom.length) {
+            merged.bom = record.bom
+            const detailsMode = String(record.detailsMode || 'normal')
+            merged.bomDisplay =
+              detailsMode === 'plaza' || detailsMode === 'plaza-edit' ? 'fee' : 'sku'
+            if (merged.beadsSubtotalTwd == null && record.beadsSubtotal != null) {
+              merged.beadsSubtotalTwd = Number(record.beadsSubtotal)
+            }
+            if (merged.designFeeTwd == null && record.designFee != null) {
+              merged.designFeeTwd = Number(record.designFee)
+            }
+            if (merged.shippingTwd == null && record.shipping != null) {
+              merged.shippingTwd = Number(record.shipping)
+            }
+          }
+        }
+        await putShopifyOrderMirror(env, merged)
+        const key = String(merged.shopifyOrderId || merged.merchantOrderNo || '')
+        if (key) byId.set(key, publicMirror(merged))
       }
     } catch (e) {
       console.warn('[h5-orders] admin list failed', e instanceof Error ? e.message : e)
@@ -269,6 +246,9 @@ export async function handleH5OrdersByEmail(url, env, cors) {
  */
 export async function mirrorFromCheckoutRecord(env, record, topic = 'checkout') {
   if (!record?.shopifyOrderId) return null
+  const detailsMode = String(record.detailsMode || 'normal')
+  const bomDisplay =
+    detailsMode === 'plaza' || detailsMode === 'plaza-edit' ? 'fee' : 'sku'
   const mirror = {
     shopifyOrderId: String(record.shopifyOrderId),
     shopifyOrderName: String(record.shopifyOrderName || ''),
@@ -290,6 +270,8 @@ export async function mirrorFromCheckoutRecord(env, record, topic = 'checkout') 
         : null,
     email: String(record.email || ''),
     imageUrl: String(record.designImageUrl || ''),
+    bomDisplay,
+    bom: Array.isArray(record.bom) ? record.bom : [],
     topic,
     updatedAt: Date.now(),
     shopifyUpdatedAt: null,
@@ -382,6 +364,34 @@ function buildMirror(order, topic) {
   }
 }
 
+/**
+ * Keep checkout BOM / fee fields when Shopify webhook only sends status.
+ * @param {any} env
+ * @param {object} mirror
+ */
+async function mergeMirrorPreservingBom(env, mirror) {
+  const existing = await getShopifyOrderMirror(env, {
+    shopifyOrderId: mirror.shopifyOrderId,
+  })
+  if (!existing) return mirror
+  if (!mirror.bom?.length && Array.isArray(existing.bom) && existing.bom.length) {
+    mirror.bom = existing.bom
+  }
+  if (!mirror.bomDisplay && existing.bomDisplay) mirror.bomDisplay = existing.bomDisplay
+  if (mirror.beadsSubtotalTwd == null && existing.beadsSubtotalTwd != null) {
+    mirror.beadsSubtotalTwd = existing.beadsSubtotalTwd
+  }
+  if (mirror.designFeeTwd == null && existing.designFeeTwd != null) {
+    mirror.designFeeTwd = existing.designFeeTwd
+  }
+  if (mirror.shippingTwd == null && existing.shippingTwd != null) {
+    mirror.shippingTwd = existing.shippingTwd
+  }
+  if (mirror.wristCm == null && existing.wristCm != null) mirror.wristCm = existing.wristCm
+  if (!mirror.imageUrl && existing.imageUrl) mirror.imageUrl = existing.imageUrl
+  return mirror
+}
+
 /** @param {object} mirror */
 function publicMirror(mirror) {
   return {
@@ -400,7 +410,32 @@ function publicMirror(mirror) {
     wristCm: mirror.wristCm ?? null,
     email: mirror.email || '',
     imageUrl: mirror.imageUrl || '',
+    bomDisplay: mirror.bomDisplay || null,
+    bom: Array.isArray(mirror.bom) ? mirror.bom : [],
     updatedAt: mirror.updatedAt,
+  }
+}
+
+/** @param {object} record */
+function publicFromCheckoutRecord(record) {
+  const detailsMode = String(record.detailsMode || 'normal')
+  return {
+    merchantOrderNo: record.merchantOrderNo,
+    shopifyOrderId: record.shopifyOrderId || null,
+    shopifyOrderName: record.shopifyOrderName || null,
+    h5Status: record.h5Status || mapNewebpayRecordStatus(record),
+    trackingNo: record.trackingNo || '',
+    amountTwd: record.amountTwd,
+    beadsSubtotalTwd: record.beadsSubtotal ?? null,
+    designFeeTwd: record.designFee ?? null,
+    shippingTwd: record.shipping ?? null,
+    wristCm: record.wristCmNum ?? null,
+    title: record.designName || '',
+    imageUrl: record.designImageUrl || '',
+    bomDisplay:
+      detailsMode === 'plaza' || detailsMode === 'plaza-edit' ? 'fee' : 'sku',
+    bom: Array.isArray(record.bom) ? record.bom : [],
+    updatedAt: record.shopifyWebhookAt || record.syncedAt || record.paidAt || record.createdAt,
   }
 }
 

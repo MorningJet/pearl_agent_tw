@@ -89,11 +89,6 @@ function detailHtml(o) {
     typeof fees.wristCm === 'number' && Number.isFinite(fees.wristCm)
       ? `手圍 ≈ ${fees.wristCm.toFixed(1)}cm`
       : ''
-  const wristLabel =
-    typeof fees.wristCm === 'number' && Number.isFinite(fees.wristCm)
-      ? `手圍 ${fees.wristCm.toFixed(1)}cm`
-      : ''
-  const shipNote = fees.ship === 0 ? '滿1000包郵' : '標準配送'
 
   const tracking =
     o.trackingNo && (status === 'shipping' || status === 'pickup' || status === 'done')
@@ -211,54 +206,7 @@ function detailHtml(o) {
     <section class="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-stone-100">
       <p class="text-sm font-semibold text-stone-900">商品明細</p>
       <ul class="mt-1 divide-y divide-stone-100 text-sm">
-        <li class="flex items-start justify-between gap-3 py-2.5">
-          <div class="min-w-0">
-            <p class="truncate font-medium text-stone-800">${escapeHtml(o.title || '手鍊設計')}</p>
-            ${
-              wristLabel
-                ? `<p class="mt-0.5 text-xs text-stone-400">${escapeHtml(wristLabel)}</p>`
-                : ''
-            }
-          </div>
-          <div class="shrink-0 text-right">
-            <p class="text-stone-600">×1</p>
-            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
-              fees.beads,
-            )}</p>
-          </div>
-        </li>
-        <li class="flex items-start justify-between gap-3 py-2.5">
-          <div class="min-w-0 pr-2">
-            <p class="font-medium text-stone-800">設計費用</p>
-            <p class="mt-0.5 text-xs text-stone-400">由設計師收取，平台不抽成</p>
-          </div>
-          <div class="shrink-0 text-right">
-            <p class="text-stone-600">×1</p>
-            <p class="mt-0.5 font-medium tabular-nums text-stone-800">${
-              fees.fee > 0 ? `NT$${formatPrice(fees.fee)}` : '免費'
-            }</p>
-          </div>
-        </li>
-        <li class="flex items-start justify-between gap-3 py-2.5">
-          <div class="min-w-0">
-            <p class="truncate font-medium text-stone-800">運費</p>
-            <p class="mt-0.5 text-xs text-stone-400">${escapeHtml(shipNote)}</p>
-          </div>
-          <div class="shrink-0 text-right">
-            <p class="text-stone-600">×1</p>
-            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
-              fees.ship,
-            )}</p>
-          </div>
-        </li>
-        <li class="flex items-center justify-between gap-3 py-2.5">
-          <span class="font-medium text-stone-900">${
-            status === 'unpaid' ? '應付金額' : '實付金額'
-          }</span>
-          <span class="font-semibold tabular-nums text-stone-900">NT$${formatPrice(
-            fees.total,
-          )}</span>
-        </li>
+        ${orderBomRowsHtml(o, fees)}
       </ul>
     </section>
 
@@ -290,6 +238,108 @@ const FREE_SHIPPING_MIN_TWD = 1000
 const STANDARD_SHIPPING_TWD = 50
 
 /**
+ * Same structure as design details「商品明細」:
+ * - sku: per-bead BOM + 運費
+ * - fee: design name + 設計費用 + 運費（廣場）
+ * @param {import('../../shared/state/ordersStore.js').Order} o
+ * @param {{ beads: number, fee: number, ship: number, wristCm: number | null }} fees
+ */
+function orderBomRowsHtml(o, fees) {
+  const shipNote = fees.ship === 0 ? '滿1000包郵' : '標準配送'
+  const shipRow = `
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">運費</p>
+            <p class="mt-0.5 text-xs text-stone-400">${escapeHtml(shipNote)}</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              fees.ship,
+            )}</p>
+          </div>
+        </li>`
+
+  const bom = Array.isArray(o.bom) ? o.bom : []
+  const useFeeSummary =
+    o.bomDisplay === 'fee' || (!bom.length && fees.fee > 0)
+
+  if (useFeeSummary) {
+    const wristLabel =
+      typeof fees.wristCm === 'number' && Number.isFinite(fees.wristCm)
+        ? `手圍 ${fees.wristCm.toFixed(1)}cm`
+        : ''
+    return `
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">${escapeHtml(o.title || '手鍊設計')}</p>
+            ${
+              wristLabel
+                ? `<p class="mt-0.5 text-xs text-stone-400">${escapeHtml(wristLabel)}</p>`
+                : ''
+            }
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              fees.beads,
+            )}</p>
+          </div>
+        </li>
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0 pr-2">
+            <p class="font-medium text-stone-800">設計費用</p>
+            <p class="mt-0.5 text-xs text-stone-400">由設計師收取，平台不抽成</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">${
+              fees.fee > 0 ? `NT$${formatPrice(fees.fee)}` : '免費'
+            }</p>
+          </div>
+        </li>${shipRow}`
+  }
+
+  if (bom.length) {
+    return (
+      bom
+        .map(
+          (row) => `
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">${escapeHtml(row.name)}</p>
+            <p class="mt-0.5 text-xs text-stone-400">${escapeHtml(
+              String(row.diameterMm || 0),
+            )}mm</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×${escapeHtml(String(row.qty || 1))}</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              row.lineTotal,
+            )}</p>
+          </div>
+        </li>`,
+        )
+        .join('') + shipRow
+    )
+  }
+
+  // Legacy orders without BOM: single materials line + shipping (no fake 設計費用)
+  return `
+        <li class="flex items-start justify-between gap-3 py-2.5">
+          <div class="min-w-0">
+            <p class="truncate font-medium text-stone-800">${escapeHtml(o.title || '手鍊設計')}</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <p class="text-stone-600">×1</p>
+            <p class="mt-0.5 font-medium tabular-nums text-stone-800">NT$${formatPrice(
+              fees.beads,
+            )}</p>
+          </div>
+        </li>${shipRow}`
+}
+
+/**
  * Align with details page fee math (beads + design fee + shipping).
  * @param {import('../../shared/state/ordersStore.js').Order} o
  */
@@ -311,7 +361,6 @@ function resolveOrderFees(o) {
     beads = Math.max(0, total - fee - ship)
   }
 
-  // Prefer stored total; if parts exceed it, keep parts and recompute display total.
   const partsSum = beads + fee + ship
   const displayTotal = total > 0 ? total : partsSum
 

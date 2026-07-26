@@ -16,6 +16,17 @@
 
 /**
  * @typedef {{
+ *   productId?: string,
+ *   name: string,
+ *   diameterMm: number,
+ *   qty: number,
+ *   unitPrice?: number,
+ *   lineTotal: number,
+ * }} OrderBomLine
+ */
+
+/**
+ * @typedef {{
  *   id: string,
  *   title: string,
  *   status: OrderStatus,
@@ -36,6 +47,8 @@
  *   shopifyOrderName?: string,
  *   merchantOrderNo?: string,
  *   email?: string,
+ *   bomDisplay?: 'fee' | 'sku',
+ *   bom?: OrderBomLine[],
  * }} Order
  */
 
@@ -153,7 +166,34 @@ function normalizeOrder(raw) {
     shopifyOrderName: String(o.shopifyOrderName || ''),
     merchantOrderNo: String(o.merchantOrderNo || ''),
     email: String(o.email || ''),
+    bomDisplay: o.bomDisplay === 'fee' || o.bomDisplay === 'sku' ? o.bomDisplay : undefined,
+    bom: normalizeBomLines(o.bom),
   }
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {OrderBomLine[]}
+ */
+function normalizeBomLines(raw) {
+  if (!Array.isArray(raw)) return []
+  /** @type {OrderBomLine[]} */
+  const out = []
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue
+    const r = /** @type {Record<string, unknown>} */ (row)
+    const name = String(r.name || '').trim()
+    if (!name) continue
+    out.push({
+      productId: r.productId != null ? String(r.productId) : '',
+      name,
+      diameterMm: Number(r.diameterMm) || 0,
+      qty: Math.max(1, Math.round(Number(r.qty) || 1)),
+      unitPrice: Number(r.unitPrice) || 0,
+      lineTotal: Number(r.lineTotal) || 0,
+    })
+  }
+  return out
 }
 
 /**
@@ -247,6 +287,8 @@ export function upsertOrder(input) {
     shopifyOrderName: input.shopifyOrderName || '',
     merchantOrderNo: input.merchantOrderNo || '',
     email: input.email || '',
+    bomDisplay: input.bomDisplay === 'fee' || input.bomDisplay === 'sku' ? input.bomDisplay : undefined,
+    bom: normalizeBomLines(input.bom),
   }
   if (idx >= 0) {
     const prev = list[idx]
@@ -267,6 +309,8 @@ export function upsertOrder(input) {
       shopifyOrderId: next.shopifyOrderId || prev.shopifyOrderId || '',
       shopifyOrderName: next.shopifyOrderName || prev.shopifyOrderName || '',
       merchantOrderNo: next.merchantOrderNo || prev.merchantOrderNo || '',
+      bomDisplay: next.bomDisplay || prev.bomDisplay,
+      bom: next.bom?.length ? next.bom : prev.bom || [],
     }
     writeAll(list)
     return list[idx]
@@ -292,6 +336,8 @@ export function upsertOrder(input) {
  *   shippingTwd?: number | null,
  *   wristCm?: number | null,
  *   imageUrl?: string,
+ *   bomDisplay?: 'fee' | 'sku',
+ *   bom?: import('./ordersStore.js').OrderBomLine[],
  * }} patch
  */
 export function patchOrderFromRemote(id, patch) {
@@ -299,6 +345,7 @@ export function patchOrderFromRemote(id, patch) {
   const idx = list.findIndex((o) => o.id === id)
   if (idx < 0) return null
   const prev = list[idx]
+  const bom = normalizeBomLines(patch.bom)
   list[idx] = {
     ...prev,
     status: patch.status != null ? normalizeStatus(patch.status) : prev.status,
@@ -337,6 +384,11 @@ export function patchOrderFromRemote(id, patch) {
         ? Number(patch.wristCm)
         : prev.wristCm,
     imageUrl: patch.imageUrl ? String(patch.imageUrl) : prev.imageUrl,
+    bomDisplay:
+      patch.bomDisplay === 'fee' || patch.bomDisplay === 'sku'
+        ? patch.bomDisplay
+        : prev.bomDisplay,
+    bom: bom.length ? bom : prev.bom || [],
   }
   writeAll(list)
   return list[idx]

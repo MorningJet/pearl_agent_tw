@@ -27,6 +27,15 @@ import {
  *   email?: string,
  *   imageUrl?: string,
  *   updatedAt?: number,
+ *   bomDisplay?: 'fee' | 'sku',
+ *   bom?: Array<{
+ *     productId?: string,
+ *     name: string,
+ *     diameterMm: number,
+ *     qty: number,
+ *     unitPrice?: number,
+ *     lineTotal?: number,
+ *   }>,
  * }} RemoteOrder
  */
 
@@ -52,6 +61,15 @@ function apiBase() {
  *   designFeeTwd?: number,
  *   email?: string,
  *   shippingAddress?: Record<string, unknown> | null,
+ *   bomDisplay?: 'fee' | 'sku',
+ *   bom?: Array<{
+ *     productId?: string,
+ *     name: string,
+ *     diameterMm: number,
+ *     qty: number,
+ *     unitPrice?: number,
+ *     lineTotal?: number,
+ *   }>,
  * }} meta
  * @param {{ beadsSubtotal?: number, designFee?: number, shipping?: number }} [breakdown]
  */
@@ -67,6 +85,12 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
       : meta.beadsSubtotalTwd != null && Number(meta.beadsSubtotalTwd) >= 1000
         ? 0
         : 50
+  const bomDisplay =
+    meta.bomDisplay === 'fee' || meta.bomDisplay === 'sku'
+      ? meta.bomDisplay
+      : Number(meta.designFeeTwd) > 0
+        ? 'fee'
+        : 'sku'
 
   return upsertOrder({
     id: orderIdFromKeys({ shopifyOrderId, merchantOrderNo }),
@@ -94,6 +118,8 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
     shopifyOrderName: String(result.shopifyOrderName || ''),
     merchantOrderNo,
     email: String(meta.email || '').trim().toLowerCase(),
+    bomDisplay,
+    bom: Array.isArray(meta.bom) ? meta.bom : [],
   })
 }
 
@@ -241,6 +267,8 @@ function applyRemoteOrder(remote) {
       shippingTwd: remote.shippingTwd,
       wristCm: remote.wristCm,
       imageUrl: remote.imageUrl,
+      bomDisplay: remote.bomDisplay,
+      bom: remote.bom,
     })
     return
   }
@@ -262,5 +290,7 @@ function applyRemoteOrder(remote) {
     shopifyOrderName: String(remote.shopifyOrderName || ''),
     merchantOrderNo,
     email: String(remote.email || ''),
+    bomDisplay: remote.bomDisplay,
+    bom: remote.bom,
   })
 }

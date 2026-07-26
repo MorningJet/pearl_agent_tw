@@ -219,6 +219,8 @@ async function submitCheckout() {
         designFeeTwd: draft.designFeeTwd,
         email: parsed.email,
         shippingAddress: parsed.shippingAddress,
+        bomDisplay: draft.bomDisplay || 'sku',
+        bom: draft.bom,
       },
       {
         beadsSubtotal: draft.beadsSubtotalTwd,
