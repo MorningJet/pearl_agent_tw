@@ -3,12 +3,13 @@
  *
  * H5 → Shopify field mapping (Admin 訂單列表):
  *   備註 note     → 藍新訂單號、手圍、商品編碼（順時針編號，每顆一行）
- *   客戶 email    → 會員 email
+ *   客戶 email    → 會員 email（寫入客戶列顯示名，避免重名混淆）
  *   總計          → 與藍新一致（BOM 珠款 + 設計費 + 運費）
  *   商品 line_items → H5 BOM 對應後台產品（SKU=productId → variant_id）；另含設計費/運費
  *   支付狀態      → pending（待付款）→ 藍新成功後 paid
  *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
  *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
+ *   收貨地址姓名  → 姓氏／名字（物流用；與客戶列 email 分開）
  *
  * Variant IDs come from bundled variantMap.json (Storefront sync). Admin
  * read_products is optional; app may only have write_orders.
@@ -219,6 +220,18 @@ async function createShopifyOrder(env, record, opts) {
     note,
     note_attributes: noteAttributes,
     line_items: lineItems,
+  }
+
+  // Customer row: use email as display identity so same Chinese names don't collide.
+  // Shipping address still carries 姓氏／名字 for logistics.
+  const memberEmail = String(record.email || '').trim().toLowerCase()
+  if (memberEmail) {
+    order.email = memberEmail
+    order.customer = {
+      email: memberEmail,
+      first_name: memberEmail,
+      last_name: '',
+    }
   }
 
   if (built.shippingLines?.length) {
