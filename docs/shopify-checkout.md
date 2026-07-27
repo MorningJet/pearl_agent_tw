@@ -57,7 +57,7 @@ DIY 接單手作建議珠款與「設計費用」開啟 **Continue selling when 
 
 H5 若嵌在 Shopify Page 的 **iframe** 裡：
 
-1. **底部留白**：iframe 必須 `position:fixed; inset:0` 铺满（勿用 `min-height:80vh` / `85vh`），且 Page 用 `{% layout none %}` 去掉主題頭尾。Instagram／Threads 內建瀏覽器對 `vh` 特別不準。見 [`shopify-embed-page.liquid`](shopify-embed-page.liquid)。
+1. **底部留白**：首頁 Custom Liquid 若仍為 `min-height:85vh` 會在 Tab 列下留白（IG／Threads 特別明顯）。請改用 [`shopify-homepage-custom-liquid.liquid`](shopify-homepage-custom-liquid.liquid) 或全螢幕 `index.liquid`（[`shopify-index-homepage.liquid`](shopify-index-homepage.liquid)）。iframe 須 `position:fixed` 鋪滿（勿用 `vh`），且 Page 用 `{% layout none %}` 去掉主題頭尾。
 2. **結帳 API**：正式環境 `VITE_NEWEBPAY_API_BASE` 應為 Shopify App Proxy  
    `https://pearl-diy.myshopify.com/apps/pearl-pay`  
    （瀏覽器直連 `*.workers.dev` 常被劫持／人機驗證卡住，導致停在「前往付款」且後台無單。）

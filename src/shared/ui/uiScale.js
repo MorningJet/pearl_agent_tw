@@ -102,8 +102,20 @@ export function syncAppHeight() {
       document.documentElement?.clientHeight ||
       0,
   )
+  const w = Math.round(
+    (vv && vv.width) ||
+      window.innerWidth ||
+      document.documentElement?.clientWidth ||
+      0,
+  )
   if (h <= 0) return
   document.documentElement.style.setProperty('--app-height', `${h}px`)
+  if (!isEmbedMode()) return
+  try {
+    window.parent.postMessage({ type: 'pearl-diy-fit', width: w, height: h }, '*')
+  } catch {
+    /* cross-origin parent */
+  }
 }
 
 /** Re-read the live viewport and apply scale. */

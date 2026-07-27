@@ -1,0 +1,85 @@
+{% comment %}
+  Pearl Pearl DIY — replace the homepage Custom Liquid block (quick fix).
+
+  Problem: `min-height:85vh` leaves a white band under the tab bar in
+  Instagram / Threads in-app browsers.
+
+  Install (Shopify Admin → Online Store → Themes → Customize → Homepage):
+  1. Find the Custom Liquid section that embeds the H5 iframe.
+  2. DELETE the old iframe (`min-height:85vh` or similar).
+  3. Paste EVERYTHING below this comment block and Save.
+  4. Phone → View page source on https://pearl-diy.myshopify.com/
+     Search "85vh" → must be ZERO results.
+     Search "pearl-diy-frame" → must exist.
+
+  Better long-term: use templates/index.liquid (docs/shopify-index-homepage.liquid)
+  or inject at layout/theme.liquid top (docs/shopify-theme-layout-homepage-top.liquid).
+{% endcomment %}
+<style>
+  /* Cover Horizon header/footer; parent page must not scroll behind iframe */
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  #pearl-diy-frame {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #fff;
+    z-index: 2147483646;
+  }
+</style>
+<iframe
+  id="pearl-diy-frame"
+  src="https://morningjet.github.io/pearl_agent_tw/?embed=1&v={{ 'now' | date: '%s' }}"
+  title="Pearl Pearl DIY"
+  allow="payment *; clipboard-write *"
+  referrerpolicy="strict-origin-when-cross-origin"
+></iframe>
+<script>
+  (function () {
+    function fit() {
+      var vv = window.visualViewport
+      var h = Math.round(
+        (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight,
+      )
+      var w = Math.round(
+        (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth,
+      )
+      var el = document.getElementById('pearl-diy-frame')
+      if (!el) return
+      el.style.width = w + 'px'
+      el.style.height = h + 'px'
+      if (vv) {
+        el.style.top = (vv.offsetTop || 0) + 'px'
+        el.style.left = (vv.offsetLeft || 0) + 'px'
+      }
+    }
+    function onPearlDiyFit(e) {
+      if (!e.data || e.data.type !== 'pearl-diy-fit') return
+      var el = document.getElementById('pearl-diy-frame')
+      if (!el || !e.data.height) return
+      el.style.width = (e.data.width || window.innerWidth) + 'px'
+      el.style.height = e.data.height + 'px'
+    }
+    fit()
+    window.addEventListener('resize', fit)
+    window.addEventListener('orientationchange', function () {
+      setTimeout(fit, 50)
+      setTimeout(fit, 300)
+    })
+    window.addEventListener('message', onPearlDiyFit)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fit)
+      window.visualViewport.addEventListener('scroll', fit)
+    }
+    setTimeout(fit, 50)
+    setTimeout(fit, 300)
+  })()
+</script>

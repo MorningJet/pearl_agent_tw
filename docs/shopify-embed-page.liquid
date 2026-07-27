@@ -43,7 +43,8 @@
       /* fixed + inset fills Instagram/Threads WebViews more reliably than 100dvh alone */
       #pearl-diy-frame {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         border: 0;
@@ -59,5 +60,46 @@
       allow="payment *; clipboard-write *"
       referrerpolicy="strict-origin-when-cross-origin"
     ></iframe>
+    <script>
+      (function () {
+        function fit() {
+          var vv = window.visualViewport
+          var h = Math.round(
+            (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight,
+          )
+          var w = Math.round(
+            (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth,
+          )
+          var el = document.getElementById('pearl-diy-frame')
+          if (!el) return
+          el.style.width = w + 'px'
+          el.style.height = h + 'px'
+          if (vv) {
+            el.style.top = (vv.offsetTop || 0) + 'px'
+            el.style.left = (vv.offsetLeft || 0) + 'px'
+          }
+        }
+        function onPearlDiyFit(e) {
+          if (!e.data || e.data.type !== 'pearl-diy-fit') return
+          var el = document.getElementById('pearl-diy-frame')
+          if (!el || !e.data.height) return
+          el.style.width = (e.data.width || window.innerWidth) + 'px'
+          el.style.height = e.data.height + 'px'
+        }
+        fit()
+        window.addEventListener('resize', fit)
+        window.addEventListener('orientationchange', function () {
+          setTimeout(fit, 50)
+          setTimeout(fit, 300)
+        })
+        window.addEventListener('message', onPearlDiyFit)
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', fit)
+          window.visualViewport.addEventListener('scroll', fit)
+        }
+        setTimeout(fit, 50)
+        setTimeout(fit, 300)
+      })()
+    </script>
   </body>
 </html>

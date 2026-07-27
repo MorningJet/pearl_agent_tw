@@ -1,34 +1,33 @@
 {% comment %}
-  Pearl Pearl DIY — FULL homepage (replaces templates/index.json).
+  Pearl Pearl DIY — inject at the TOP of layout/theme.liquid (Plan B).
 
-  Why Custom Liquid on Horizon still leaves a white band:
-  the theme layout / section wrappers keep a short iframe (often still
-  min-height:85vh on the live storefront even after editor edits).
+  Use this when index.json still wins / homepage source still shows Horizon
+  (Inter fonts, Theme.translations, min-height:85vh).
 
-  Install (Shopify Admin → Themes → … → Edit code):
-  1. Under templates/: download a backup of index.json, then DELETE index.json
-     (JSON and Liquid cannot both drive the homepage; JSON wins if both exist).
-  2. templates/ → Add a new file → name it exactly: index.liquid
-  3. Paste this entire file and Save.
-  4. Phone Safari → View page source on https://pearl-diy.myshopify.com/
-     Confirm there is NO "85vh" and you see id="pearl-diy-frame".
+  Install:
+  1. Themes → … → Edit code → layout/theme.liquid
+  2. Scroll to the VERY TOP of the file (before <!doctype or <html>)
+  3. Paste EVERYTHING in this file FIRST
+  4. Scroll to the VERY BOTTOM of theme.liquid
+  5. Add a single line: {% endif %}
+  6. Save
+  7. Phone source must be short: search "85vh" → none; search "pearl-diy-frame" → yes
+    and there should be almost no Inter / Theme.translations chrome.
 {% endcomment %}
-{% layout none %}
+{% if request.page_type == 'index' %}
 <!doctype html>
 <html lang="zh-Hant-TW">
   <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8">
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
-    />
-    <meta name="theme-color" content="#ffffff" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    >
+    <meta name="theme-color" content="#ffffff">
     <title>{{ shop.name }}</title>
     {{ content_for_header }}
     <style>
-      html,
-      body {
+      html, body {
         margin: 0;
         padding: 0;
         width: 100%;
@@ -59,12 +58,8 @@
       (function () {
         function fit() {
           var vv = window.visualViewport
-          var h = Math.round(
-            (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight,
-          )
-          var w = Math.round(
-            (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth,
-          )
+          var h = Math.round((vv && vv.height) || window.innerHeight || document.documentElement.clientHeight)
+          var w = Math.round((vv && vv.width) || window.innerWidth || document.documentElement.clientWidth)
           var el = document.getElementById('pearl-diy-frame')
           if (!el) return
           el.style.width = w + 'px'
@@ -98,3 +93,4 @@
     </script>
   </body>
 </html>
+{% else %}

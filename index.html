@@ -29,6 +29,15 @@
           var inEmbed =
             q.get('embed') === '1' || q.get('app') === '1' || window.self !== window.top
           if (inEmbed) document.documentElement.classList.add('embed-app')
+          if (inEmbed) {
+            var vv0 = window.visualViewport
+            var h0 = Math.round(
+              (vv0 && vv0.height) || window.innerHeight || 0,
+            )
+            if (h0 > 0) {
+              document.documentElement.style.setProperty('--app-height', h0 + 'px')
+            }
+          }
           if (!inEmbed) return
           if (q.get('nocache') === '0') return
 

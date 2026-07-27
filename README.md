@@ -45,7 +45,9 @@ git push -u origin main
 4. 站點網址：`https://MorningJet.github.io/pearl_agent_tw/`（倉庫名不同則改路徑）。
 5. Shopify 請用**全螢幕** Page 模板嵌入（勿用 `min-height:80vh` / `85vh`，否則 Tab 列下方會留白——Instagram／Threads 內建瀏覽器尤其明顯；結帳也可能卡在 iframe 裡的 Cloudflare 驗證）：
 
-把 [`docs/shopify-embed-page.liquid`](docs/shopify-embed-page.liquid) 加到主題後套用到 DIY 頁面。若暫時仍用首頁 Custom Liquid，請用固定鋪滿（不要 `min-height:…vh`）：
+把 [`docs/shopify-homepage-custom-liquid.liquid`](docs/shopify-homepage-custom-liquid.liquid) 貼到首頁 **Custom Liquid** 區塊（取代舊的 `min-height:85vh` iframe）。或改用全螢幕模板 [`docs/shopify-index-homepage.liquid`](docs/shopify-index-homepage.liquid) / [`docs/shopify-embed-page.liquid`](docs/shopify-embed-page.liquid)。**勿用** `min-height:80vh` / `85vh`（Instagram／Threads 內建瀏覽器會在 Tab 列下方留白）。
+
+若暫時仍用首頁 Custom Liquid，請用固定鋪滿（不要 `min-height:…vh`）：
 
 ```html
 <style>
