@@ -1,0 +1,93 @@
+{% comment %}
+  Pearl Pearl DIY — FULL homepage (replaces templates/index.json).
+
+  Why Custom Liquid on Horizon still leaves a white band:
+  the theme layout / section wrappers keep a short iframe (often still
+  min-height:85vh on the live storefront even after editor edits).
+
+  Install (Shopify Admin → Themes → … → Edit code):
+  1. Under templates/: download a backup of index.json, then DELETE index.json
+     (JSON and Liquid cannot both drive the homepage; JSON wins if both exist).
+  2. templates/ → Add a new file → name it exactly: index.liquid
+  3. Paste this entire file and Save.
+  4. Phone Safari → View page source on https://pearl-diy.myshopify.com/
+     Confirm there is NO "85vh" and you see id="pearl-diy-frame".
+{% endcomment %}
+{% layout none %}
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#ffffff" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>{{ shop.name }}</title>
+    {{ content_for_header }}
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #fff;
+      }
+      #pearl-diy-frame {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        border: 0;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      id="pearl-diy-frame"
+      src="https://morningjet.github.io/pearl_agent_tw/?embed=1&v={{ 'now' | date: '%s' }}"
+      title="Pearl Pearl DIY"
+      allow="payment *; clipboard-write *"
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
+    <script>
+      (function () {
+        function fit() {
+          var vv = window.visualViewport
+          var h = Math.round(
+            (vv && vv.height) || window.innerHeight || document.documentElement.clientHeight,
+          )
+          var w = Math.round(
+            (vv && vv.width) || window.innerWidth || document.documentElement.clientWidth,
+          )
+          var el = document.getElementById('pearl-diy-frame')
+          if (!el) return
+          el.style.width = w + 'px'
+          el.style.height = h + 'px'
+          if (vv) {
+            el.style.top = (vv.offsetTop || 0) + 'px'
+            el.style.left = (vv.offsetLeft || 0) + 'px'
+          }
+        }
+        fit()
+        window.addEventListener('resize', fit)
+        window.addEventListener('orientationchange', function () {
+          setTimeout(fit, 50)
+          setTimeout(fit, 300)
+        })
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener('resize', fit)
+          window.visualViewport.addEventListener('scroll', fit)
+        }
+        setTimeout(fit, 50)
+        setTimeout(fit, 300)
+      })()
+    </script>
+  </body>
+</html>

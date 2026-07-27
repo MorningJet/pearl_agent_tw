@@ -89,8 +89,26 @@ export function applyUiScale(cssWidthPx) {
   }
 }
 
+/**
+ * Lock layout height to the visible viewport (fixes white band under tab bar
+ * inside Shopify iframes / Instagram–Threads in-app browsers).
+ */
+export function syncAppHeight() {
+  if (!isEmbedMode() && !isLivePhoneViewport()) return
+  const vv = window.visualViewport
+  const h = Math.round(
+    (vv && vv.height) ||
+      window.innerHeight ||
+      document.documentElement?.clientHeight ||
+      0,
+  )
+  if (h <= 0) return
+  document.documentElement.style.setProperty('--app-height', `${h}px`)
+}
+
 /** Re-read the live viewport and apply scale. */
 export function syncUiScaleFromScreen() {
+  syncAppHeight()
   applyUiScale(measureViewportWidth())
 }
 

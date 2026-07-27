@@ -1,14 +1,20 @@
 {% comment %}
   Pearl Pearl DIY — fullscreen Shopify Page template.
 
-  Why: embedding with min-height:80vh leaves a white band under the H5 tab bar.
-  Checkout (Cloudflare) also hangs if it stays inside a short iframe.
+  Why: embedding with min-height:80vh / 85vh leaves a white band under the H5
+  tab bar (especially Instagram / Threads in-app browsers). Checkout
+  (Cloudflare) also hangs if it stays inside a short iframe.
 
-  Setup:
-  1. Online Store → Themes → Edit code → Templates → Add template → page
-  2. Name it e.g. "pearl-diy" and paste this file
-  3. Create/open a Page, set Theme template → pearl-diy
+  Setup (recommended):
+  1. Online Store → Themes → Edit code → Templates → Add a new template → page
+  2. Name it e.g. "pearl-diy" and paste this entire file
+  3. Online Store → Pages → create/open DIY page → Theme template → pearl-diy
   4. Do NOT put a second iframe in the Page body — this template is the embed
+  5. Point Instagram / Threads bio link to that Page URL (or set it as homepage)
+
+  Quick fix if DIY is still a Custom Liquid block on the homepage:
+  replace the iframe style `min-height:85vh` with the fixed fullscreen snippet
+  in README / docs/shopify-checkout.md (and hide theme header/footer).
 
   Cache: `v={{ 'now' | date: '%s' }}` auto-busts the iframe on each page load.
   You do NOT need to edit this URL after every GitHub Pages deploy.
@@ -31,15 +37,15 @@
         margin: 0;
         width: 100%;
         height: 100%;
-        height: 100dvh;
         overflow: hidden;
         background: #fff;
       }
+      /* fixed + inset fills Instagram/Threads WebViews more reliably than 100dvh alone */
       #pearl-diy-frame {
-        display: block;
+        position: fixed;
+        inset: 0;
         width: 100%;
         height: 100%;
-        height: 100dvh;
         border: 0;
         background: #fff;
       }
