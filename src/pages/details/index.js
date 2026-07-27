@@ -460,7 +460,8 @@ function bindActions() {
     openPlazaPublish()
   })
   document.getElementById('details-cs')?.addEventListener('click', () => {
-    showToast('客服中心 — 即將推出')
+    showToast('如有問題，請來信至客服信箱 themorningjet@gmail.com')
+    window.location.href = 'mailto:themorningjet@gmail.com'
   })
   document.getElementById('details-back-design')?.addEventListener('click', () => {
     if (detailsMode === 'plaza') {

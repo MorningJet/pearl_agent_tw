@@ -96,6 +96,11 @@ function bindLinks() {
         refreshOrdersPage()
         return
       }
+      if (link === 'support') {
+        showToast('如有問題，請來信至客服信箱 themorningjet@gmail.com')
+        window.location.href = 'mailto:themorningjet@gmail.com'
+        return
+      }
       showToast('即將推出')
     })
   })
