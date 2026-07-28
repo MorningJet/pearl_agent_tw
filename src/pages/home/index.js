@@ -44,6 +44,8 @@ let dragStartX = 0
 let dragDeltaX = 0
 let dragging = false
 let dragWidth = 0
+/** @type {HTMLElement | null} */
+let dragSlide = null
 
 /** @param {(publishId: string) => boolean} fn */
 export function setOpenHomePlazaDesign(fn) {
@@ -121,6 +123,12 @@ function bindBannerGestures(track) {
     dragStartX = e.clientX
     dragDeltaX = 0
     dragWidth = track.parentElement?.clientWidth || track.clientWidth || 1
+    // Remember slide at press time — after setPointerCapture, pointerup's
+    // e.target is the track, so closest('[data-banner-action]') would fail.
+    dragSlide =
+      e.target instanceof Element
+        ? e.target.closest('[data-banner-action]')
+        : null
     track.style.transition = 'none'
     pauseBannerAutoplayTemporarily()
     try {
@@ -147,6 +155,9 @@ function bindBannerGestures(track) {
       /* ignore */
     }
 
+    const slide = dragSlide
+    dragSlide = null
+
     const moved = Math.abs(dragDeltaX) > SWIPE_THRESHOLD_PX
     if (moved) {
       if (dragDeltaX < 0) goToBanner(bannerIndex + 1)
@@ -154,7 +165,6 @@ function bindBannerGestures(track) {
     } else {
       applyBannerTransform(true)
       // Treat as tap → open linked page
-      const slide = e.target instanceof Element ? e.target.closest('[data-banner-action]') : null
       if (slide instanceof HTMLElement) openBannerAction(slide.dataset.bannerAction)
     }
     dragDeltaX = 0
