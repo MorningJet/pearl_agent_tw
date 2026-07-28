@@ -33,6 +33,7 @@ export function initMePage(host) {
   bindLinks()
   bindAvatarEdit()
   bindNameEdit()
+  bindSupportModal()
 }
 
 /** Re-render after profile changes (also usable when showing the tab). */
@@ -97,13 +98,33 @@ function bindLinks() {
         return
       }
       if (link === 'support') {
-        showToast('如有問題，請來信至客服信箱 themorningjet@gmail.com')
-        window.location.href = 'mailto:themorningjet@gmail.com'
+        openSupportModal()
         return
       }
       showToast('即將推出')
     })
   })
+}
+
+function bindSupportModal() {
+  const modal = document.getElementById('me-support-modal')
+  const closeBtn = document.getElementById('me-support-close')
+  closeBtn?.addEventListener('click', () => closeSupportModal())
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeSupportModal()
+  })
+}
+
+function openSupportModal() {
+  const modal = document.getElementById('me-support-modal')
+  modal?.classList.remove('hidden')
+  modal?.classList.add('flex')
+}
+
+function closeSupportModal() {
+  const modal = document.getElementById('me-support-modal')
+  modal?.classList.add('hidden')
+  modal?.classList.remove('flex')
 }
 
 function bindAvatarEdit() {

@@ -460,8 +460,8 @@ function bindActions() {
     openPlazaPublish()
   })
   document.getElementById('details-cs')?.addEventListener('click', () => {
-    showToast('如有問題，請來信至客服信箱 themorningjet@gmail.com')
-    window.location.href = 'mailto:themorningjet@gmail.com'
+    showToast('客服：Instagram @pearl_diy_tw 或 d19950706@gmail.com')
+    window.location.href = 'mailto:d19950706@gmail.com'
   })
   document.getElementById('details-back-design')?.addEventListener('click', () => {
     if (detailsMode === 'plaza') {
