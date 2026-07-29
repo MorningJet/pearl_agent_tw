@@ -42,7 +42,8 @@ import {
 import { getMemberId } from '../../shared/state/userProfileStore.js'
 import { createEarningsOrder } from '../../shared/state/earningsStore.js'
 import { syncPlazaPublish, syncPlazaUseCount } from '../../shared/api/plazaSync.js'
-import { getSeedPlazaAsPublished, resolvePlazaPreviewUrl } from '../home/plazaData.js'
+import { getPlazaDesignAsPublished, resolvePlazaPreviewUrl } from '../home/plazaData.js'
+import { patchRemotePlazaUseCount } from '../../shared/state/plazaRemoteStore.js'
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
@@ -220,7 +221,7 @@ export function openDesignDetailsFromPublish(pub) {
  */
 export function openDesignDetailsFromPlaza(publishId) {
   try {
-    const pub = getPublishedPlazaDesign(publishId) || getSeedPlazaAsPublished(publishId)
+    const pub = getPlazaDesignAsPublished(publishId)
     if (!pub) {
       showToast('此設計暫無法預覽')
       return false
@@ -553,6 +554,7 @@ function recordPlazaUseOnOrderClick() {
     plazaViewPub = { ...pub, useCount }
   }
   void syncPlazaUseCount(id, useCount)
+  patchRemotePlazaUseCount(id, useCount)
   renderDetails()
   refreshPlazaPage()
   refreshHomePlaza()
@@ -862,7 +864,7 @@ function submitPlazaPublish() {
     ...published,
     imageDataUrl: previewImage || published.imageDataUrl || '',
   }).then((result) => {
-    const path = result?.row?.image_path
+    const path = result?.row?.image_path || result?.design?.imageDataUrl
     if (typeof path === 'string' && path) {
       setPublishedPlazaImage(published.id, path)
       refreshPlazaPage()

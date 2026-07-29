@@ -21,6 +21,7 @@ import {
   openDesignDetailsFromPlaza,
   openDesignDetailsFromSaved,
 } from './pages/details/index.js'
+import { refreshPlazaRemote } from './shared/state/plazaRemoteStore.js'
 
 function boot() {
   initUiAdaptive()
@@ -45,8 +46,12 @@ function boot() {
   setAfterShowTab((tab) => {
     setHomeBannerAutoplay(tab === 'home')
     if (tab === 'my-designs') refreshMyDesignsPage()
-    if (tab === 'home') refreshHomePlaza()
-    if (tab === 'plaza') refreshPlazaPage()
+    if (tab === 'home' || tab === 'plaza') {
+      void refreshPlazaRemote({ force: true }).then(() => {
+        if (tab === 'home') refreshHomePlaza()
+        if (tab === 'plaza') refreshPlazaPage()
+      })
+    }
   })
 
   const diy = initDiyPage(app, {
@@ -64,6 +69,7 @@ function boot() {
 
   // Default entry: Home (DIY opens from CTA / stays reachable via back)
   showHomePage()
+  void refreshPlazaRemote().then(() => refreshHomePlaza())
 }
 
 boot()

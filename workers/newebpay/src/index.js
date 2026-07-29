@@ -24,9 +24,21 @@
  *   GET  /api/h5/orders?email=
  *   GET  /api/h5/shipping-address?email=
  *   GET/POST /api/h5/designer-count
+ *   GET  /api/h5/plaza/designs
+ *   GET  /api/h5/plaza/designs/:id
+ *   GET  /api/h5/plaza/preview/:id
+ *   POST /api/h5/plaza/publish|unpublish|use-count
  */
 
 import { getOrder, putOrder, getDesignerCount, incrementDesignerCount } from './store.js'
+import {
+  handlePlazaDesignGet,
+  handlePlazaDesignsList,
+  handlePlazaPreview,
+  handlePlazaPublish,
+  handlePlazaUnpublish,
+  handlePlazaUseCount,
+} from './plaza.js'
 import {
   createPaidShopifyOrder,
   createUnpaidShopifyOrder,
@@ -83,6 +95,7 @@ export default {
             },
             shopifyWebhookConfigured: Boolean(String(env.SHOPIFY_WEBHOOK_SECRET || '').trim()),
             ordersKv: Boolean(env.ORDERS),
+            plazaApi: true,
             allowDevSimulate: isDevSimulateEnabled(env),
           },
           200,
@@ -118,6 +131,32 @@ export default {
 
       if (url.pathname === '/api/h5/order-status/batch' && request.method === 'POST') {
         return await handleH5OrderStatusBatch(request, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/plaza/designs' && request.method === 'GET') {
+        return await handlePlazaDesignsList(url, env, cors)
+      }
+
+      const plazaDesignMatch = url.pathname.match(/^\/api\/h5\/plaza\/designs\/([^/]+)\/?$/)
+      if (plazaDesignMatch && request.method === 'GET') {
+        return await handlePlazaDesignGet(decodeURIComponent(plazaDesignMatch[1]), env, cors)
+      }
+
+      const plazaPreviewMatch = url.pathname.match(/^\/api\/h5\/plaza\/preview\/([^/]+)\/?$/)
+      if (plazaPreviewMatch && request.method === 'GET') {
+        return await handlePlazaPreview(decodeURIComponent(plazaPreviewMatch[1]), env)
+      }
+
+      if (url.pathname === '/api/h5/plaza/publish' && request.method === 'POST') {
+        return await handlePlazaPublish(request, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/plaza/unpublish' && request.method === 'POST') {
+        return await handlePlazaUnpublish(request, env, cors)
+      }
+
+      if (url.pathname === '/api/h5/plaza/use-count' && request.method === 'POST') {
+        return await handlePlazaUseCount(request, env, cors)
       }
 
       if (url.pathname === '/api/checkout' && request.method === 'POST') {

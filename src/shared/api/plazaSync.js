@@ -1,15 +1,34 @@
 /**
- * Sync Design Plaza publishes to the maintenance table (dev server API).
- * Outside `vite` (preview/production static), calls no-op gracefully.
+ * Sync Design Plaza publishes to shared storage.
+ * - Production: Cloudflare Worker (`VITE_NEWEBPAY_API_BASE`)
+ * - Local dev: Vite middleware (`/api/plaza/*`) when API base unset
  */
+
+import {
+  removeRemotePlazaDesign,
+  upsertRemotePlazaDesign,
+} from '../state/plazaRemoteStore.js'
+
+function apiBase() {
+  return String(import.meta.env.VITE_NEWEBPAY_API_BASE || '').trim().replace(/\/$/, '')
+}
+
+/**
+ * @param {'publish' | 'unpublish' | 'use-count'} action
+ */
+function plazaEndpoint(action) {
+  const base = apiBase()
+  if (base) return `${base}/api/h5/plaza/${action}`
+  return `/api/plaza/${action}`
+}
 
 /**
  * @param {import('../state/plazaPublishStore.js').PlazaPublishedDesign} pub
- * @returns {Promise<{ ok: boolean, row?: Record<string, unknown> } | null>}
+ * @returns {Promise<{ ok: boolean, row?: Record<string, unknown>, design?: import('../state/plazaPublishStore.js').PlazaPublishedDesign } | null>}
  */
 export async function syncPlazaPublish(pub) {
   if (!pub?.id) return null
-  return post('/api/plaza/publish', {
+  const result = await post(plazaEndpoint('publish'), {
     id: pub.id,
     sourceDesignId: pub.sourceDesignId,
     title: pub.title,
@@ -25,6 +44,10 @@ export async function syncPlazaPublish(pub) {
     })),
     imageDataUrl: pub.imageDataUrl || '',
   })
+  if (result?.ok && result.design) {
+    upsertRemotePlazaDesign(result.design)
+  }
+  return result
 }
 
 /**
@@ -33,7 +56,8 @@ export async function syncPlazaPublish(pub) {
  */
 export async function syncPlazaUnpublish(id) {
   if (!id) return false
-  const data = await post('/api/plaza/unpublish', { id })
+  const data = await post(plazaEndpoint('unpublish'), { id })
+  if (data?.ok) removeRemotePlazaDesign(id)
   return Boolean(data?.ok)
 }
 
@@ -44,18 +68,18 @@ export async function syncPlazaUnpublish(id) {
  */
 export async function syncPlazaUseCount(id, useCount) {
   if (!id) return false
-  const data = await post('/api/plaza/use-count', { id, useCount })
+  const data = await post(plazaEndpoint('use-count'), { id, useCount })
   return Boolean(data?.ok)
 }
 
 /**
- * @param {string} path
+ * @param {string} url
  * @param {object} body
- * @returns {Promise<{ ok?: boolean, row?: Record<string, unknown> } | null>}
+ * @returns {Promise<{ ok?: boolean, row?: Record<string, unknown>, design?: import('../state/plazaPublishStore.js').PlazaPublishedDesign } | null>}
  */
-async function post(path, body) {
+async function post(url, body) {
   try {
-    const res = await fetch(path, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -64,7 +88,6 @@ async function post(path, body) {
     const data = await res.json().catch(() => null)
     return data && typeof data === 'object' ? data : null
   } catch {
-    // Static preview / production without API — localStorage remains source of truth.
     return null
   }
 }

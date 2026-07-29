@@ -9,21 +9,21 @@ UGC 鏡像：`data/plaza_ugc.json`
 ```
 用戶點「發佈 / 下架 / 使用設計」
         │
-        ├─► localStorage（瀏覽器即時 feed）
+        ├─► localStorage（本機「我的發佈」快取）
         │
-        └─► POST /api/plaza/*（僅 vite dev）
-                 │
-                 ├─ 預覽圖 → public/plaza/<id>.png
-                 ├─ 更新 data/plaza_ugc.json
-                 └─ 合併官方 seed + UGC
-                        ├─ data/plaza_designs.xlsx
-                        └─ src/shared/data/plazaDesigns.json
+        └─► POST {VITE_NEWEBPAY_API_BASE}/api/h5/plaza/*
+                 │  （正式環境：Cloudflare Worker + KV）
+                 ├─ 預覽圖 → KV `plaza:img:<id>`
+                 ├─ 設計清單 → KV `plaza:manifest`
+                 └─ GET /api/h5/plaza/designs → 所有用戶可見
+
+本地 `npm run dev` 且未設 API base 時，仍可走 Vite `/api/plaza/*` 寫入 repo 檔案（維運用）。
 ```
 
 - **官方 seed**（`source=seed`）：手動維護於 xlsx；sync 時保留。
 - **用戶 UGC**（`source=user`）：以 `plaza_ugc.json` 為準；發佈/下架會覆寫進 xlsx。
-- 手動重建：`npm run sync:plaza`
-- 靜態 `preview` / 正式環境無 API 時：仍寫 localStorage，xlsx 不變更（需之後接真實後端）。
+- 手動重建：`npm run sync:plaza`（僅維運 xlsx / 靜態 seed）
+- 正式環境：以 Worker KV 為 UGC 準；`src/shared/data/plazaDesigns.json` 僅保留官方 seed
 
 ## 工作簿
 
