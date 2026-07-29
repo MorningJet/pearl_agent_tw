@@ -6,6 +6,10 @@ import {
   setShelfType,
   subscribe,
 } from '../../../shared/state/designStore.js'
+import { openLifestyleModal } from './shelfLifestyle.js'
+
+const LONG_PRESS_MS = 450
+const MOVE_CANCEL_PX = 10
 
 export function initShelf() {
   const catsEl = document.getElementById('shelf-categories')
@@ -65,7 +69,7 @@ export function initShelf() {
         .map((p) => {
           const n = usageCount(p.id)
           return `
-          <button type="button" data-id="${escapeAttr(p.id)}" class="relative flex aspect-square flex-col items-center rounded-xl bg-white px-2 pb-2 pt-2.5 text-center ring-1 ring-stone-200 transition active:scale-95">
+          <button type="button" data-id="${escapeAttr(p.id)}" class="shelf-product-card relative flex aspect-square select-none flex-col items-center rounded-xl bg-white px-2 pb-2 pt-2.5 text-center ring-1 ring-stone-200 transition active:scale-95 touch-manipulation">
             ${n ? `<span class="absolute right-1.5 top-1.5 rounded bg-stone-900/80 px-1.5 py-0.5 text-[0.65rem] leading-none text-white">x${n}</span>` : ''}
             <span class="flex aspect-square w-[52%] shrink-0 items-center justify-center overflow-hidden rounded-full">
               ${
@@ -84,9 +88,11 @@ export function initShelf() {
         .join('')
 
       gridEl.querySelectorAll('button[data-id]').forEach((btn) => {
+        const id = btn.getAttribute('data-id')
+        if (!id) return
+        attachShelfLongPress(btn, id)
         btn.addEventListener('click', () => {
-          const id = btn.getAttribute('data-id')
-          if (id) addBead(id)
+          addBead(id)
         })
       })
     }
@@ -94,6 +100,57 @@ export function initShelf() {
 
   subscribe(render)
   render()
+}
+
+/**
+ * @param {HTMLElement} btn
+ * @param {string} productId
+ */
+function attachShelfLongPress(btn, productId) {
+  let timer = null
+  let longPressed = false
+  let startX = 0
+  let startY = 0
+
+  function clearTimer() {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+
+  btn.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    longPressed = false
+    startX = e.clientX
+    startY = e.clientY
+    clearTimer()
+    timer = setTimeout(() => {
+      timer = null
+      if (!openLifestyleModal(productId)) return
+      longPressed = true
+      if (navigator.vibrate) navigator.vibrate(12)
+    }, LONG_PRESS_MS)
+  })
+
+  btn.addEventListener('pointermove', (e) => {
+    if (!timer) return
+    if (Math.hypot(e.clientX - startX, e.clientY - startY) > MOVE_CANCEL_PX) {
+      clearTimer()
+    }
+  })
+
+  const cancel = () => clearTimer()
+  btn.addEventListener('pointerup', cancel)
+  btn.addEventListener('pointercancel', cancel)
+  btn.addEventListener('pointerleave', cancel)
+
+  btn.addEventListener('click', (e) => {
+    if (!longPressed) return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    longPressed = false
+  })
 }
 
 /** @param {string} s */

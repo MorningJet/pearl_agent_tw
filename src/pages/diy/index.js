@@ -2,6 +2,7 @@ import { createCanvasApp } from './canvas/engine.js'
 import { initTopBar } from './ui/topBar.js'
 import { initMiddleBar } from './ui/middleBar.js'
 import { initShelf } from './ui/shelf.js'
+import { initShelfLifestyleModal } from './ui/shelfLifestyle.js'
 import diyHtml from './page.html?raw'
 import { mountFragment } from '../../shared/mount.js'
 import { leaveDiyPage } from '../../shared/nav.js'
@@ -22,6 +23,7 @@ export function initDiyPage(host, options) {
   const canvasApp = createCanvasApp(canvas)
   initTopBar()
   initMiddleBar({ onMakeNow: options.onMakeNow })
+  initShelfLifestyleModal()
   initShelf()
 
   document.getElementById('diy-back')?.addEventListener('click', () => {

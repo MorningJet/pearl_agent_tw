@@ -10,8 +10,10 @@
     "preview": "vite preview",
     "preview:pages": "VITE_BASE=/pearl_agent_tw/ vite build && vite preview",
     "sync:catalog": "node scripts/sync-catalog.mjs",
+    "sync:lifestyle": "node scripts/sync-product-lifestyle.mjs",
     "sync:plaza": "node scripts/sync-plaza.mjs",
     "sync:shopify-variants": "node scripts/sync-shopify-variants.mjs",
+    "patch:shopify-theme": "node scripts/patch-shopify-homepage-theme.mjs",
     "normalize:products": "node scripts/normalize-product-image.mjs public/products",
     "newebpay:dev": "npx --yes wrangler@4 dev --config workers/newebpay/wrangler.toml --port 8787",
     "newebpay:deploy": "npx --yes wrangler@4 deploy --config workers/newebpay/wrangler.toml"

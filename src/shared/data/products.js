@@ -11,6 +11,7 @@
  */
 
 import catalog from './catalog.json'
+import lifestyleMap from './productLifestyle.json'
 import { withBase } from '../assetUrl.js'
 
 /** @typedef {'bead' | 'accessory'} MaterialType */
@@ -101,4 +102,19 @@ export function productImageUrl(pictureOrPath) {
   }
   if (pictureOrPath.startsWith('/')) return withBase(pictureOrPath)
   return withBase(`/products/${pictureOrPath}`)
+}
+
+/** Picture filename stem, e.g. `/products/白水晶.png` → `白水晶`. */
+export function productPictureStem(imageOrPicture) {
+  if (!imageOrPicture) return ''
+  const base = imageOrPicture.split('/').pop() || imageOrPicture
+  return base.replace(/\.[^.]+$/, '')
+}
+
+/** Lifestyle photo URL for a catalog product, or empty if none. */
+export function productLifestyleUrlForProduct(product) {
+  if (!product?.image) return ''
+  const file = lifestyleMap[productPictureStem(product.image)]
+  if (!file) return ''
+  return withBase(`/products/${file}`)
 }

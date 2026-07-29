@@ -123,7 +123,7 @@
   <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
     <h2 class="text-base font-semibold">如何設計</h2>
     <ol class="mt-3 list-decimal space-y-2 pl-4 text-sm text-stone-600">
-      <li>點選下方珠子或配件，即可加入手鍊。</li>
+      <li>點選下方珠子或配件，即可加入手鍊；長按商品卡可查看實拍圖。</li>
       <li>沿著圓環拖曳，可調整排列順序。</li>
       <li>往圓環外拖曳，可移除單顆珠子。</li>
       <li>點垃圾桶圖示，可清除整組設計。</li>
@@ -135,5 +135,39 @@
     >
       知道了
     </button>
+  </div>
+</div>
+
+<!-- Shelf product lifestyle photo (long-press) -->
+<div
+  id="shelf-lifestyle-modal"
+  class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 p-5"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="shelf-lifestyle-title"
+>
+  <div
+    class="flex max-h-[min(90vh,720px)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+  >
+    <div class="flex items-center justify-between border-b border-stone-100 px-4 py-3">
+      <h2 id="shelf-lifestyle-title" class="text-base font-semibold text-stone-900">
+        實拍圖
+      </h2>
+      <button
+        type="button"
+        id="shelf-lifestyle-close"
+        class="rounded-lg px-2 py-1 text-sm text-stone-500"
+        aria-label="關閉"
+      >
+        關閉
+      </button>
+    </div>
+    <div class="flex min-h-0 flex-1 items-center justify-center bg-stone-50 p-3">
+      <img
+        id="shelf-lifestyle-img"
+        alt=""
+        class="max-h-[min(70vh,560px)] w-full object-contain"
+      />
+    </div>
   </div>
 </div>
