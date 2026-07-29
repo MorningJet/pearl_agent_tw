@@ -341,8 +341,18 @@ function buildCatalogJson(rows) {
     console.warn('missing images in public/products/:', [...missingImages].join(', '))
   }
 
-  // Drop obsolete product images not referenced by the new catalog
+  // Drop obsolete product images not referenced by the new catalog.
+  // Keep lifestyle photos (*1.*) used by long-press preview on the DIY shelf.
   const keep = new Set(products.map((p) => path.basename(p.image)).filter(Boolean))
+  const lifestyleJson = path.join(root, 'src', 'shared', 'data', 'productLifestyle.json')
+  if (fs.existsSync(lifestyleJson)) {
+    try {
+      const lifestyleMap = JSON.parse(fs.readFileSync(lifestyleJson, 'utf8'))
+      for (const file of Object.values(lifestyleMap)) keep.add(String(file))
+    } catch {
+      /* ignore */
+    }
+  }
   if (fs.existsSync(productsDir)) {
     for (const file of fs.readdirSync(productsDir)) {
       if (!isProductImage(file)) continue
