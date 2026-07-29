@@ -1,6 +1,76 @@
 {
   "products": [
     {
+      "id": "xhyl_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "雪花幽靈",
+      "diameterMm": 6,
+      "price": 59,
+      "image": "/products/雪花幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "xhyl_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "雪花幽靈",
+      "diameterMm": 8,
+      "price": 89,
+      "image": "/products/雪花幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "xhyl_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "雪花幽靈",
+      "diameterMm": 10,
+      "price": 139,
+      "image": "/products/雪花幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "bsj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "白水晶",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/白水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "bsj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "白水晶",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/白水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "bsj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "白水晶",
+      "diameterMm": 10,
+      "price": 89,
+      "image": "/products/白水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "byl_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "白幽靈",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/白幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "sd_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -11,63 +81,123 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "nbj_cysl_6",
+      "id": "lfj_cysl_8",
       "type": "bead",
       "category": "水晶",
-      "name": "奶白晶",
+      "name": "綠髮晶",
+      "diameterMm": 8,
+      "price": 99,
+      "image": "/products/绿发晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lfj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "綠髮晶",
+      "diameterMm": 10,
+      "price": 139,
+      "image": "/products/绿发晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "dszzhu_prl_6",
+      "type": "bead",
+      "category": "珍珠",
+      "name": "淡水珍珠",
+      "diameterMm": 6,
+      "price": 99,
+      "image": "/products/淡水珍珠.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "dszzhu_prl_8",
+      "type": "bead",
+      "category": "珍珠",
+      "name": "淡水珍珠",
+      "diameterMm": 8,
+      "price": 169,
+      "image": "/products/淡水珍珠.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "dszzhu_prl_10",
+      "type": "bead",
+      "category": "珍珠",
+      "name": "淡水珍珠",
+      "diameterMm": 10,
+      "price": 199,
+      "image": "/products/淡水珍珠.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hfj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黑髮晶",
+      "diameterMm": 6,
+      "price": 49,
+      "image": "/products/黑发晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hfj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黑髮晶",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/黑发晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hfj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黑髮晶",
+      "diameterMm": 10,
+      "price": 169,
+      "image": "/products/黑发晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "pts_stn_6",
+      "type": "bead",
+      "category": "礦石",
+      "name": "葡萄石",
+      "diameterMm": 6,
+      "price": 49,
+      "image": "/products/葡萄石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "pts_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "葡萄石",
+      "diameterMm": 10,
+      "price": 89,
+      "image": "/products/葡萄石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lys_stn_6",
+      "type": "bead",
+      "category": "礦石",
+      "name": "綠螢石",
       "diameterMm": 6,
       "price": 69,
-      "image": "/products/奶白晶.png",
+      "image": "/products/绿萤石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "nbj_cysl_8",
+      "id": "lys_stn_8",
       "type": "bead",
-      "category": "水晶",
-      "name": "奶白晶",
+      "category": "礦石",
+      "name": "綠螢石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/奶白晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "nbj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "奶白晶",
-      "diameterMm": 10,
       "price": 99,
-      "image": "/products/奶白晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dszz_prl_6",
-      "type": "bead",
-      "category": "珍珠",
-      "name": "圓珍珠",
-      "diameterMm": 6,
-      "price": 99,
-      "image": "/products/圆珍珠.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dszz_prl_8",
-      "type": "bead",
-      "category": "珍珠",
-      "name": "圓珍珠",
-      "diameterMm": 8,
-      "price": 199,
-      "image": "/products/圆珍珠.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dszz_prl_10",
-      "type": "bead",
-      "category": "珍珠",
-      "name": "圓珍珠",
-      "diameterMm": 10,
-      "price": 399,
-      "image": "/products/圆珍珠.png",
+      "image": "/products/绿萤石.png",
       "color": "#d6d3d1"
     },
     {
@@ -131,33 +261,33 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "xgfj_cysl_6",
+      "id": "by_agt_6",
       "type": "bead",
-      "category": "水晶",
-      "name": "星光粉晶",
+      "category": "瑪瑙",
+      "name": "白玉髓",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/星光粉晶.png",
+      "price": 39,
+      "image": "/products/白玉髓.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "xgfj_cysl_8",
+      "id": "by_agt_8",
       "type": "bead",
-      "category": "水晶",
-      "name": "星光粉晶",
+      "category": "瑪瑙",
+      "name": "白玉髓",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/星光粉晶.png",
+      "price": 59,
+      "image": "/products/白玉髓.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "xgfj_cysl_10",
+      "id": "by_agt_10",
       "type": "bead",
-      "category": "水晶",
-      "name": "星光粉晶",
+      "category": "瑪瑙",
+      "name": "白玉髓",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/星光粉晶.png",
+      "price": 89,
+      "image": "/products/白玉髓.png",
       "color": "#d6d3d1"
     },
     {
@@ -168,6 +298,66 @@
       "diameterMm": 8,
       "price": 59,
       "image": "/products/菱格立方.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zlh_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "紫鋰輝",
+      "diameterMm": 6,
+      "price": 89,
+      "image": "/products/紫锂辉.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zlh_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "紫鋰輝",
+      "diameterMm": 8,
+      "price": 129,
+      "image": "/products/紫锂辉.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zlh_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "紫鋰輝",
+      "diameterMm": 10,
+      "price": 169,
+      "image": "/products/紫锂辉.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "fsj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "粉水晶",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/粉水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "fsj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "粉水晶",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/粉水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "fsj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "粉水晶",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/粉水晶.png",
       "color": "#d6d3d1"
     },
     {
@@ -191,36 +381,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "by_agt_6",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "白玉髓",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/白玉髓.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "by_agt_8",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "白玉髓",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/白玉髓.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "by_agt_10",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "白玉髓",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/白玉髓.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "lkjf_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -231,183 +391,103 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "bsy_cysl_6",
+      "id": "bas_cysl_8",
       "type": "bead",
       "category": "水晶",
-      "name": "白石英",
-      "diameterMm": 6,
+      "name": "白阿塞",
+      "diameterMm": 8,
       "price": 69,
-      "image": "/products/白石英.png",
+      "image": "/products/白阿塞.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "bsy_cysl_8",
+      "id": "bas_cysl_10",
       "type": "bead",
       "category": "水晶",
-      "name": "白石英",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/白石英.png",
+      "name": "白阿塞",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/白阿塞.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "bsy_cysl_10",
+      "id": "hws_stn_6",
+      "type": "bead",
+      "category": "礦石",
+      "name": "海紋石",
+      "diameterMm": 6,
+      "price": 69,
+      "image": "/products/海纹石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hws_stn_8",
+      "type": "bead",
+      "category": "礦石",
+      "name": "海紋石",
+      "diameterMm": 8,
+      "price": 99,
+      "image": "/products/海纹石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hws_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "海紋石",
+      "diameterMm": 10,
+      "price": 169,
+      "image": "/products/海纹石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zys_agt_6",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "紫玉髓",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/紫玉髓.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zys_agt_8",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "紫玉髓",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/紫玉髓.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "jfj_cysl_6",
       "type": "bead",
       "category": "水晶",
-      "name": "白石英",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/白石英.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "nyl_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "奶油藍",
+      "name": "金髮晶",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/奶油藍.png",
+      "price": 49,
+      "image": "/products/金发晶.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "nyl_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "奶油藍",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/奶油藍.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "nyl_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "奶油藍",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/奶油藍.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "mtfj_cysl_6",
+      "id": "jfj_cysl_8",
       "type": "bead",
       "category": "水晶",
-      "name": "蜜桃粉晶",
-      "diameterMm": 6,
+      "name": "金髮晶",
+      "diameterMm": 8,
       "price": 69,
-      "image": "/products/蜜桃粉晶.png",
+      "image": "/products/金发晶.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "mtfj_cysl_8",
+      "id": "jfj_cysl_10",
       "type": "bead",
       "category": "水晶",
-      "name": "蜜桃粉晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/蜜桃粉晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "mtfj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "蜜桃粉晶",
+      "name": "金髮晶",
       "diameterMm": 10,
       "price": 99,
-      "image": "/products/蜜桃粉晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lpts_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠葡萄石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lpts_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠葡萄石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lpts_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠葡萄石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lyg_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍月光",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/藍月光.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lyg_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍月光",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/藍月光.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lyg_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍月光",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/藍月光.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "sbs_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "閃白石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/閃白石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "sbs_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "閃白石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/閃白石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "sbs_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "閃白石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/閃白石.png",
+      "image": "/products/金发晶.png",
       "color": "#d6d3d1"
     },
     {
@@ -471,6 +551,36 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "lwmn_agt_6",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "藍紋瑪瑙",
+      "diameterMm": 6,
+      "price": 69,
+      "image": "/products/蓝纹玛瑙.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lwmn_agt_8",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "藍紋瑪瑙",
+      "diameterMm": 8,
+      "price": 99,
+      "image": "/products/蓝纹玛瑙.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lwmn_agt_10",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "藍紋瑪瑙",
+      "diameterMm": 10,
+      "price": 199,
+      "image": "/products/蓝纹玛瑙.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "nwxh_spc_5",
       "type": "accessory",
       "category": "隔珠",
@@ -478,6 +588,26 @@
       "diameterMm": 5,
       "price": 59,
       "image": "/products/扭纹小环.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "xyc_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "薰衣草",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/薰衣草.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "xyc_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "薰衣草",
+      "diameterMm": 10,
+      "price": 139,
+      "image": "/products/薰衣草.png",
       "color": "#d6d3d1"
     },
     {
@@ -511,33 +641,63 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "lwmn_agt_6",
+      "id": "yys_stn_6",
       "type": "bead",
-      "category": "瑪瑙",
-      "name": "藍紋瑪瑙",
+      "category": "礦石",
+      "name": "銀曜石",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/藍紋瑪瑙.png",
+      "price": 39,
+      "image": "/products/银曜石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "lwmn_agt_8",
+      "id": "yys_stn_8",
       "type": "bead",
-      "category": "瑪瑙",
-      "name": "藍紋瑪瑙",
+      "category": "礦石",
+      "name": "銀曜石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/藍紋瑪瑙.png",
+      "price": 69,
+      "image": "/products/银曜石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "lwmn_agt_10",
+      "id": "yys_stn_10",
       "type": "bead",
-      "category": "瑪瑙",
-      "name": "藍紋瑪瑙",
+      "category": "礦石",
+      "name": "銀曜石",
       "diameterMm": 10,
       "price": 99,
-      "image": "/products/藍紋瑪瑙.png",
+      "image": "/products/银曜石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hsj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黃水晶",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/黄水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hsj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黃水晶",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/黄水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hsj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "黃水晶",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/黄水晶.png",
       "color": "#d6d3d1"
     },
     {
@@ -601,43 +761,13 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hsj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃水晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hsj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃水晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hsj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃水晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "hm_agt_6",
       "type": "bead",
       "category": "瑪瑙",
       "name": "黃瑪瑙",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黃瑪瑙.png",
+      "price": 39,
+      "image": "/products/黄玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -646,8 +776,8 @@
       "category": "瑪瑙",
       "name": "黃瑪瑙",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黃瑪瑙.png",
+      "price": 59,
+      "image": "/products/黄玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -656,8 +786,8 @@
       "category": "瑪瑙",
       "name": "黃瑪瑙",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黃瑪瑙.png",
+      "price": 89,
+      "image": "/products/黄玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -667,7 +797,7 @@
       "name": "蜜蠟",
       "diameterMm": 6,
       "price": 69,
-      "image": "/products/蜜蠟.png",
+      "image": "/products/蜜蜡.png",
       "color": "#d6d3d1"
     },
     {
@@ -676,18 +806,8 @@
       "category": "礦石",
       "name": "蜜蠟",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/蜜蠟.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ml_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "蜜蠟",
-      "diameterMm": 10,
       "price": 99,
-      "image": "/products/蜜蠟.png",
+      "image": "/products/蜜蜡.png",
       "color": "#d6d3d1"
     },
     {
@@ -721,66 +841,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hws_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "海紋石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/海紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hws_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "海紋石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/海紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hws_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "海紋石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/海紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "pts_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "葡萄石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "pts_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "葡萄石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "pts_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "葡萄石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/葡萄石.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "jf_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -798,36 +858,6 @@
       "diameterMm": 8,
       "price": 59,
       "image": "/products/复古雕花.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "mtx_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "滿天星",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/滿天星.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "mtx_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "滿天星",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/滿天星.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "mtx_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "滿天星",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/滿天星.png",
       "color": "#d6d3d1"
     },
     {
@@ -851,96 +881,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "nmhsj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "檸檬黃水晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/檸檬黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "nmhsj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "檸檬黃水晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/檸檬黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "nmhsj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "檸檬黃水晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/檸檬黃水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ths_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "天河石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/天河石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ths_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "天河石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/天河石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ths_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "天河石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/天河石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠螢石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠螢石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠螢石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "gsmm_spc_8",
       "type": "accessory",
       "category": "隔珠",
@@ -948,36 +888,6 @@
       "diameterMm": 8,
       "price": 59,
       "image": "/products/锆石猫咪.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jfj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "金髮晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/金髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jfj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "金髮晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/金髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jfj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "金髮晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/金髮晶.png",
       "color": "#d6d3d1"
     },
     {
@@ -1001,36 +911,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "ymys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "羽毛螢石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/羽毛螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ymys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "羽毛螢石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/羽毛螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ymys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "羽毛螢石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/羽毛螢石.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "xfp_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -1048,36 +928,6 @@
       "diameterMm": 2,
       "price": 99,
       "image": "/products/葫芦成双.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hty_jd_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "和田玉",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/和田玉.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hty_jd_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "和田玉",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/和田玉.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hty_jd_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "和田玉",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/和田玉.png",
       "color": "#d6d3d1"
     },
     {
@@ -1131,6 +981,36 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "hps_stn_6",
+      "type": "bead",
+      "category": "礦石",
+      "name": "琥珀石",
+      "diameterMm": 6,
+      "price": 59,
+      "image": "/products/琥珀石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hps_stn_8",
+      "type": "bead",
+      "category": "礦石",
+      "name": "琥珀石",
+      "diameterMm": 8,
+      "price": 89,
+      "image": "/products/琥珀石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hps_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "琥珀石",
+      "diameterMm": 10,
+      "price": 199,
+      "image": "/products/琥珀石.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "bjx_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -1151,33 +1031,33 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hj_cysl_6",
+      "id": "hlb_stn_6",
       "type": "bead",
-      "category": "水晶",
-      "name": "黃膠花",
+      "category": "礦石",
+      "name": "海藍寶",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黃膠花.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃膠花",
-      "diameterMm": 8,
       "price": 89,
-      "image": "/products/黃膠花.png",
+      "image": "/products/海蓝宝.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "hj_cysl_10",
+      "id": "hlb_stn_8",
       "type": "bead",
-      "category": "水晶",
-      "name": "黃膠花",
-      "diameterMm": 10,
+      "category": "礦石",
+      "name": "海藍寶",
+      "diameterMm": 8,
       "price": 99,
-      "image": "/products/黃膠花.png",
+      "image": "/products/海蓝宝.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hlb_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "海藍寶",
+      "diameterMm": 10,
+      "price": 169,
+      "image": "/products/海蓝宝.png",
       "color": "#d6d3d1"
     },
     {
@@ -1191,63 +1071,33 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "xyczsj_cysl_6",
+      "id": "ths_stn_6",
       "type": "bead",
-      "category": "水晶",
-      "name": "薰衣草紫水晶",
+      "category": "礦石",
+      "name": "天河石",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/薰衣草紫水晶.png",
+      "price": 59,
+      "image": "/products/天河石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "xyczsj_cysl_8",
+      "id": "ths_stn_8",
       "type": "bead",
-      "category": "水晶",
-      "name": "薰衣草紫水晶",
+      "category": "礦石",
+      "name": "天河石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/薰衣草紫水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "xyczsj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "薰衣草紫水晶",
-      "diameterMm": 10,
       "price": 99,
-      "image": "/products/薰衣草紫水晶.png",
+      "image": "/products/天河石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "zlh_cysl_6",
+      "id": "ths_stn_10",
       "type": "bead",
-      "category": "水晶",
-      "name": "紫鋰輝",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紫鋰輝.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zlh_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫鋰輝",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紫鋰輝.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zlh_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫鋰輝",
+      "category": "礦石",
+      "name": "天河石",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紫鋰輝.png",
+      "price": 139,
+      "image": "/products/天河石.png",
       "color": "#d6d3d1"
     },
     {
@@ -1271,66 +1121,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "bcb_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "冰川寶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/冰川寶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "bcb_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "冰川寶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/冰川寶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "bcb_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "冰川寶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/冰川寶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃塔晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黃塔晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃塔晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黃塔晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黃塔晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黃塔晶.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "wyh_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -1351,36 +1141,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "jhy_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金虎眼",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/金虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jhy_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金虎眼",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/金虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jhy_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金虎眼",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/金虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "jsmxyl_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -1391,6 +1151,36 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "lcmj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "綠莓晶",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/绿莓晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lcmj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "綠莓晶",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/绿莓晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "lcmj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "綠莓晶",
+      "diameterMm": 10,
+      "price": 89,
+      "image": "/products/绿莓晶.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "hbgd_spc_6",
       "type": "accessory",
       "category": "隔珠",
@@ -1398,36 +1188,6 @@
       "diameterMm": 6,
       "price": 59,
       "image": "/products/花边轨道.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "qtxy_jd_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "青提玉",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/青提玉.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "qtxy_jd_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "青提玉",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/青提玉.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "qtxy_jd_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "青提玉",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/青提玉.png",
       "color": "#d6d3d1"
     },
     {
@@ -1471,36 +1231,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hfj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黑髮晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黑髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hfj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黑髮晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黑髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hfj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "黑髮晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黑髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "cyym_pnd_2",
       "type": "accessory",
       "category": "吊墜",
@@ -1511,36 +1241,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hw_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紅紋石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紅紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hw_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紅紋石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紅紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hw_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紅紋石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紅紋石.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "cysy_spc_6",
       "type": "accessory",
       "category": "隔珠",
@@ -1548,6 +1248,26 @@
       "diameterMm": 6,
       "price": 59,
       "image": "/products/藏银树叶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "qws_stn_8",
+      "type": "bead",
+      "category": "礦石",
+      "name": "薔薇石",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/蔷薇石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "qws_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "薔薇石",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/蔷薇石.png",
       "color": "#d6d3d1"
     },
     {
@@ -1591,63 +1311,33 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hyg_stn_6",
+      "id": "tys_stn_6",
       "type": "bead",
       "category": "礦石",
-      "name": "灰月光",
+      "name": "太陽石",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/灰月光.png",
+      "price": 49,
+      "image": "/products/太阳石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "hyg_stn_8",
+      "id": "tys_stn_8",
       "type": "bead",
       "category": "礦石",
-      "name": "灰月光",
+      "name": "太陽石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/灰月光.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hyg_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "灰月光",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/灰月光.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "slhlb_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "聖藍海寶",
-      "diameterMm": 6,
       "price": 69,
-      "image": "/products/聖藍海寶.png",
+      "image": "/products/太阳石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "slhlb_stn_8",
+      "id": "tys_stn_10",
       "type": "bead",
       "category": "礦石",
-      "name": "聖藍海寶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/聖藍海寶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "slhlb_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "聖藍海寶",
+      "name": "太陽石",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/聖藍海寶.png",
+      "price": 169,
+      "image": "/products/太阳石.png",
       "color": "#d6d3d1"
     },
     {
@@ -1668,56 +1358,6 @@
       "diameterMm": 6,
       "price": 59,
       "image": "/products/凯尔特结.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ysxq_spc_8",
-      "type": "accessory",
-      "category": "隔珠",
-      "name": "銀色繡球",
-      "diameterMm": 8,
-      "price": 59,
-      "image": "/products/银色绣球.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "tys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "太陽石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/太陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "tys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "太陽石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/太陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "tys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "太陽石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/太陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "wgzl_pnd_2",
-      "type": "accessory",
-      "category": "吊墜",
-      "name": "王國之淚",
-      "diameterMm": 2,
-      "price": 99,
-      "image": "/products/王国之泪.png",
       "color": "#d6d3d1"
     },
     {
@@ -1751,93 +1391,23 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "dsj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "豆沙晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/豆沙晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dsj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "豆沙晶",
+      "id": "ysxq_spc_8",
+      "type": "accessory",
+      "category": "隔珠",
+      "name": "銀色繡球",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/豆沙晶.png",
+      "price": 59,
+      "image": "/products/银色绣球.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "dsj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "豆沙晶",
-      "diameterMm": 10,
+      "id": "wgzl_pnd_2",
+      "type": "accessory",
+      "category": "吊墜",
+      "name": "王國之淚",
+      "diameterMm": 2,
       "price": 99,
-      "image": "/products/豆沙晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yhyqws_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "櫻花石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/櫻花石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yhyqws_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "櫻花石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/櫻花石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yhyqws_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "櫻花石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/櫻花石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zfj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫粉晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紫粉晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zfj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫粉晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紫粉晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zfj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫粉晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紫粉晶.png",
+      "image": "/products/王国之泪.png",
       "color": "#d6d3d1"
     },
     {
@@ -1851,123 +1421,33 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "ccs_stn_6",
+      "id": "cmj_cysl_6",
       "type": "bead",
-      "category": "礦石",
-      "name": "橙彩石",
+      "category": "水晶",
+      "name": "草莓晶",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/橙彩石.png",
+      "price": 39,
+      "image": "/products/草莓晶.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "ccs_stn_8",
+      "id": "cmj_cysl_8",
       "type": "bead",
-      "category": "礦石",
-      "name": "橙彩石",
+      "category": "水晶",
+      "name": "草莓晶",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/橙彩石.png",
+      "price": 69,
+      "image": "/products/草莓晶.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "ccs_stn_10",
+      "id": "cmj_cysl_10",
       "type": "bead",
-      "category": "礦石",
-      "name": "橙彩石",
+      "category": "水晶",
+      "name": "草莓晶",
       "diameterMm": 10,
       "price": 99,
-      "image": "/products/橙彩石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lfj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠髮晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lfj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠髮晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lfj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠髮晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠髮晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lcmj_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠莓晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠莓晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lcmj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠莓晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠莓晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lcmj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠莓晶",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠莓晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hjh_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅膠花",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紅膠花.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hjh_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅膠花",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紅膠花.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hjh_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅膠花",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紅膠花.png",
+      "image": "/products/草莓晶.png",
       "color": "#d6d3d1"
     },
     {
@@ -2008,36 +1488,6 @@
       "diameterMm": 5,
       "price": 59,
       "image": "/products/藏银回纹.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htm_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅兔毛",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紅兔毛.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htm_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅兔毛",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紅兔毛.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "htm_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紅兔毛",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紅兔毛.png",
       "color": "#d6d3d1"
     },
     {
@@ -2091,36 +1541,6 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "jtys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金陽石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/金陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jtys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金陽石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/金陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "jtys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "金陽石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/金陽石.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "jtlfq_spc_8",
       "type": "accessory",
       "category": "隔珠",
@@ -2131,183 +1551,93 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "hjc_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑金超",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黑金超.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hjc_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑金超",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黑金超.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hjc_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑金超",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黑金超.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hhy_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黃虎眼",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黃虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hhy_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黃虎眼",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黃虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hhy_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黃虎眼",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黃虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dws_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "帝王砂",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/帝王砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dws_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "帝王砂",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/帝王砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "dws_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "帝王砂",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/帝王砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hmn_agt_6",
+      "id": "nh_agt_6",
       "type": "bead",
       "category": "瑪瑙",
-      "name": "紅瑪瑙",
+      "name": "南紅",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紅瑪瑙.png",
+      "price": 39,
+      "image": "/products/南红.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "hmn_agt_8",
+      "id": "nh_agt_8",
       "type": "bead",
       "category": "瑪瑙",
-      "name": "紅瑪瑙",
+      "name": "南紅",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紅瑪瑙.png",
+      "price": 69,
+      "image": "/products/南红.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "hmn_agt_10",
+      "id": "nh_agt_10",
       "type": "bead",
       "category": "瑪瑙",
-      "name": "紅瑪瑙",
+      "name": "南紅",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紅瑪瑙.png",
+      "price": 129,
+      "image": "/products/南红.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "bys_stn_6",
+      "id": "hyes_stn_6",
       "type": "bead",
       "category": "礦石",
-      "name": "冰曜石",
+      "name": "虎眼石",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/冰曜石.png",
+      "price": 39,
+      "image": "/products/虎眼石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "bys_stn_8",
+      "id": "hyes_stn_8",
       "type": "bead",
       "category": "礦石",
-      "name": "冰曜石",
+      "name": "虎眼石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/冰曜石.png",
+      "price": 59,
+      "image": "/products/虎眼石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "bys_stn_10",
+      "id": "hyes_stn_10",
       "type": "bead",
       "category": "礦石",
-      "name": "冰曜石",
+      "name": "虎眼石",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/冰曜石.png",
+      "price": 89,
+      "image": "/products/虎眼石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "jtcj_cysl_6",
+      "id": "gqys_agt_6",
       "type": "bead",
-      "category": "水晶",
-      "name": "淨體茶晶",
+      "category": "瑪瑙",
+      "name": "乾青玉髓",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/淨體茶晶.png",
+      "price": 59,
+      "image": "/products/干青玉髓.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "jtcj_cysl_8",
+      "id": "gqys_agt_8",
       "type": "bead",
-      "category": "水晶",
-      "name": "淨體茶晶",
+      "category": "瑪瑙",
+      "name": "乾青玉髓",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/淨體茶晶.png",
+      "price": 69,
+      "image": "/products/干青玉髓.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "jtcj_cysl_10",
+      "id": "gqys_agt_10",
       "type": "bead",
-      "category": "水晶",
-      "name": "淨體茶晶",
+      "category": "瑪瑙",
+      "name": "乾青玉髓",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/淨體茶晶.png",
+      "price": 89,
+      "image": "/products/干青玉髓.png",
       "color": "#d6d3d1"
     },
     {
@@ -2316,8 +1646,8 @@
       "category": "礦石",
       "name": "藍晶石",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/藍晶石.png",
+      "price": 99,
+      "image": "/products/蓝晶石.png",
       "color": "#d6d3d1"
     },
     {
@@ -2326,8 +1656,8 @@
       "category": "礦石",
       "name": "藍晶石",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/藍晶石.png",
+      "price": 139,
+      "image": "/products/蓝晶石.png",
       "color": "#d6d3d1"
     },
     {
@@ -2336,38 +1666,8 @@
       "category": "礦石",
       "name": "藍晶石",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/藍晶石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "銀曜石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/銀曜石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "銀曜石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/銀曜石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "yys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "銀曜石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/銀曜石.png",
+      "price": 199,
+      "image": "/products/蓝晶石.png",
       "color": "#d6d3d1"
     },
     {
@@ -2378,6 +1678,66 @@
       "diameterMm": 2,
       "price": 99,
       "image": "/products/捕梦网.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "csj_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "茶水晶",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/茶水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "csj_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "茶水晶",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/茶水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "csj_cysl_10",
+      "type": "bead",
+      "category": "水晶",
+      "name": "茶水晶",
+      "diameterMm": 10,
+      "price": 89,
+      "image": "/products/茶水晶.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hmn_agt_6",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "紅瑪瑙",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/红玛瑙.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hmn_agt_8",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "紅瑪瑙",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/红玛瑙.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hmn_agt_10",
+      "type": "bead",
+      "category": "瑪瑙",
+      "name": "紅瑪瑙",
+      "diameterMm": 10,
+      "price": 89,
+      "image": "/products/红玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -2406,188 +1766,38 @@
       "category": "礦石",
       "name": "孔雀石",
       "diameterMm": 10,
-      "price": 99,
+      "price": 199,
       "image": "/products/孔雀石.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "llj_stn_6",
+      "id": "wlg_cysl_6",
       "type": "bead",
-      "category": "礦石",
-      "name": "綠龍晶",
+      "category": "水晶",
+      "name": "烏拉圭",
       "diameterMm": 6,
       "price": 69,
-      "image": "/products/綠龍晶.png",
+      "image": "/products/乌拉圭.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "llj_stn_8",
+      "id": "wlg_cysl_8",
       "type": "bead",
-      "category": "礦石",
-      "name": "綠龍晶",
+      "category": "水晶",
+      "name": "烏拉圭",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠龍晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "llj_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "綠龍晶",
-      "diameterMm": 10,
       "price": 99,
-      "image": "/products/綠龍晶.png",
+      "image": "/products/乌拉圭.png",
       "color": "#d6d3d1"
     },
     {
-      "id": "wlgzsj_cysl_6",
+      "id": "wlg_cysl_10",
       "type": "bead",
       "category": "水晶",
-      "name": "烏拉圭紫水晶",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/烏拉圭紫水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "wlgzsj_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "烏拉圭紫水晶",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/烏拉圭紫水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "wlgzsj_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "烏拉圭紫水晶",
+      "name": "烏拉圭",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/烏拉圭紫水晶.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lt_wd_6",
-      "type": "bead",
-      "category": "木質",
-      "name": "綠檀木",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠檀木.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lt_wd_8",
-      "type": "bead",
-      "category": "木質",
-      "name": "綠檀木",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠檀木.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lt_wd_10",
-      "type": "bead",
-      "category": "木質",
-      "name": "綠檀木",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠檀木.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lmn_agt_6",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "綠瑪瑙",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠瑪瑙.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lmn_agt_8",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "綠瑪瑙",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠瑪瑙.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lmn_agt_10",
-      "type": "bead",
-      "category": "瑪瑙",
-      "name": "綠瑪瑙",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠瑪瑙.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ltm_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠兔毛",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/綠兔毛.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ltm_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠兔毛",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/綠兔毛.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "ltm_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "綠兔毛",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/綠兔毛.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zyl_cysl_6",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫幽靈",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紫幽靈.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zyl_cysl_8",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫幽靈",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紫幽靈.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zyl_cysl_10",
-      "type": "bead",
-      "category": "水晶",
-      "name": "紫幽靈",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紫幽靈.png",
+      "price": 169,
+      "image": "/products/乌拉圭.png",
       "color": "#d6d3d1"
     },
     {
@@ -2621,13 +1831,33 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "zyl_cysl_6",
+      "type": "bead",
+      "category": "水晶",
+      "name": "紫幽靈",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/紫幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "zyl_cysl_8",
+      "type": "bead",
+      "category": "水晶",
+      "name": "紫幽靈",
+      "diameterMm": 8,
+      "price": 59,
+      "image": "/products/紫幽灵.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "he_agt_6",
       "type": "bead",
       "category": "瑪瑙",
       "name": "黑瑪瑙",
       "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黑瑪瑙.png",
+      "price": 39,
+      "image": "/products/黑玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -2636,8 +1866,8 @@
       "category": "瑪瑙",
       "name": "黑瑪瑙",
       "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黑瑪瑙.png",
+      "price": 59,
+      "image": "/products/黑玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -2646,128 +1876,8 @@
       "category": "瑪瑙",
       "name": "黑瑪瑙",
       "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黑瑪瑙.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lhy_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍虎眼",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/藍虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lhy_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍虎眼",
-      "diameterMm": 8,
       "price": 89,
-      "image": "/products/藍虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "lhy_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "藍虎眼",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/藍虎眼.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zjs_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紫金砂",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/紫金砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zjs_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紫金砂",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/紫金砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "zjs_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "紫金砂",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/紫金砂.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hbx_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑碧璽",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黑碧璽.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hbx_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑碧璽",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黑碧璽.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hbx_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑碧璽",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黑碧璽.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hys_stn_6",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑曜石",
-      "diameterMm": 6,
-      "price": 69,
-      "image": "/products/黑曜石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hys_stn_8",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑曜石",
-      "diameterMm": 8,
-      "price": 89,
-      "image": "/products/黑曜石.png",
-      "color": "#d6d3d1"
-    },
-    {
-      "id": "hys_stn_10",
-      "type": "bead",
-      "category": "礦石",
-      "name": "黑曜石",
-      "diameterMm": 10,
-      "price": 99,
-      "image": "/products/黑曜石.png",
+      "image": "/products/黑玛瑙.png",
       "color": "#d6d3d1"
     },
     {
@@ -2776,7 +1886,7 @@
       "category": "礦石",
       "name": "金曜石",
       "diameterMm": 6,
-      "price": 69,
+      "price": 39,
       "image": "/products/金曜石.png",
       "color": "#d6d3d1"
     },
@@ -2786,7 +1896,7 @@
       "category": "礦石",
       "name": "金曜石",
       "diameterMm": 8,
-      "price": 89,
+      "price": 69,
       "image": "/products/金曜石.png",
       "color": "#d6d3d1"
     },
@@ -2798,6 +1908,36 @@
       "diameterMm": 10,
       "price": 99,
       "image": "/products/金曜石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hys_stn_6",
+      "type": "bead",
+      "category": "礦石",
+      "name": "黑曜石",
+      "diameterMm": 6,
+      "price": 39,
+      "image": "/products/黑曜石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hys_stn_8",
+      "type": "bead",
+      "category": "礦石",
+      "name": "黑曜石",
+      "diameterMm": 8,
+      "price": 69,
+      "image": "/products/黑曜石.png",
+      "color": "#d6d3d1"
+    },
+    {
+      "id": "hys_stn_10",
+      "type": "bead",
+      "category": "礦石",
+      "name": "黑曜石",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/黑曜石.png",
       "color": "#d6d3d1"
     }
   ]
