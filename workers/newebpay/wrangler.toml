@@ -23,7 +23,7 @@ id = "46766556425b4480a0d0e18aa67c00d1"
 preview_id = "eba7cee8bcef4ad19731c47bec26bd00"
 
 [vars]
-NEWEBPAY_ENV = "sandbox"
+NEWEBPAY_ENV = "production"
 PUBLIC_API_BASE = "https://pearl-newebpay.pearl-diy.workers.dev"
 H5_RETURN_URL = "https://morningjet.github.io/pearl_agent_tw/?embed=1"
 CORS_ORIGINS = "*"
@@ -31,8 +31,10 @@ SHOPIFY_STORE_DOMAIN = "pearl-diy.myshopify.com"
 SHOPIFY_API_VERSION = "2025-01"
 # NT$1「設計費用」變體數字 ID（Storefront / Admin 變體 GID 末段）
 SHOPIFY_DESIGN_FEE_VARIANT_ID = "52116571554090"
+# 逗號分隔；這些信箱的 H5 訂單會多打「測試」標籤
+TEST_ACCOUNT_EMAILS = "511895572@qq.com"
 # Set to "1" only while NewebPay is pending review (disable in production)
-ALLOW_DEV_SIMULATE = "1"
+ALLOW_DEV_SIMULATE = "0"
 
 # Secrets (also):
 #   npx wrangler secret put SHOPIFY_CLIENT_ID
