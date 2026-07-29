@@ -160,6 +160,8 @@ function drawBeadShadow(ctx, x, y, r) {
 function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   if (bead.pendant) {
     drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts)
+  } else if (bead.spacer) {
+    drawSpacer(ctx, bead, x, y, alpha, onImageLoad, opts)
   } else {
     drawBead(ctx, bead, x, y, alpha, onImageLoad, opts)
   }
@@ -262,6 +264,63 @@ function drawPendantShadow(ctx, w, h) {
     ctx.ellipse(w * 0.06, h * 0.58, w * 0.3, h * 0.28, 0, 0, Math.PI * 2)
     ctx.fill()
   }
+  ctx.restore()
+}
+
+/**
+ * Spacer discs are thin along the cord; draw in a tangent×radial ellipse so they
+ * sit flush against round beads instead of floating inside a full-diameter circle.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('./layout.js').LayoutBead} bead
+ * @param {number} x
+ * @param {number} y
+ * @param {number} alpha
+ * @param {() => void} [onImageLoad]
+ * @param {{ shadow?: boolean }} [opts]
+ */
+function drawSpacer(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
+  const rRadial = bead.radiusPx
+  const rTangent = bead.trackRadiusPx || rRadial * 0.35
+  const tangentRot = (bead.angle ?? -Math.PI / 2) + Math.PI / 2
+
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.translate(x, y)
+  ctx.rotate(tangentRot)
+
+  if (opts.shadow !== false) {
+    drawBeadShadow(ctx, 0, 0, Math.max(rRadial, rTangent))
+  }
+
+  const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
+  if (img) {
+    const zoom = contentZoom(img)
+    const drawRx = rTangent * zoom
+    const drawRy = rRadial * zoom
+    ctx.beginPath()
+    ctx.ellipse(0, 0, rTangent, rRadial, 0, 0, Math.PI * 2)
+    ctx.closePath()
+    ctx.clip()
+    ctx.drawImage(img, -drawRx, -drawRy, drawRx * 2, drawRy * 2)
+  } else {
+    const color = bead.color || '#d6d3d1'
+    const grd = ctx.createRadialGradient(
+      -rRadial * 0.35,
+      -rRadial * 0.35,
+      rRadial * 0.1,
+      0,
+      0,
+      rRadial,
+    )
+    grd.addColorStop(0, lighten(color, 0.35))
+    grd.addColorStop(0.55, color)
+    grd.addColorStop(1, darken(color, 0.25))
+    ctx.beginPath()
+    ctx.ellipse(0, 0, rTangent, rRadial, 0, 0, Math.PI * 2)
+    ctx.fillStyle = grd
+    ctx.fill()
+  }
+
   ctx.restore()
 }
 
