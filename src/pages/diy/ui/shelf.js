@@ -67,7 +67,7 @@ export function initShelf() {
           return `
           <button type="button" data-id="${escapeAttr(p.id)}" class="relative flex aspect-square flex-col items-center rounded-xl bg-white px-2 pb-2 pt-2.5 text-center ring-1 ring-stone-200 transition active:scale-95">
             ${n ? `<span class="absolute right-1.5 top-1.5 rounded bg-stone-900/80 px-1.5 py-0.5 text-[0.65rem] leading-none text-white">x${n}</span>` : ''}
-            <span class="flex aspect-square w-[52%] shrink-0 items-center justify-center overflow-hidden rounded-full bg-stone-200">
+            <span class="flex aspect-square w-[52%] shrink-0 items-center justify-center overflow-hidden rounded-full">
               ${
                 p.image
                   ? `<img src="${escapeAttr(p.image)}" alt="" class="h-full w-full object-cover" />`
