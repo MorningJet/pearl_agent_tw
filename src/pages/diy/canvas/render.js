@@ -268,8 +268,8 @@ function drawPendantShadow(ctx, w, h) {
 }
 
 /**
- * Spacer discs are thin along the cord; draw in a tangent×radial ellipse so they
- * sit flush against round beads instead of floating inside a full-diameter circle.
+ * Spacer ring art is thin along the cord; stretch along tangent (local +X) so it
+ * fills the catalog slot and meets round neighbors. Radial size stays true to mm.
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('./layout.js').LayoutBead} bead
  * @param {number} x
@@ -279,44 +279,41 @@ function drawPendantShadow(ctx, w, h) {
  * @param {{ shadow?: boolean }} [opts]
  */
 function drawSpacer(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
-  const rRadial = bead.radiusPx
-  const rTangent = bead.trackRadiusPx || rRadial * 0.35
+  const r = bead.radiusPx
   const tangentRot = (bead.angle ?? -Math.PI / 2) + Math.PI / 2
 
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.translate(x, y)
-  ctx.rotate(tangentRot)
 
   if (opts.shadow !== false) {
-    drawBeadShadow(ctx, 0, 0, Math.max(rRadial, rTangent))
+    drawBeadShadow(ctx, x, y, r)
   }
+
+  ctx.translate(x, y)
+  ctx.rotate(tangentRot)
 
   const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
   if (img) {
     const zoom = contentZoom(img)
-    const drawRx = rTangent * zoom
-    const drawRy = rRadial * zoom
+    const box = getContentBBox(img)
+    const aspect = box.w / Math.max(box.h, 1)
+    // Stretch the narrow content axis along the cord; cap to avoid mushy discs.
+    const tangentStretch = Math.min(2.6, Math.max(1, aspect > 1 ? aspect : 1 / aspect))
+    const drawRx = r * zoom * tangentStretch
+    const drawRy = r * zoom
     ctx.beginPath()
-    ctx.ellipse(0, 0, rTangent, rRadial, 0, 0, Math.PI * 2)
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
     ctx.closePath()
     ctx.clip()
     ctx.drawImage(img, -drawRx, -drawRy, drawRx * 2, drawRy * 2)
   } else {
     const color = bead.color || '#d6d3d1'
-    const grd = ctx.createRadialGradient(
-      -rRadial * 0.35,
-      -rRadial * 0.35,
-      rRadial * 0.1,
-      0,
-      0,
-      rRadial,
-    )
+    const grd = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r)
     grd.addColorStop(0, lighten(color, 0.35))
     grd.addColorStop(0.55, color)
     grd.addColorStop(1, darken(color, 0.25))
     ctx.beginPath()
-    ctx.ellipse(0, 0, rTangent, rRadial, 0, 0, Math.PI * 2)
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
     ctx.fillStyle = grd
     ctx.fill()
   }

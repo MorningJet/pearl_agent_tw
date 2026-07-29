@@ -183,36 +183,11 @@ export function createCanvasApp(canvas) {
         if (hitTestPendant(b, x, y)) return i
         continue
       }
-      if (b.spacer) {
-        if (hitTestSpacer(b, x, y)) return i
-        continue
-      }
       const dx = x - b.x
       const dy = y - b.y
       if (dx * dx + dy * dy <= b.radiusPx * b.radiusPx * 1.35) return i
     }
     return -1
-  }
-
-  /**
-   * Spacer hit box: ellipse aligned with the cord tangent.
-   * @param {import('./layout.js').LayoutBead} b
-   * @param {number} x
-   * @param {number} y
-   */
-  function hitTestSpacer(b, x, y) {
-    const dx = x - b.x
-    const dy = y - b.y
-    const rot = (b.angle ?? -Math.PI / 2) + Math.PI / 2
-    const cos = Math.cos(-rot)
-    const sin = Math.sin(-rot)
-    const lx = dx * cos - dy * sin
-    const ly = dx * sin + dy * cos
-    const rx = b.trackRadiusPx || b.radiusPx * 0.35
-    const ry = b.radiusPx
-    const nx = lx / Math.max(rx, 1)
-    const ny = ly / Math.max(ry, 1)
-    return nx * nx + ny * ny <= 1.35
   }
 
   /**

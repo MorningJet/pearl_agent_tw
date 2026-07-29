@@ -7,16 +7,11 @@
  * Pendants (吊墜): only the hook occupies `diameterMm` on the cord; the body hangs
  * radially outward (~PENDANT_BODY_MM tall).
  *
- * Spacers (隔珠): catalog `diameterMm` is the face size; only ~SPACER_TRACK_MM sits on
- * the cord. Slack vs wrist sum is redistributed to round-to-round gaps only.
+ * Spacers (隔珠): layout arc uses catalog `diameterMm` like other beads; render stretches
+ * thin ring art along the cord so they visually meet neighbors.
  */
 
-import {
-  isPendant,
-  isSpacer,
-  PENDANT_BODY_MM,
-  SPACER_TRACK_MM,
-} from '../../../shared/data/products.js'
+import { isPendant, isSpacer, PENDANT_BODY_MM } from '../../../shared/data/products.js'
 
 /**
  * @typedef {object} LayoutBead
@@ -32,50 +27,9 @@ import {
  * @property {number} radiusPx bead draw radius (half of diameter); pendants use hook radius
  * @property {boolean} pendant
  * @property {boolean} spacer
- * @property {number} [trackRadiusPx] half-thickness along the cord (spacers)
  * @property {number} [bodyHeightPx] pendant body length along outward radial
  * @property {number} [bodyWidthPx] pendant draw width
  */
-
-/**
- * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
- * @returns {{ left: number, right: number }[]}
- */
-function trackHalvesMm(resolved) {
-  const n = resolved.length
-  /** @type {number[]} */
-  const diameters = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
-  const wristSum = diameters.reduce((a, b) => a + b, 0)
-  const trackBase = resolved.map((b, i) =>
-    isSpacer(b.product) ? SPACER_TRACK_MM : diameters[i],
-  )
-  const slack = wristSum - trackBase.reduce((a, b) => a + b, 0)
-
-  const isSpc = (idx) => isSpacer(resolved[idx]?.product)
-  let roundRoundHalfCount = 0
-  for (let i = 0; i < n; i++) {
-    if (isSpc(i)) continue
-    if (!isSpc((i - 1 + n) % n)) roundRoundHalfCount += 1
-    if (!isSpc((i + 1) % n)) roundRoundHalfCount += 1
-  }
-  const slackPer = roundRoundHalfCount > 0 ? slack / roundRoundHalfCount : 0
-
-  /** @type {{ left: number, right: number }[]} */
-  const halves = []
-  for (let i = 0; i < n; i++) {
-    const b = resolved[i]
-    const d = diameters[i]
-    if (isSpacer(b.product)) {
-      halves.push({ left: SPACER_TRACK_MM / 2, right: SPACER_TRACK_MM / 2 })
-    } else {
-      halves.push({
-        left: d / 2 + (isSpc((i - 1 + n) % n) ? 0 : slackPer),
-        right: d / 2 + (isSpc((i + 1) % n) ? 0 : slackPer),
-      })
-    }
-  }
-  return halves
-}
 
 /**
  * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
@@ -88,8 +42,8 @@ export function layoutBeads(resolved, geo) {
   const safeRadius = Math.max(pathRadius, 1)
   const safeMmToPx = Number.isFinite(mmToPx) && mmToPx > 0 ? mmToPx : 2.2
 
-  const halves = trackHalvesMm(resolved)
-  const totalMm = halves.reduce((sum, h) => sum + h.left + h.right, 0)
+  const sizes = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
+  const totalMm = sizes.reduce((a, b) => a + b, 0)
   const naturalAngle = (totalMm * safeMmToPx) / safeRadius
   // Always fill the full loop so beads do not clump on one arc.
   const scale = naturalAngle > 0 ? (Math.PI * 2) / naturalAngle : 1
@@ -100,8 +54,8 @@ export function layoutBeads(resolved, geo) {
 
   for (let i = 0; i < resolved.length; i++) {
     const b = resolved[i]
-    const d = Math.max(b.product?.diameterMm || 1, 1)
-    const half = ((halves[i].left * safeMmToPx) / safeRadius) * scale
+    const d = sizes[i]
+    const half = ((d * safeMmToPx) / safeRadius / 2) * scale
     angle += half
     const radiusPx = (d * safeMmToPx) / 2
     const pendant = isPendant(b.product)
@@ -122,12 +76,10 @@ export function layoutBeads(resolved, geo) {
       radiusPx,
       pendant,
       spacer,
-      trackRadiusPx: spacer ? (SPACER_TRACK_MM * safeMmToPx) / 2 : 0,
       bodyHeightPx,
       bodyWidthPx,
     })
-    const halfRight = ((halves[i].right * safeMmToPx) / safeRadius) * scale
-    angle += halfRight
+    angle += half
   }
 
   return out

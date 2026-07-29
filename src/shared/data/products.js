@@ -85,9 +85,6 @@ export function getProduct(id) {
 /** Pendants hang off the cord; track occupancy stays `diameterMm` (typically 2). */
 export const PENDANT_BODY_MM = 8
 
-/** Thin spacers only occupy ~2mm along the cord; face size still uses `diameterMm`. */
-export const SPACER_TRACK_MM = 2
-
 /**
  * @param {{ category?: string, type?: string } | null | undefined} product
  */
