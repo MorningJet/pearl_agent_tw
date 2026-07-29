@@ -7,9 +7,9 @@
  * Pendants (吊墜): only the hook occupies `diameterMm` on the cord; the body hangs
  * radially outward (~PENDANT_BODY_MM tall).
  *
- * Spacers (隔珠): catalog `diameterMm` is face size; only ~SPACER_TRACK_MM sits on the
- * cord for layout. Saved arc is redistributed to round-to-round gaps only (when present).
- * Product images are always uniformly scaled — never stretched.
+ * Spacers (隔珠): catalog `diameterMm` is face size (draw radius); cord occupancy is
+ * ~SPACER_TRACK_MM. Any saved arc vs wrist sum is split equally across every junction
+ * so gaps stay uniform (no wide/narrow pairs). Product images are never stretched.
  */
 
 import {
@@ -38,50 +38,36 @@ import {
  */
 
 /**
- * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
+ * Cord occupancy for layout (mm). Spacers use thin track; draw size still uses diameterMm.
+ * @param {{ product: { diameterMm?: number, category?: string, type?: string } }} resolved
+ */
+function trackMm(resolved) {
+  const d = Math.max(resolved.product?.diameterMm || 1, 1)
+  return isSpacer(resolved.product) ? SPACER_TRACK_MM : d
+}
+
+/**
+ * Equal gap on every adjacent pair: each item keeps its track half, then wrist slack
+ * (catalog sum − track sum) is split evenly across all 2n half-slots.
+ *
+ * @param {Array<{ product: { diameterMm?: number, category?: string, type?: string } }>} resolved
  * @returns {{ left: number, right: number }[]}
  */
 function trackHalvesMm(resolved) {
   const n = resolved.length
   /** @type {number[]} */
+  const tracks = resolved.map((b) => trackMm(b))
+  /** @type {number[]} */
   const diameters = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
   const wristSum = diameters.reduce((a, b) => a + b, 0)
-  const isSpc = (idx) => isSpacer(resolved[idx]?.product)
+  const trackSum = tracks.reduce((a, b) => a + b, 0)
+  const slack = Math.max(0, wristSum - trackSum)
+  const slackPerHalf = n > 0 ? slack / (2 * n) : 0
 
-  let roundRoundJunctions = 0
-  for (let i = 0; i < n; i++) {
-    if (!isSpc(i) && !isSpc((i + 1) % n)) roundRoundJunctions += 1
-  }
-
-  // Pure R-S alternation has no round-round joints — keep catalog spacer arc.
-  const useSpacerTrack = roundRoundJunctions > 0
-
-  /** @type {number[]} */
-  const trackBase = diameters.map((d, i) => {
-    if (useSpacerTrack && isSpc(i)) return SPACER_TRACK_MM
-    return d
-  })
-  const trackSum = trackBase.reduce((a, b) => a + b, 0)
-  const slack = wristSum - trackSum
-  const slackPerHalf =
-    useSpacerTrack && roundRoundJunctions > 0
-      ? slack / (2 * roundRoundJunctions)
-      : 0
-
-  /** @type {{ left: number, right: number }[]} */
-  const halves = []
-  for (let i = 0; i < n; i++) {
-    const d = diameters[i]
-    if (useSpacerTrack && isSpc(i)) {
-      halves.push({ left: SPACER_TRACK_MM / 2, right: SPACER_TRACK_MM / 2 })
-    } else {
-      halves.push({
-        left: d / 2 + (isSpc((i - 1 + n) % n) ? 0 : slackPerHalf),
-        right: d / 2 + (isSpc((i + 1) % n) ? 0 : slackPerHalf),
-      })
-    }
-  }
-  return halves
+  return tracks.map((t) => ({
+    left: t / 2 + slackPerHalf,
+    right: t / 2 + slackPerHalf,
+  }))
 }
 
 /**
