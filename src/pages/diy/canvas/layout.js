@@ -7,11 +7,17 @@
  * Pendants (吊墜): only the hook occupies `diameterMm` on the cord; the body hangs
  * radially outward (~PENDANT_BODY_MM tall).
  *
- * Spacers (隔珠): layout arc uses catalog `diameterMm` like other beads; render stretches
- * thin ring art along the cord so they visually meet neighbors.
+ * Spacers (隔珠): catalog `diameterMm` is face size; only ~SPACER_TRACK_MM sits on the
+ * cord for layout. Saved arc is redistributed to round-to-round gaps only (when present).
+ * Product images are always uniformly scaled — never stretched.
  */
 
-import { isPendant, isSpacer, PENDANT_BODY_MM } from '../../../shared/data/products.js'
+import {
+  isPendant,
+  isSpacer,
+  PENDANT_BODY_MM,
+  SPACER_TRACK_MM,
+} from '../../../shared/data/products.js'
 
 /**
  * @typedef {object} LayoutBead
@@ -33,6 +39,53 @@ import { isPendant, isSpacer, PENDANT_BODY_MM } from '../../../shared/data/produ
 
 /**
  * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
+ * @returns {{ left: number, right: number }[]}
+ */
+function trackHalvesMm(resolved) {
+  const n = resolved.length
+  /** @type {number[]} */
+  const diameters = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
+  const wristSum = diameters.reduce((a, b) => a + b, 0)
+  const isSpc = (idx) => isSpacer(resolved[idx]?.product)
+
+  let roundRoundJunctions = 0
+  for (let i = 0; i < n; i++) {
+    if (!isSpc(i) && !isSpc((i + 1) % n)) roundRoundJunctions += 1
+  }
+
+  // Pure R-S alternation has no round-round joints — keep catalog spacer arc.
+  const useSpacerTrack = roundRoundJunctions > 0
+
+  /** @type {number[]} */
+  const trackBase = diameters.map((d, i) => {
+    if (useSpacerTrack && isSpc(i)) return SPACER_TRACK_MM
+    return d
+  })
+  const trackSum = trackBase.reduce((a, b) => a + b, 0)
+  const slack = wristSum - trackSum
+  const slackPerHalf =
+    useSpacerTrack && roundRoundJunctions > 0
+      ? slack / (2 * roundRoundJunctions)
+      : 0
+
+  /** @type {{ left: number, right: number }[]} */
+  const halves = []
+  for (let i = 0; i < n; i++) {
+    const d = diameters[i]
+    if (useSpacerTrack && isSpc(i)) {
+      halves.push({ left: SPACER_TRACK_MM / 2, right: SPACER_TRACK_MM / 2 })
+    } else {
+      halves.push({
+        left: d / 2 + (isSpc((i - 1 + n) % n) ? 0 : slackPerHalf),
+        right: d / 2 + (isSpc((i + 1) % n) ? 0 : slackPerHalf),
+      })
+    }
+  }
+  return halves
+}
+
+/**
+ * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
  * @param {{ cx: number, cy: number, pathRadius: number, mmToPx: number }} geo
  * @returns {LayoutBead[]}
  */
@@ -42,8 +95,8 @@ export function layoutBeads(resolved, geo) {
   const safeRadius = Math.max(pathRadius, 1)
   const safeMmToPx = Number.isFinite(mmToPx) && mmToPx > 0 ? mmToPx : 2.2
 
-  const sizes = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
-  const totalMm = sizes.reduce((a, b) => a + b, 0)
+  const halves = trackHalvesMm(resolved)
+  const totalMm = halves.reduce((sum, h) => sum + h.left + h.right, 0)
   const naturalAngle = (totalMm * safeMmToPx) / safeRadius
   // Always fill the full loop so beads do not clump on one arc.
   const scale = naturalAngle > 0 ? (Math.PI * 2) / naturalAngle : 1
@@ -54,14 +107,13 @@ export function layoutBeads(resolved, geo) {
 
   for (let i = 0; i < resolved.length; i++) {
     const b = resolved[i]
-    const d = sizes[i]
-    const half = ((d * safeMmToPx) / safeRadius / 2) * scale
-    angle += half
+    const d = Math.max(b.product?.diameterMm || 1, 1)
+    const halfLeft = ((halves[i].left * safeMmToPx) / safeRadius) * scale
+    angle += halfLeft
     const radiusPx = (d * safeMmToPx) / 2
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
     const bodyHeightPx = pendant ? PENDANT_BODY_MM * safeMmToPx : 0
-    // Hit-test width estimate; actual draw width follows image aspect (uniform scale).
     const bodyWidthPx = pendant ? bodyHeightPx : 0
     out.push({
       instanceId: b.instanceId,
@@ -79,7 +131,8 @@ export function layoutBeads(resolved, geo) {
       bodyHeightPx,
       bodyWidthPx,
     })
-    angle += half
+    const halfRight = ((halves[i].right * safeMmToPx) / safeRadius) * scale
+    angle += halfRight
   }
 
   return out

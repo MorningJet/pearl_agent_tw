@@ -160,9 +160,8 @@ function drawBeadShadow(ctx, x, y, r) {
 function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   if (bead.pendant) {
     drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts)
-  } else if (bead.spacer) {
-    drawSpacer(ctx, bead, x, y, alpha, onImageLoad, opts)
   } else {
+    // Spacers use the same uniform-scale bead draw path (no aspect stretch).
     drawBead(ctx, bead, x, y, alpha, onImageLoad, opts)
   }
 }
@@ -264,60 +263,6 @@ function drawPendantShadow(ctx, w, h) {
     ctx.ellipse(w * 0.06, h * 0.58, w * 0.3, h * 0.28, 0, 0, Math.PI * 2)
     ctx.fill()
   }
-  ctx.restore()
-}
-
-/**
- * Spacer ring art is thin along the cord; stretch along tangent (local +X) so it
- * fills the catalog slot and meets round neighbors. Radial size stays true to mm.
- * @param {CanvasRenderingContext2D} ctx
- * @param {import('./layout.js').LayoutBead} bead
- * @param {number} x
- * @param {number} y
- * @param {number} alpha
- * @param {() => void} [onImageLoad]
- * @param {{ shadow?: boolean }} [opts]
- */
-function drawSpacer(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
-  const r = bead.radiusPx
-  const tangentRot = (bead.angle ?? -Math.PI / 2) + Math.PI / 2
-
-  ctx.save()
-  ctx.globalAlpha = alpha
-
-  if (opts.shadow !== false) {
-    drawBeadShadow(ctx, x, y, r)
-  }
-
-  ctx.translate(x, y)
-  ctx.rotate(tangentRot)
-
-  const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
-  if (img) {
-    const zoom = contentZoom(img)
-    const box = getContentBBox(img)
-    const aspect = box.w / Math.max(box.h, 1)
-    // Stretch the narrow content axis along the cord; cap to avoid mushy discs.
-    const tangentStretch = Math.min(2.6, Math.max(1, aspect > 1 ? aspect : 1 / aspect))
-    const drawRx = r * zoom * tangentStretch
-    const drawRy = r * zoom
-    ctx.beginPath()
-    ctx.arc(0, 0, r, 0, Math.PI * 2)
-    ctx.closePath()
-    ctx.clip()
-    ctx.drawImage(img, -drawRx, -drawRy, drawRx * 2, drawRy * 2)
-  } else {
-    const color = bead.color || '#d6d3d1'
-    const grd = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r)
-    grd.addColorStop(0, lighten(color, 0.35))
-    grd.addColorStop(0.55, color)
-    grd.addColorStop(1, darken(color, 0.25))
-    ctx.beginPath()
-    ctx.arc(0, 0, r, 0, Math.PI * 2)
-    ctx.fillStyle = grd
-    ctx.fill()
-  }
-
   ctx.restore()
 }
 
