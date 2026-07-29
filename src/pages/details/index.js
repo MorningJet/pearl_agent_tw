@@ -40,10 +40,6 @@ import {
   upsertPublishedPlazaDesign,
 } from '../../shared/state/plazaPublishStore.js'
 import { getMemberId } from '../../shared/state/userProfileStore.js'
-import {
-  DESIGNER_FEATURE_LOCKED_TOAST,
-  hasCompletedOrder,
-} from '../../shared/state/ordersStore.js'
 import { createEarningsOrder } from '../../shared/state/earningsStore.js'
 import { syncPlazaPublish, syncPlazaUseCount } from '../../shared/api/plazaSync.js'
 import { getSeedPlazaAsPublished, resolvePlazaPreviewUrl } from '../home/plazaData.js'
@@ -453,10 +449,6 @@ function bindNameEdit() {
 
 function bindActions() {
   document.getElementById('details-submit')?.addEventListener('click', () => {
-    if (!hasCompletedOrder()) {
-      showToast(DESIGNER_FEATURE_LOCKED_TOAST)
-      return
-    }
     openPlazaPublish()
   })
   document.getElementById('details-cs')?.addEventListener('click', () => {
@@ -702,10 +694,6 @@ function bindPlazaPublish() {
 }
 
 function openPlazaPublish() {
-  if (!hasCompletedOrder()) {
-    showToast(DESIGNER_FEATURE_LOCKED_TOAST)
-    return
-  }
   const modal = document.getElementById('plaza-publish-modal')
   const nameInput = /** @type {HTMLInputElement | null} */ (
     document.getElementById('plaza-publish-name')

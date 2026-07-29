@@ -26,7 +26,7 @@
  * @property {number} [originDesignFeeTwd]
  */
 
-const STORAGE_KEY = 'pearl-tw.plazaPublished.v1'
+const STORAGE_KEY = 'pearl-tw.plazaPublished.v2'
 
 /** @type {PlazaPublishedDesign[] | null} */
 let cache = null
@@ -115,7 +115,7 @@ export function deletePublishedPlazaDesign(id) {
   writeAll(list)
 }
 
-const USE_COUNT_KEY = 'pearl-tw.plazaUseCounts.v1'
+const USE_COUNT_KEY = 'pearl-tw.plazaUseCounts.v2'
 
 /** @returns {Record<string, number>} */
 function readUseOverrides() {
