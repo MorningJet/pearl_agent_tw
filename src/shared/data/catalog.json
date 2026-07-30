@@ -344,10 +344,10 @@
       "id": "ysmxyl_pnd_2",
       "type": "accessory",
       "category": "吊墜",
-      "name": "銀色滿鑲月亮",
+      "name": "滿鑲月亮",
       "diameterMm": 2,
       "price": 99,
-      "image": "/products/银色满镶月亮.png",
+      "image": "/products/满镶月亮.png",
       "color": "#d6d3d1"
     },
     {
@@ -761,6 +761,16 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "gh_spc_6",
+      "type": "accessory",
+      "category": "隔珠",
+      "name": "桂花",
+      "diameterMm": 6,
+      "price": 139,
+      "image": "/products/桂花.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "hm_agt_6",
       "type": "bead",
       "category": "瑪瑙",
@@ -1144,10 +1154,10 @@
       "id": "xfp_pnd_2",
       "type": "accessory",
       "category": "吊墜",
-      "name": "小福牌",
+      "name": "招財",
       "diameterMm": 2,
       "price": 99,
-      "image": "/products/小福牌.png",
+      "image": "/products/招财.png",
       "color": "#d6d3d1"
     },
     {
@@ -1344,10 +1354,10 @@
       "id": "gszs_spc_5",
       "type": "accessory",
       "category": "隔珠",
-      "name": "鋯石鑽閃",
+      "name": "藏銀繡球鋯石細閃",
       "diameterMm": 5,
       "price": 59,
-      "image": "/products/锆石钻闪.png",
+      "image": "/products/藏银绣球锆石细闪.png",
       "color": "#d6d3d1"
     },
     {
@@ -1681,6 +1691,16 @@
       "color": "#d6d3d1"
     },
     {
+      "id": "tz_spc_10",
+      "type": "accessory",
+      "category": "隔珠",
+      "name": "天珠",
+      "diameterMm": 10,
+      "price": 99,
+      "image": "/products/天珠.png",
+      "color": "#d6d3d1"
+    },
+    {
       "id": "ysxz_spc_6",
       "type": "accessory",
       "category": "隔珠",
@@ -1724,10 +1744,10 @@
       "id": "jsmxyl_pnd_2",
       "type": "accessory",
       "category": "吊墜",
-      "name": "金色滿鑲月亮",
+      "name": "滿鑲彩月",
       "diameterMm": 2,
       "price": 99,
-      "image": "/products/金色满镶月亮.png",
+      "image": "/products/满镶彩月.png",
       "color": "#d6d3d1"
     },
     {
@@ -2074,10 +2094,10 @@
       "id": "yslzzy_spc_8",
       "type": "accessory",
       "category": "隔珠",
-      "name": "銀色六字真言",
+      "name": "銀六字箴言",
       "diameterMm": 8,
       "price": 59,
-      "image": "/products/银色六字真言.png",
+      "image": "/products/银六字箴言.png",
       "color": "#d6d3d1"
     },
     {
@@ -2094,10 +2114,10 @@
       "id": "ysxq_spc_8",
       "type": "accessory",
       "category": "隔珠",
-      "name": "銀色繡球",
+      "name": "藏銀繡球",
       "diameterMm": 8,
       "price": 59,
-      "image": "/products/银色绣球.png",
+      "image": "/products/藏银绣球.png",
       "color": "#d6d3d1"
     },
     {
@@ -2144,10 +2164,10 @@
       "id": "wgzl_pnd_2",
       "type": "accessory",
       "category": "吊墜",
-      "name": "王國之淚",
+      "name": "國王之淚",
       "diameterMm": 2,
       "price": 99,
-      "image": "/products/王国之泪.png",
+      "image": "/products/国王之泪.png",
       "color": "#d6d3d1"
     },
     {
@@ -2224,10 +2244,10 @@
       "id": "jslzzy_spc_8",
       "type": "accessory",
       "category": "隔珠",
-      "name": "金色六字真言",
+      "name": "金六字箴言",
       "diameterMm": 8,
       "price": 59,
-      "image": "/products/金色六字真言.png",
+      "image": "/products/金六字箴言.png",
       "color": "#d6d3d1"
     },
     {
@@ -2334,10 +2354,10 @@
       "id": "cyszdz_pnd_2",
       "type": "accessory",
       "category": "吊墜",
-      "name": "藏銀十字吊墜",
+      "name": "藏銀十字",
       "diameterMm": 2,
       "price": 99,
-      "image": "/products/藏银十字吊坠.png",
+      "image": "/products/藏银十字.png",
       "color": "#d6d3d1"
     },
     {
@@ -2351,33 +2371,23 @@
       "color": "#d6d3d1"
     },
     {
-      "id": "cyxhlf_spc_8",
-      "type": "accessory",
-      "category": "隔珠",
-      "name": "藏銀小花立方",
-      "diameterMm": 8,
-      "price": 59,
-      "image": "/products/藏银小花立方.png",
-      "color": "#d6d3d1"
-    },
-    {
       "id": "cydhlf_spc_8",
       "type": "accessory",
       "category": "隔珠",
-      "name": "藏銀大花立方",
+      "name": "藏銀立方",
       "diameterMm": 8,
       "price": 59,
-      "image": "/products/藏银大花立方.png",
+      "image": "/products/藏银立方.png",
       "color": "#d6d3d1"
     },
     {
       "id": "jtlfq_spc_8",
       "type": "accessory",
       "category": "隔珠",
-      "name": "景泰藍福球",
+      "name": "景泰藍",
       "diameterMm": 8,
       "price": 59,
-      "image": "/products/景泰蓝福球.png",
+      "image": "/products/景泰蓝.png",
       "color": "#d6d3d1"
     },
     {
