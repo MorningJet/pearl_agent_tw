@@ -128,6 +128,17 @@ export function layoutBeads(resolved, geo) {
   return out
 }
 
+/** Midpoint along the shorter arc from `start` to `end` (radians). */
+function shortArcMid(start, end) {
+  const delta = Math.atan2(Math.sin(end - start), Math.cos(end - start))
+  return start + delta / 2
+}
+
+/** Shortest angular distance between two angles. */
+function shortAngleDist(a, b) {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))
+}
+
 /**
  * Snap drop angle to the gap *between* two neighbors (mid-arc), not to a bead center.
  * Returns the original array index to insert before (for `reorderInsertIndex`).
@@ -161,11 +172,8 @@ export function gapInsertIndex(layout, angle, dragIndex) {
     const insertBefore = others[(i + 1) % others.length].index
     const gapStart = left.angle + (left.halfRightRad ?? 0)
     const gapEnd = right.angle - (right.halfLeftRad ?? 0)
-    let span = gapEnd - gapStart
-    while (span <= 0) span += Math.PI * 2
-    const mid = gapStart + span / 2
-    let d = Math.abs(normalizeAngle(angle - mid))
-    if (d > Math.PI) d = Math.PI * 2 - d
+    const mid = shortArcMid(gapStart, gapEnd)
+    const d = shortAngleDist(angle, mid)
     if (d < bestDist) {
       bestDist = d
       bestInsertBefore = insertBefore

@@ -45,6 +45,14 @@ function layoutBeads(resolved, geo) {
   return out
 }
 
+function shortArcMid(start, end) {
+  const delta = Math.atan2(Math.sin(end - start), Math.cos(end - start))
+  return start + delta / 2
+}
+function shortAngleDist(a, b) {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)))
+}
+
 function gapInsertIndex(layout, angle, dragIndex) {
   const n = layout.length
   if (n <= 1) return 0
@@ -65,11 +73,8 @@ function gapInsertIndex(layout, angle, dragIndex) {
     const insertBefore = others[(i + 1) % others.length].index
     const gapStart = left.angle + left.halfRightRad
     const gapEnd = right.angle - right.halfLeftRad
-    let span = gapEnd - gapStart
-    while (span <= 0) span += Math.PI * 2
-    const mid = gapStart + span / 2
-    let d = Math.abs(normalizeAngle(angle - mid))
-    if (d > Math.PI) d = Math.PI * 2 - d
+    const mid = shortArcMid(gapStart, gapEnd)
+    const d = shortAngleDist(angle, mid)
     if (d < bestDist) {
       bestDist = d
       bestInsertBefore = insertBefore
@@ -98,9 +103,7 @@ function gapMid(layout, a, b) {
   const right = layout[b]
   const gapStart = left.angle + left.halfRightRad
   const gapEnd = right.angle - right.halfLeftRad
-  let span = gapEnd - gapStart
-  while (span <= 0) span += Math.PI * 2
-  return gapStart + span / 2
+  return shortArcMid(gapStart, gapEnd)
 }
 
 const bead = (mm) => ({ diameterMm: mm, highMm: mm })
@@ -121,6 +124,8 @@ const cases = [
   { from: 1, gap: [0, 2], want: names },
   { from: 3, gap: [1, 2], want: ['B10', 'ring', 'ring2', 'B8', 'B10b'] },
   { from: 0, gap: [3, 4], want: ['ring', 'B8', 'ring2', 'B10', 'B10b'] },
+  // Wrap gap between last and first bead — must not jump to opposite side.
+  { from: 1, gap: [4, 0], want: ['ring', 'B10', 'B8', 'ring2', 'B10b'] },
 ]
 
 let pass = 0

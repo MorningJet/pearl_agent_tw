@@ -279,7 +279,8 @@ export function createCanvasApp(canvas) {
       return
     }
 
-    const insertBeforeLayout = gapInsertIndex(layout, p.angle, layoutIndex)
+    const dropAngle = Math.atan2(drag.y - geo.cy, drag.x - geo.cx)
+    const insertBeforeLayout = gapInsertIndex(layout, dropAngle, layoutIndex)
     let stateInsertBefore = getBeadCount()
     if (insertBeforeLayout < layout.length) {
       const idx = beadIndexByInstanceId(layout[insertBeforeLayout].instanceId)
