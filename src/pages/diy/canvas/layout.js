@@ -9,7 +9,7 @@
  * - `high_mm` / `highMm`: vertical / face size (bracelet width)
  *
  * Beads are spherical (`highMm === diameterMm`). Spacers / letters / numbers /
- * zodiac sit on the cord like beads (track = size_mm, face draw = high_mm).
+ * zodiac sit on the cord like beads: draw box = size_mm (tangent) × high_mm (radial).
  * Pendants (吊墜): only the hook occupies `diameterMm` on the cord (~2mm); the
  * body hangs radially outward using `highMm`.
  */
@@ -35,9 +35,11 @@ import {
  * @property {number} halfRightRad arc from center toward next neighbor
  * @property {number} x hook / bead center on the track
  * @property {number} y
- * @property {number} radiusPx draw radius (beads/spacers: face; pendants: hook)
+ * @property {number} radiusPx draw radius (round beads: face/2; pendants: hook/2)
  * @property {boolean} pendant
  * @property {boolean} spacer
+ * @property {number} [trackWidthPx] non-pendant cord-axis draw width (size_mm)
+ * @property {number} [faceHeightPx] non-pendant radial draw height (high_mm)
  * @property {number} [bodyHeightPx] pendant body length along outward radial
  * @property {number} [bodyWidthPx] pendant draw width
  */
@@ -96,10 +98,15 @@ export function layoutBeads(resolved, geo) {
     // Pendants: hook radius from size_mm; body height from high_mm.
     // Hit/draw width stays narrower than height so tall pendants do not steal
     // taps from neighboring beads along the cord.
-    // Beads / spacers / charms: face circle from high_mm (beads: == size_mm).
-    const drawMm = pendant ? track : face
-    const radiusPx = (drawMm * safeMmToPx) / 2
-    const bodyHeightPx = pendant ? face * safeMmToPx : 0
+    // Beads / spacers / charms: draw box = size_mm (tangent) × high_mm (radial).
+    // Round beads have equal sides; elongated spacers (e.g. 13×5 cross) fill the
+    // reserved cord slot instead of shrinking to a high_mm circle.
+    const trackWidthPx = track * safeMmToPx
+    const faceHeightPx = face * safeMmToPx
+    const radiusPx = pendant
+      ? trackWidthPx / 2
+      : Math.max(trackWidthPx, faceHeightPx) / 2
+    const bodyHeightPx = pendant ? faceHeightPx : 0
     const bodyWidthPx = pendant
       ? Math.max(track, face * 0.45) * safeMmToPx
       : 0
@@ -119,6 +126,8 @@ export function layoutBeads(resolved, geo) {
       radiusPx,
       pendant,
       spacer,
+      trackWidthPx: pendant ? 0 : trackWidthPx,
+      faceHeightPx: pendant ? 0 : faceHeightPx,
       bodyHeightPx,
       bodyWidthPx,
     })

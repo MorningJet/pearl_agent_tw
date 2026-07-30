@@ -202,8 +202,16 @@ export function createCanvasApp(canvas) {
           dist = Math.min(dist, Math.hypot(x - bx, y - by))
         }
       } else {
-        const hitR = Math.max(b.radiusPx, MIN_HIT_RADIUS_PX)
-        hit = dist <= hitR * Math.sqrt(1.35)
+        const halfW = Math.max(
+          MIN_HIT_RADIUS_PX,
+          (b.trackWidthPx > 0 ? b.trackWidthPx : b.radiusPx * 2) / 2,
+        )
+        const halfH = Math.max(
+          MIN_HIT_RADIUS_PX,
+          (b.faceHeightPx > 0 ? b.faceHeightPx : b.radiusPx * 2) / 2,
+        )
+        hit = hitTestOval(b, x, y, halfW, halfH)
+        if (hit) dist = Math.hypot(x - b.x, y - b.y)
       }
       if (!hit) continue
       if (dist < bestDist) {
@@ -212,6 +220,27 @@ export function createCanvasApp(canvas) {
       }
     }
     return best
+  }
+
+  /**
+   * Oval hit in local tangent/radial coords (cord along +X after rotate).
+   * @param {import('./layout.js').LayoutBead} b
+   * @param {number} x
+   * @param {number} y
+   * @param {number} halfW
+   * @param {number} halfH
+   */
+  function hitTestOval(b, x, y, halfW, halfH) {
+    const dx = x - b.x
+    const dy = y - b.y
+    const rot = (b.angle ?? -Math.PI / 2) + Math.PI / 2
+    const cos = Math.cos(-rot)
+    const sin = Math.sin(-rot)
+    const lx = dx * cos - dy * sin
+    const ly = dx * sin + dy * cos
+    const nx = lx / halfW
+    const ny = ly / halfH
+    return nx * nx + ny * ny <= 1.35
   }
 
   /**

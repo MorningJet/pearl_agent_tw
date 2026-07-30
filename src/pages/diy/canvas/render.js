@@ -2,7 +2,7 @@
  * Canvas drawing for track + center logo + beads (images or color fallback).
  */
 
-import { contentZoom, getContentBBox } from './imageMetrics.js'
+import { getContentBBox, TARGET_CONTENT_FILL } from './imageMetrics.js'
 
 /** @type {Map<string, HTMLImageElement>} */
 const imageCache = new Map()
@@ -161,7 +161,6 @@ function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   if (bead.pendant) {
     drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts)
   } else {
-    // Spacers use the same uniform-scale bead draw path (no aspect stretch).
     drawBead(ctx, bead, x, y, alpha, onImageLoad, opts)
   }
 }
@@ -276,12 +275,17 @@ function drawPendantShadow(ctx, w, h) {
  * @param {{ shadow?: boolean }} [opts]
  */
 function drawBead(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
-  const r = bead.radiusPx
+  const boxW = bead.trackWidthPx > 0 ? bead.trackWidthPx : bead.radiusPx * 2
+  const boxH = bead.faceHeightPx > 0 ? bead.faceHeightPx : bead.radiusPx * 2
+  const halfW = boxW / 2
+  const halfH = boxH / 2
+  const shadowR = Math.max(halfW, halfH)
+
   ctx.save()
   ctx.globalAlpha = alpha
 
   if (opts.shadow !== false) {
-    drawBeadShadow(ctx, x, y, r)
+    drawBeadShadow(ctx, x, y, shadowR)
   }
 
   // Rotate so the bead’s horizontal cord-hole aligns with the ring tangent
@@ -289,26 +293,49 @@ function drawBead(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   const tangentRot = (bead.angle ?? -Math.PI / 2) + Math.PI / 2
 
   const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
+  ctx.translate(x, y)
+  ctx.rotate(tangentRot)
+
+  const round = Math.abs(boxW - boxH) < 0.75
+  ctx.beginPath()
+  if (round) {
+    ctx.arc(0, 0, halfW, 0, Math.PI * 2)
+  } else {
+    // Elongated spacers / charms: size_mm along tangent × high_mm radially.
+    ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2)
+  }
+  ctx.closePath()
+  ctx.clip()
+
   if (img) {
-    const zoom = contentZoom(img)
-    const drawR = r * zoom
-    ctx.translate(x, y)
-    ctx.rotate(tangentRot)
-    ctx.beginPath()
-    ctx.arc(0, 0, r, 0, Math.PI * 2)
-    ctx.closePath()
-    ctx.clip()
-    ctx.drawImage(img, -drawR, -drawR, drawR * 2, drawR * 2)
+    const box = getContentBBox(img)
+    // Cover the track×face box so elongated SKUs (13×5 cross) fill the
+    // reserved cord slot; ellipse/circle clip crops overflow.
+    const scale =
+      Math.max(boxW / box.w, boxH / box.h) * TARGET_CONTENT_FILL
+    const drawW = box.w * scale
+    const drawH = box.h * scale
+    ctx.drawImage(
+      img,
+      box.x,
+      box.y,
+      box.w,
+      box.h,
+      -drawW / 2,
+      -drawH / 2,
+      drawW,
+      drawH,
+    )
   } else {
     const color = bead.color || '#d6d3d1'
+    const r = shadowR
     const grd = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r)
     grd.addColorStop(0, lighten(color, 0.35))
     grd.addColorStop(0.55, color)
     grd.addColorStop(1, darken(color, 0.25))
-    ctx.translate(x, y)
-    ctx.rotate(tangentRot)
     ctx.beginPath()
-    ctx.arc(0, 0, r, 0, Math.PI * 2)
+    if (round) ctx.arc(0, 0, halfW, 0, Math.PI * 2)
+    else ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2)
     ctx.fillStyle = grd
     ctx.fill()
   }

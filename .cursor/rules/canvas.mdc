@@ -9,11 +9,12 @@ alwaysApply: false
 - Use a single `#bracelet-canvas` with DPR scaling via `ResizeObserver`
 - Split concerns: `layout.js` (math) → `render.js` (draw) → `engine.js` (input + loop)
 - Layout consumes resolved beads `{ instanceId, product }`; never fetch Shopify here
-- Bead visual radius ∝ face size via `mmToPx` (`highMm`, equals `diameterMm` for spheres); path radius is constant
+- Bead visual size uses `size_mm` (tangent / cord) × `high_mm` (radial / face) via `mmToPx`; path radius is constant
 - Cord occupancy always uses `diameterMm` (`size_mm`)
 - **Pendants (`category` 吊墜)**: track arc uses `diameterMm` (hook, typically 2mm); body hangs radially outward using catalog `highMm` — see `drawPendant` / `isPendant`
 - Pendant hit box width stays narrow (hook-scale); hit-test picks the **closest** candidate so tall bodies do not steal neighbor taps
-- **Spacers / charms**: track = `diameterMm`; face draw = `highMm`
+- **Spacers / charms**: draw into a `diameterMm` × `highMm` ellipse (not a `highMm`-only circle) so elongated SKUs like 藏銀十字架 13×5 fill their cord slot
+- Round beads (`highMm === diameterMm`) still draw as circles
 - Track *represents* `max(sum(diameterMm), 130mm)` — ≤13cm locks to 13cm; above uses actual wrist
 - Always scale placement angles to span a full `2π` so beads spread evenly (drawn size still uses true mm)
 - Pointer events only (`pointerdown/move/up`); support touch on mobile
