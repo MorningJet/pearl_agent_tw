@@ -90,12 +90,16 @@ export function layoutBeads(resolved, geo) {
     angle += halfLeft
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
-    // Pendants: hook radius from size_mm; body from high_mm.
+    // Pendants: hook radius from size_mm; body height from high_mm.
+    // Hit/draw width stays narrower than height so tall pendants do not steal
+    // taps from neighboring beads along the cord.
     // Beads / spacers / charms: face circle from high_mm (beads: == size_mm).
     const drawMm = pendant ? track : face
     const radiusPx = (drawMm * safeMmToPx) / 2
     const bodyHeightPx = pendant ? face * safeMmToPx : 0
-    const bodyWidthPx = pendant ? bodyHeightPx : 0
+    const bodyWidthPx = pendant
+      ? Math.max(track, face * 0.45) * safeMmToPx
+      : 0
     out.push({
       instanceId: b.instanceId,
       productId: b.productId,

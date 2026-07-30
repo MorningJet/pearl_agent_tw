@@ -175,23 +175,44 @@ export function createCanvasApp(canvas) {
     }
   }
 
+  /** Minimum touch target radius (CSS px) so small SKUs stay grabbable. */
+  const MIN_HIT_RADIUS_PX = 16
+
   function hitTest(x, y) {
-    for (let i = layout.length - 1; i >= 0; i--) {
+    // Prefer the closest hit. Tall pendant bodies used to win z-order and
+    // swallow taps meant for neighboring beads on the cord.
+    let best = -1
+    let bestDist = Infinity
+    for (let i = 0; i < layout.length; i++) {
       const b = layout[i]
       if (flyIns.has(b.instanceId)) continue
+      let hit = false
+      let dist = Math.hypot(x - b.x, y - b.y)
       if (b.pendant) {
-        if (hitTestPendant(b, x, y)) return i
-        continue
+        hit = hitTestPendant(b, x, y)
+        if (hit) {
+          // Distance to body midpoint along the outward radial.
+          const mid = (b.bodyHeightPx || 0) * 0.45
+          const bx = b.x + Math.cos(b.angle) * mid
+          const by = b.y + Math.sin(b.angle) * mid
+          dist = Math.min(dist, Math.hypot(x - bx, y - by))
+        }
+      } else {
+        const hitR = Math.max(b.radiusPx, MIN_HIT_RADIUS_PX)
+        hit = dist <= hitR * Math.sqrt(1.35)
       }
-      const dx = x - b.x
-      const dy = y - b.y
-      if (dx * dx + dy * dy <= b.radiusPx * b.radiusPx * 1.35) return i
+      if (!hit) continue
+      if (dist < bestDist) {
+        bestDist = dist
+        best = i
+      }
     }
-    return -1
+    return best
   }
 
   /**
    * Pendant hit box: local coords with hook at origin and body along +Y (outward).
+   * Width is intentionally much smaller than height (hook is only ~size_mm).
    * @param {import('./layout.js').LayoutBead} b
    * @param {number} x
    * @param {number} y
@@ -204,8 +225,11 @@ export function createCanvasApp(canvas) {
     const sin = Math.sin(-rot)
     const lx = dx * cos - dy * sin
     const ly = dx * sin + dy * cos
-    const halfW = (b.bodyWidthPx || b.radiusPx * 3) * 0.55
     const h = b.bodyHeightPx || b.radiusPx * 8
+    const halfW = Math.max(
+      MIN_HIT_RADIUS_PX * 0.75,
+      (b.bodyWidthPx || h * 0.45) * 0.5,
+    )
     return lx >= -halfW && lx <= halfW && ly >= -b.radiusPx * 0.8 && ly <= h * 1.05
   }
 
@@ -213,9 +237,14 @@ export function createCanvasApp(canvas) {
     const { x, y } = eventPos(e)
     const i = hitTest(x, y)
     if (i < 0) return
+    e.preventDefault()
     const b = layout[i]
     drag = { id: b.instanceId, index: i, x, y, pointerId: e.pointerId }
-    canvas.setPointerCapture(e.pointerId)
+    try {
+      canvas.setPointerCapture(e.pointerId)
+    } catch {
+      /* ignore — some iframe/webview hosts reject capture */
+    }
     paint()
   }
 
