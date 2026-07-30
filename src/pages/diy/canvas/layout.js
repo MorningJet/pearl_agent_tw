@@ -89,6 +89,7 @@ export function layoutBeads(resolved, geo) {
     const track = trackMmOf(b.product)
     const face = faceMmOf(b.product)
     const halfLeft = ((halves[i].left * safeMmToPx) / safeRadius) * scale
+    const halfRight = ((halves[i].right * safeMmToPx) / safeRadius) * scale
     angle += halfLeft
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
@@ -121,7 +122,6 @@ export function layoutBeads(resolved, geo) {
       bodyHeightPx,
       bodyWidthPx,
     })
-    const halfRight = ((halves[i].right * safeMmToPx) / safeRadius) * scale
     angle += halfRight
   }
 
