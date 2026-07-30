@@ -9,9 +9,9 @@
  * - `high_mm` / `highMm`: max extent perpendicular to the cord (radial / face)
  *
  * Beads are spherical (`highMm === diameterMm`) and keep uniform circular draw.
- * Accessories stretch their PNG to size_mm (tangent) × high_mm (radial) — aspect
- * may change. Pendants (吊墜): hook occupies size_mm on the cord; body hangs
- * outward and stretches to size_mm × high_mm.
+ * On-cord accessories (隔珠 / 字母 / …) stretch PNG to size_mm × high_mm.
+ * Pendants (吊墜): size_mm = bail/hook width on the cord only; high_mm = tip-to-tip
+ * height; body hangs outward with **uniform** scale (aspect preserved).
  */
 
 import {
@@ -38,11 +38,11 @@ import {
  * @property {number} radiusPx draw radius (round beads: face/2; pendants: hook/2)
  * @property {boolean} pendant
  * @property {boolean} spacer
- * @property {boolean} accessory stretch PNG to size_mm × high_mm (non-uniform)
- * @property {number} [trackWidthPx] cord-axis draw width (size_mm)
- * @property {number} [faceHeightPx] radial draw height (high_mm)
- * @property {number} [bodyHeightPx] pendant body length along outward radial
- * @property {number} [bodyWidthPx] pendant draw width (= size_mm)
+ * @property {boolean} accessory on-cord accessory (not pendant): stretch to size×high
+ * @property {number} [trackWidthPx] cord-axis draw width (size_mm) for on-cord items
+ * @property {number} [faceHeightPx] radial draw height (high_mm) for on-cord items
+ * @property {number} [bodyHeightPx] pendant: high_mm in px (bail→tip)
+ * @property {number} [bodyWidthPx] pendant hit width hint (hook-scale; draw uses aspect)
  */
 
 /**
@@ -96,10 +96,11 @@ export function layoutBeads(resolved, geo) {
     angle += halfLeft
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
-    const accessory = b.product.type === 'accessory'
-    // Cord occupancy always size_mm. Draw extents:
-    // - Accessories: stretch art to size_mm (tangent) × high_mm (radial max)
-    // - Pendants: hook on cord = size_mm; body stretches to size_mm × high_mm outward
+    // Pendants are accessories in catalog type, but must not use stretch-to-box draw.
+    const accessory = b.product.type === 'accessory' && !pendant
+    // Cord occupancy always size_mm.
+    // - On-cord accessories: stretch art to size_mm × high_mm
+    // - Pendants: size_mm = bail on cord; high_mm = hanging height; uniform scale
     // - Beads: circular face from diameter (= high_mm)
     const trackWidthPx = track * safeMmToPx
     const faceHeightPx = face * safeMmToPx
@@ -107,7 +108,10 @@ export function layoutBeads(resolved, geo) {
       ? trackWidthPx / 2
       : Math.max(trackWidthPx, faceHeightPx) / 2
     const bodyHeightPx = pendant ? faceHeightPx : 0
-    const bodyWidthPx = pendant ? trackWidthPx : 0
+    // Hit width stays hook-ish so tall bodies do not steal neighbor taps.
+    const bodyWidthPx = pendant
+      ? Math.max(trackWidthPx, faceHeightPx * 0.45)
+      : 0
     out.push({
       instanceId: b.instanceId,
       productId: b.productId,

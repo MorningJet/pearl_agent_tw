@@ -6,9 +6,11 @@
  * id | category1 | category2 | name | size_mm | high_mm | price_twd | picture | supply
  *
  * - id: unique SKU id
- * - size_mm → diameterMm: max extent along the bracelet cord (track occupancy)
- * - high_mm → highMm: max extent perpendicular to the cord (radial / face; not average)
- * - Accessories on canvas stretch PNG to size_mm × high_mm (aspect may change)
+ * - size_mm → diameterMm: max extent along the bracelet cord (track occupancy;
+ *   for pendants this is bail/hook width only)
+ * - high_mm → highMm: beads = diameter; pendants = bail→tip height (uniform draw);
+ *   other accessories = max radial height (may stretch on canvas)
+ * - Accessories on cord stretch PNG to size_mm × high_mm; pendants do not
  * - supply: supplier name (ops; not shown on shelf)
  * - one name ↔ one picture file; different size/price rows = different SKUs sharing the image
  * - Taiwan market: Traditional Chinese names, prices in TWD (NT$)

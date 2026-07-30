@@ -166,9 +166,10 @@ function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
 }
 
 /**
- * Pendant: hook sits on the cord at (x,y); body hangs radially outward.
- * Product art is assumed hook-at-top (image +Y = body).
- * Accessories stretch to size_mm (tangent width) × high_mm (outward max height).
+ * Pendant: bail/hook sits on the cord at (x,y); body hangs radially outward.
+ * Product art is assumed bail-at-top (image +Y = body).
+ * - size_mm = bail width on the cord (track occupancy only — not image width)
+ * - high_mm = bail-top → tip height; opaque content scaled uniformly to that height
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('./layout.js').LayoutBead} bead
  * @param {number} x
@@ -178,18 +179,22 @@ function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
  * @param {{ shadow?: boolean }} [opts]
  */
 function drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
-  // size_mm × high_mm — anisotropic stretch to catalog max extents.
-  const drawW = bead.bodyWidthPx || bead.radiusPx * 2
-  const drawH = bead.bodyHeightPx || bead.radiusPx * 8
+  const targetH = bead.bodyHeightPx || bead.radiusPx * 8
   // Map local +Y (down in image) onto outward radial (cos θ, sin θ).
   const outwardRot = (bead.angle ?? -Math.PI / 2) - Math.PI / 2
 
   const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
+  let drawW = bead.bodyWidthPx || targetH * 0.45
+  let drawH = targetH
   /** @type {{ x: number, y: number, w: number, h: number } | null} */
   let src = null
   if (img) {
     const box = getContentBBox(img)
     src = { x: box.x, y: box.y, w: box.w, h: box.h }
+    // Uniform scale: content height → high_mm (max hanging height).
+    const scale = targetH / Math.max(box.h, 1)
+    drawH = box.h * scale
+    drawW = box.w * scale
   }
 
   ctx.save()
@@ -202,8 +207,8 @@ function drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   }
 
   if (img && src) {
-    // Bail sits on the cord; stretch opaque content to size_mm × high_mm.
-    const hookInset = drawH * 0.08
+    // Bail sits on the string; body extends outward. Aspect unchanged.
+    const hookInset = drawH * 0.06
     ctx.drawImage(
       img,
       src.x,
