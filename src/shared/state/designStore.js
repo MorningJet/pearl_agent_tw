@@ -159,6 +159,7 @@ export function clearBeads() {
 
 /**
  * Move bead from fromIndex to toIndex (array order = string order).
+ * `toIndex` is the element's final index after the move.
  * @param {number} fromIndex
  * @param {number} toIndex
  */
@@ -169,6 +170,37 @@ export function reorderBead(fromIndex, toIndex) {
   const [item] = state.beads.splice(fromIndex, 1)
   state.beads.splice(toIndex, 0, item)
   notify()
+}
+
+/** @param {string} instanceId @param {number} toIndex */
+export function reorderBeadByInstanceId(instanceId, toIndex) {
+  const fromIndex = state.beads.findIndex((b) => b.instanceId === instanceId)
+  if (fromIndex < 0) return
+  reorderBead(fromIndex, toIndex)
+}
+
+/** @param {string} instanceId */
+export function beadIndexByInstanceId(instanceId) {
+  return state.beads.findIndex((b) => b.instanceId === instanceId)
+}
+
+export function getBeadCount() {
+  return state.beads.length
+}
+
+/**
+ * Move a bead so it lands immediately before `insertBeforeIndex` in the string.
+ * @param {string} instanceId
+ * @param {number} insertBeforeIndex 0..length (length = append at end)
+ */
+export function reorderBeadToInsertBefore(instanceId, insertBeforeIndex) {
+  const fromIndex = beadIndexByInstanceId(instanceId)
+  if (fromIndex < 0) return
+  const clamped = Math.max(0, Math.min(insertBeforeIndex, state.beads.length))
+  const toIndex = fromIndex === clamped ? fromIndex : (
+    fromIndex < clamped ? clamped - 1 : clamped
+  )
+  reorderBead(fromIndex, toIndex)
 }
 
 /** @param {'bead'|'accessory'} type */

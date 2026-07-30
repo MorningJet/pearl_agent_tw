@@ -3,7 +3,9 @@ import { drawScene } from './render.js'
 import {
   getResolvedBeads,
   removeBead,
-  reorderBead,
+  reorderBeadToInsertBefore,
+  beadIndexByInstanceId,
+  getBeadCount,
   subscribe,
 } from '../../../shared/state/designStore.js'
 import { totalCircumferenceMm, trackRepresentedMm } from '../../../shared/domain/sizing.js'
@@ -277,10 +279,13 @@ export function createCanvasApp(canvas) {
       return
     }
 
-    const target = gapInsertIndex(layout, p.angle, layoutIndex)
-    if (target !== layoutIndex) {
-      reorderBead(layoutIndex, target)
+    const insertBeforeLayout = gapInsertIndex(layout, p.angle, layoutIndex)
+    let stateInsertBefore = getBeadCount()
+    if (insertBeforeLayout < layout.length) {
+      const idx = beadIndexByInstanceId(layout[insertBeforeLayout].instanceId)
+      if (idx >= 0) stateInsertBefore = idx
     }
+    reorderBeadToInsertBefore(drag.id, stateInsertBefore)
     drag = null
     refresh()
   }

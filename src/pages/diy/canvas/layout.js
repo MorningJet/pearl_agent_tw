@@ -30,7 +30,9 @@ import {
  * @property {string} color
  * @property {string} name
  * @property {string} [image]
- * @property {number} angle rad
+ * @property {number} angle rad — bead center on the track
+ * @property {number} halfLeftRad arc from center toward previous neighbor
+ * @property {number} halfRightRad arc from center toward next neighbor
  * @property {number} x hook / bead center on the track
  * @property {number} y
  * @property {number} radiusPx draw radius (beads/spacers: face; pendants: hook)
@@ -109,6 +111,8 @@ export function layoutBeads(resolved, geo) {
       name: b.product.name,
       image: b.product.image || '',
       angle,
+      halfLeftRad: halfLeft,
+      halfRightRad: halfRight,
       x: cx + Math.cos(angle) * safeRadius,
       y: cy + Math.sin(angle) * safeRadius,
       radiusPx,
@@ -126,7 +130,7 @@ export function layoutBeads(resolved, geo) {
 
 /**
  * Snap drop angle to the gap *between* two neighbors (mid-arc), not to a bead center.
- * Returns the `toIndex` for `reorderBead` (insert index after removing `dragIndex`).
+ * Returns the original array index to insert before (for `reorderInsertIndex`).
  *
  * @param {LayoutBead[]} layout
  * @param {number} angle rad
@@ -136,38 +140,50 @@ export function gapInsertIndex(layout, angle, dragIndex) {
   const n = layout.length
   if (n <= 1) return 0
 
-  /** @type {{ angle: number, index: number }[]} */
+  /** @type {{ bead: LayoutBead, index: number }[]} */
   const others = []
   for (let i = 0; i < n; i++) {
     if (i === dragIndex) continue
-    others.push({ angle: layout[i].angle, index: i })
+    others.push({ bead: layout[i], index: i })
   }
   if (!others.length) return 0
   if (others.length === 1) {
-    let delta = normalizeAngle(angle - others[0].angle)
-    const insertBeforeOriginal = delta < 0 ? others[0].index : others[0].index + 1
-    return clampIndex(insertBeforeOriginal, n - 1)
+    const delta = normalizeAngle(angle - others[0].bead.angle)
+    return delta < 0 ? others[0].index : others[0].index + 1
   }
 
-  let bestSlot = 0
+  let bestInsertBefore = others[0].index
   let bestDist = Infinity
 
   for (let i = 0; i < others.length; i++) {
-    const a0 = others[i].angle
-    const a1 = others[(i + 1) % others.length].angle
-    let span = a1 - a0
+    const left = others[i].bead
+    const right = others[(i + 1) % others.length].bead
+    const insertBefore = others[(i + 1) % others.length].index
+    const gapStart = left.angle + (left.halfRightRad ?? 0)
+    const gapEnd = right.angle - (right.halfLeftRad ?? 0)
+    let span = gapEnd - gapStart
     while (span <= 0) span += Math.PI * 2
-    const mid = a0 + span / 2
+    const mid = gapStart + span / 2
     let d = Math.abs(normalizeAngle(angle - mid))
     if (d > Math.PI) d = Math.PI * 2 - d
     if (d < bestDist) {
       bestDist = d
-      bestSlot = (i + 1) % others.length
+      bestInsertBefore = insertBefore
     }
   }
 
-  // `reorderBead(from, to)` expects `to` as the final index after the move.
-  return clampIndex(others[bestSlot].index, n - 1)
+  return clampIndex(bestInsertBefore, n)
+}
+
+/**
+ * Map “insert before original index” to `reorderBead(from, to)`'s `to` (final index).
+ * @param {number} fromIndex
+ * @param {number} insertBefore
+ */
+export function reorderInsertIndex(fromIndex, insertBefore) {
+  if (fromIndex === insertBefore) return fromIndex
+  if (fromIndex < insertBefore) return insertBefore - 1
+  return insertBefore
 }
 
 /** @param {LayoutBead[]} layout @param {number} angle */
@@ -194,7 +210,7 @@ export function normalizeAngle(a) {
   return x
 }
 
-/** @param {number} i @param {number} max */
+/** @param {number} i @param {number} max inclusive upper bound */
 function clampIndex(i, max) {
   if (max < 0) return 0
   return Math.max(0, Math.min(i, max))
