@@ -309,10 +309,10 @@ function drawBead(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
 
   if (img) {
     const box = getContentBBox(img)
-    // Cover the track×face box so elongated SKUs (13×5 cross) fill the
-    // reserved cord slot; ellipse/circle clip crops overflow.
+    // Contain: never crop product art. Cord spacing still uses size_mm; if
+    // catalog aspect ≠ image aspect, empty arc is preferable to clipped tips.
     const scale =
-      Math.max(boxW / box.w, boxH / box.h) * TARGET_CONTENT_FILL
+      Math.min(boxW / box.w, boxH / box.h) * TARGET_CONTENT_FILL
     const drawW = box.w * scale
     const drawH = box.h * scale
     ctx.drawImage(

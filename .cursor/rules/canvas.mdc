@@ -13,7 +13,7 @@ alwaysApply: false
 - Cord occupancy always uses `diameterMm` (`size_mm`)
 - **Pendants (`category` 吊墜)**: track arc uses `diameterMm` (hook, typically 2mm); body hangs radially outward using catalog `highMm` — see `drawPendant` / `isPendant`
 - Pendant hit box width stays narrow (hook-scale); hit-test picks the **closest** candidate so tall bodies do not steal neighbor taps
-- **Spacers / charms**: draw into a `diameterMm` × `highMm` ellipse (not a `highMm`-only circle) so elongated SKUs like 藏銀十字架 13×5 fill their cord slot
+- **Spacers / charms**: draw into a `diameterMm` × `highMm` ellipse with **contain** (never crop art). Catalog aspect should match the PNG; elongated SKUs like 藏銀十字架 use e.g. 13×8
 - Round beads (`highMm === diameterMm`) still draw as circles
 - Track *represents* `max(sum(diameterMm), 130mm)` — ≤13cm locks to 13cm; above uses actual wrist
 - Always scale placement angles to span a full `2π` so beads spread evenly (drawn size still uses true mm)
