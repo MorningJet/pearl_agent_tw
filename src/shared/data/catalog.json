@@ -37,6 +37,18 @@
       "supply": ""
     },
     {
+      "id": "tg1_sz_7",
+      "type": "accessory",
+      "category": "數字",
+      "name": "鈦鋼1",
+      "diameterMm": 7,
+      "highMm": 7,
+      "price": 59,
+      "image": "/products/钛钢1.png",
+      "color": "#d6d3d1",
+      "supply": "東莞晞亞"
+    },
+    {
       "id": "xhyl_cysl_6",
       "type": "bead",
       "category": "水晶",
@@ -2423,18 +2435,6 @@
       "image": "/products/草莓晶.png",
       "color": "#d6d3d1",
       "supply": ""
-    },
-    {
-      "id": "tg1_sz_7",
-      "type": "accessory",
-      "category": "數字",
-      "name": "鈦鋼1",
-      "diameterMm": 7,
-      "highMm": 7,
-      "price": 59,
-      "image": "/products/钛钢1.png",
-      "color": "#d6d3d1",
-      "supply": "東莞晞亞"
     },
     {
       "id": "gtjx_xz_3",
