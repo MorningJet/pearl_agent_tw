@@ -80,7 +80,7 @@ export function initShelf() {
             </span>
             <span class="mt-1.5 w-full truncate text-xs font-medium leading-snug text-stone-800">${escapeHtml(p.name)}</span>
             <span class="mt-auto flex w-full items-end justify-between pt-1 text-[0.65rem] leading-none text-stone-500">
-              <span>${p.diameterMm}mm</span>
+              <span>${formatSizeLabel(p)}</span>
               <span>NT$${Math.round(p.price).toLocaleString('zh-TW')}</span>
             </span>
           </button>`
@@ -165,4 +165,15 @@ function escapeHtml(s) {
 /** @param {string} s */
 function escapeAttr(s) {
   return escapeHtml(s)
+}
+
+/**
+ * Beads: `6mm`. Accessories with distinct height: `2×10mm` (cord × face).
+ * @param {{ diameterMm: number, highMm?: number, type?: string }} p
+ */
+function formatSizeLabel(p) {
+  const d = Number(p.diameterMm) || 0
+  const h = Number(p.highMm) || 0
+  if (p.type === 'accessory' && h > 0 && h !== d) return `${d}×${h}mm`
+  return `${d}mm`
 }

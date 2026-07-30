@@ -3,9 +3,12 @@
  * (merged from incremental new_input/ batches via `npm run sync:catalog`).
  *
  * Excel columns:
- * id | category1 | category2 | name | size_mm | price_twd | picture
+ * id | category1 | category2 | name | size_mm | high_mm | price_twd | picture | supply
  *
  * - id: unique SKU id
+ * - size_mm → diameterMm: occupancy along the bracelet cord
+ * - high_mm → highMm: vertical / face size (beads: equals size_mm)
+ * - supply: supplier name (ops; not shown on shelf)
  * - one name ↔ one picture file; different size/price rows = different SKUs sharing the image
  * - Taiwan market: Traditional Chinese names, prices in TWD (NT$)
  */
@@ -22,15 +25,19 @@ import { withBase } from '../assetUrl.js'
  * @property {MaterialType} type
  * @property {string} category
  * @property {string} name
- * @property {number} diameterMm
+ * @property {number} diameterMm cord-track occupancy (Excel size_mm)
+ * @property {number} highMm vertical / face size (Excel high_mm)
  * @property {number} price
  * @property {string} color
  * @property {string} [image]
+ * @property {string} [supply]
  */
 
 /** @type {Product[]} */
 export const PRODUCTS = catalog.products.map((p) => ({
   ...p,
+  highMm: Number(p.highMm) > 0 ? Number(p.highMm) : Number(p.diameterMm) || 0,
+  supply: p.supply || '',
   image: p.image ? withBase(p.image) : p.image,
 }))
 
@@ -82,11 +89,23 @@ export function getProduct(id) {
   return PRODUCTS.find((p) => p.id === id)
 }
 
-/** Pendants hang off the cord; track occupancy stays `diameterMm` (typically 2). */
-export const PENDANT_BODY_MM = 8
+/**
+ * Cord-track occupancy in mm (Excel `size_mm` / runtime `diameterMm`).
+ * @param {{ diameterMm?: number } | null | undefined} product
+ */
+export function trackMmOf(product) {
+  return Math.max(Number(product?.diameterMm) || 1, 1)
+}
 
-/** Spacer thickness along the cord (catalog `diameterMm` is face size). */
-export const SPACER_TRACK_MM = 2
+/**
+ * Face / vertical size in mm (Excel `high_mm`). Beads fall back to diameterMm.
+ * @param {{ diameterMm?: number, highMm?: number } | null | undefined} product
+ */
+export function faceMmOf(product) {
+  const h = Number(product?.highMm)
+  if (Number.isFinite(h) && h > 0) return h
+  return trackMmOf(product)
+}
 
 /**
  * @param {{ category?: string, type?: string } | null | undefined} product

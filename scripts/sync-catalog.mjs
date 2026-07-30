@@ -15,8 +15,14 @@
  *   - catalog: new SKU rows (headers only after sync)
  *   - categories: existing category1 + category2 pairs (reference for filling)
  *
- * Columns: id | category1 | category2 | name | size_mm | price_twd | picture
+ * Columns: id | category1 | category2 | name | size_mm | high_mm | price_twd | picture | supply
+ *   - size_mm: occupancy along the bracelet cord (beads: diameter; pendants: hook ~2)
+ *   - high_mm: vertical / face size (beads: same as size_mm; pendants: hanging body)
+ *   - supply: supplier name (optional; kept on SKU for ops)
  * Taiwan market: Traditional Chinese names; prices in TWD (NT$).
+ *
+ * Accessory-only batches replace the full accessory set (xlsx is source of truth).
+ * Mixed / bead batches still upsert only.
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -39,7 +45,17 @@ function toTraditionalTw(text) {
   return toTw(s)
 }
 
-const COLUMNS = ['id', 'category1', 'category2', 'name', 'size_mm', 'price_twd', 'picture']
+const COLUMNS = [
+  'id',
+  'category1',
+  'category2',
+  'name',
+  'size_mm',
+  'high_mm',
+  'price_twd',
+  'picture',
+  'supply',
+]
 const CATEGORY_COLUMNS = ['category1', 'category2']
 const SHEET_CATALOG = 'catalog'
 const SHEET_CATEGORIES = 'categories'
@@ -119,14 +135,21 @@ function normalizeRows(rows) {
   for (const row of rows) {
     const id = String(row.id ?? '').trim()
     if (!id) continue
+    const sizeMm = Number(row.size_mm) || 0
+    const highRaw = Number(row.high_mm)
+    // Beads are spherical: missing high_mm defaults to size_mm.
+    const highMm =
+      Number.isFinite(highRaw) && highRaw > 0 ? highRaw : sizeMm
     byId.set(id, {
       id,
       category1: normalizeCategory1(row.category1),
       category2: toTraditionalTw(row.category2),
       name: toTraditionalTw(row.name ?? id),
-      size_mm: Number(row.size_mm) || 0,
+      size_mm: sizeMm,
+      high_mm: highMm,
       price_twd: Number(row.price_twd ?? row.price_usd) || 0,
       picture: String(row.picture ?? '').trim(),
+      supply: toTraditionalTw(row.supply ?? ''),
     })
   }
   return byId
@@ -273,6 +296,27 @@ function mergeIncrementalWorkbook() {
     )
   }
 
+  const incomingList = [...incoming.values()]
+  const incomingHasBeads = incomingList.some((r) => mapType(r.category1) === 'bead')
+  const incomingHasAccessories = incomingList.some(
+    (r) => mapType(r.category1) === 'accessory',
+  )
+  // Accessory-only xlsx = full accessory refresh (delete master accessories not listed).
+  let deleted = 0
+  if (incoming.size && incomingHasAccessories && !incomingHasBeads) {
+    const keep = new Set(
+      incomingList
+        .filter((r) => mapType(r.category1) === 'accessory')
+        .map((r) => r.id),
+    )
+    for (const [id, row] of [...master.entries()]) {
+      if (mapType(row.category1) !== 'accessory') continue
+      if (keep.has(id)) continue
+      master.delete(id)
+      deleted += 1
+    }
+  }
+
   let added = 0
   let updated = 0
   for (const [id, row] of incoming) {
@@ -284,7 +328,7 @@ function mergeIncrementalWorkbook() {
   const rows = writeMasterWorkbook(master)
   if (incoming.size) {
     console.log(
-      `merged new_input workbook → data/commodity_idx.xlsx (+${added} new, ~${updated} updated, ${rows.length} total)`,
+      `merged new_input workbook → data/commodity_idx.xlsx (+${added} new, ~${updated} updated, -${deleted} accessories removed, ${rows.length} total)`,
     )
   } else {
     console.log(`master workbook re-sorted (${rows.length} SKUs in data/commodity_idx.xlsx)`)
@@ -327,9 +371,11 @@ function buildCatalogJson(rows) {
       category: row.category2 || '未分類',
       name: row.name,
       diameterMm: row.size_mm,
+      highMm: row.high_mm,
       price: row.price_twd,
       image: picture ? `/products/${picture}` : '',
       color: '#d6d3d1',
+      supply: row.supply || '',
     }
   })
 

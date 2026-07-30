@@ -19,8 +19,13 @@ alwaysApply: false
 
 - `id` = unique SKU
 - One `name` ↔ one `picture` file
-- Same picture + different `size_mm` / `price_usd` = different SKUs
-- `new_input` workbook = **delta only**; sync merges into `data/`
+- Columns: `id | category1 | category2 | name | size_mm | high_mm | price_twd | picture | supply`
+  - `size_mm`: occupancy along the bracelet cord (beads = diameter; pendants ≈ hook 2mm)
+  - `high_mm`: vertical / face size (beads = same as `size_mm`; pendants = hanging body)
+  - `supply`: supplier name (optional)
+- Same picture + different `size_mm` / `high_mm` / price = different SKUs
+- Bead / mixed batches: `new_input` workbook = **delta only**; sync upserts into `data/`
+- **Accessory-only** batches: xlsx is the full accessory source of truth — master accessories not listed are deleted
 
 ## Sync
 

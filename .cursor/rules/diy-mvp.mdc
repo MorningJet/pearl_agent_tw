@@ -30,10 +30,11 @@ Design Details lives separately under `src/pages/details/` — DIY must not impo
 ## Product card data shape
 
 ```js
-{ id, type: 'bead'|'accessory', category, name, diameterMm, price, color, image }
+{ id, type: 'bead'|'accessory', category, name, diameterMm, highMm, price, color, image, supply }
 ```
 
 - Catalog source: `new_input/commodity_idx.xlsx` → `npm run sync:catalog` → `src/shared/data/catalog.json`
+- `diameterMm` ← Excel `size_mm` (cord occupancy); `highMm` ← Excel `high_mm` (face / hanging body)
 - `image` is `/products/<picture>` from the Excel `picture` column
 - Same `name`/picture may back multiple SKUs (different size/price/`id`)
 

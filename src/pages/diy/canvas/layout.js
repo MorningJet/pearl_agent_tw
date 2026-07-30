@@ -4,19 +4,21 @@
  * circumference the track currently represents (≥13cm, or actual wrist when longer).
  * Angles always span a full 2π so beads spread evenly; bead *drawn* size stays true to mm.
  *
- * Pendants (吊墜): only the hook occupies `diameterMm` on the cord; the body hangs
- * radially outward (~PENDANT_BODY_MM tall).
+ * Size model (Excel → runtime):
+ * - `size_mm` / `diameterMm`: occupancy along the bracelet cord
+ * - `high_mm` / `highMm`: vertical / face size (bracelet width)
  *
- * Spacers (隔珠): catalog `diameterMm` is face size (draw radius); cord occupancy is
- * ~SPACER_TRACK_MM. Any saved arc vs wrist sum is split equally across every junction
- * so gaps stay uniform (no wide/narrow pairs). Product images are never stretched.
+ * Beads are spherical (`highMm === diameterMm`). Spacers / letters / numbers /
+ * zodiac sit on the cord like beads (track = size_mm, face draw = high_mm).
+ * Pendants (吊墜): only the hook occupies `diameterMm` on the cord (~2mm); the
+ * body hangs radially outward using `highMm`.
  */
 
 import {
+  faceMmOf,
   isPendant,
   isSpacer,
-  PENDANT_BODY_MM,
-  SPACER_TRACK_MM,
+  trackMmOf,
 } from '../../../shared/data/products.js'
 
 /**
@@ -24,13 +26,14 @@ import {
  * @property {string} instanceId
  * @property {string} productId
  * @property {number} diameterMm
+ * @property {number} highMm
  * @property {string} color
  * @property {string} name
  * @property {string} [image]
  * @property {number} angle rad
  * @property {number} x hook / bead center on the track
  * @property {number} y
- * @property {number} radiusPx bead draw radius (half of diameter); pendants use hook radius
+ * @property {number} radiusPx draw radius (beads/spacers: face; pendants: hook)
  * @property {boolean} pendant
  * @property {boolean} spacer
  * @property {number} [bodyHeightPx] pendant body length along outward radial
@@ -38,40 +41,28 @@ import {
  */
 
 /**
- * Cord occupancy for layout (mm). Spacers use thin track; draw size still uses diameterMm.
- * @param {{ product: { diameterMm?: number, category?: string, type?: string } }} resolved
+ * Cord occupancy for layout (mm) — always Excel `size_mm`.
+ * @param {{ product: { diameterMm?: number } }} resolved
  */
 function trackMm(resolved) {
-  const d = Math.max(resolved.product?.diameterMm || 1, 1)
-  return isSpacer(resolved.product) ? SPACER_TRACK_MM : d
+  return trackMmOf(resolved.product)
 }
 
 /**
- * Equal gap on every adjacent pair: each item keeps its track half, then wrist slack
- * (catalog sum − track sum) is split evenly across all 2n half-slots.
+ * Equal gap on every adjacent pair: each item keeps its track half.
  *
- * @param {Array<{ product: { diameterMm?: number, category?: string, type?: string } }>} resolved
+ * @param {Array<{ product: { diameterMm?: number } }>} resolved
  * @returns {{ left: number, right: number }[]}
  */
 function trackHalvesMm(resolved) {
-  const n = resolved.length
-  /** @type {number[]} */
-  const tracks = resolved.map((b) => trackMm(b))
-  /** @type {number[]} */
-  const diameters = resolved.map((b) => Math.max(b.product?.diameterMm || 1, 1))
-  const wristSum = diameters.reduce((a, b) => a + b, 0)
-  const trackSum = tracks.reduce((a, b) => a + b, 0)
-  const slack = Math.max(0, wristSum - trackSum)
-  const slackPerHalf = n > 0 ? slack / (2 * n) : 0
-
-  return tracks.map((t) => ({
-    left: t / 2 + slackPerHalf,
-    right: t / 2 + slackPerHalf,
-  }))
+  return resolved.map((b) => {
+    const t = trackMm(b)
+    return { left: t / 2, right: t / 2 }
+  })
 }
 
 /**
- * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
+ * @param {Array<{ instanceId: string, productId: string, product: { diameterMm: number, highMm?: number, color: string, name: string, image?: string, category?: string, type?: string } }>} resolved
  * @param {{ cx: number, cy: number, pathRadius: number, mmToPx: number }} geo
  * @returns {LayoutBead[]}
  */
@@ -93,18 +84,23 @@ export function layoutBeads(resolved, geo) {
 
   for (let i = 0; i < resolved.length; i++) {
     const b = resolved[i]
-    const d = Math.max(b.product?.diameterMm || 1, 1)
+    const track = trackMmOf(b.product)
+    const face = faceMmOf(b.product)
     const halfLeft = ((halves[i].left * safeMmToPx) / safeRadius) * scale
     angle += halfLeft
-    const radiusPx = (d * safeMmToPx) / 2
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
-    const bodyHeightPx = pendant ? PENDANT_BODY_MM * safeMmToPx : 0
+    // Pendants: hook radius from size_mm; body from high_mm.
+    // Beads / spacers / charms: face circle from high_mm (beads: == size_mm).
+    const drawMm = pendant ? track : face
+    const radiusPx = (drawMm * safeMmToPx) / 2
+    const bodyHeightPx = pendant ? face * safeMmToPx : 0
     const bodyWidthPx = pendant ? bodyHeightPx : 0
     out.push({
       instanceId: b.instanceId,
       productId: b.productId,
       diameterMm: b.product.diameterMm,
+      highMm: face,
       color: b.product.color || '#d6d3d1',
       name: b.product.name,
       image: b.product.image || '',
