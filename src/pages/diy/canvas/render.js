@@ -2,7 +2,7 @@
  * Canvas drawing for track + center logo + beads (images or color fallback).
  */
 
-import { getContentBBox, TARGET_CONTENT_FILL } from './imageMetrics.js'
+import { contentZoom, getContentBBox } from './imageMetrics.js'
 
 /** @type {Map<string, HTMLImageElement>} */
 const imageCache = new Map()
@@ -168,7 +168,7 @@ function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
 /**
  * Pendant: hook sits on the cord at (x,y); body hangs radially outward.
  * Product art is assumed hook-at-top (image +Y = body).
- * Scales uniformly from the opaque content bbox — never stretches.
+ * Accessories stretch to size_mm (tangent width) × high_mm (outward max height).
  * @param {CanvasRenderingContext2D} ctx
  * @param {import('./layout.js').LayoutBead} bead
  * @param {number} x
@@ -178,22 +178,18 @@ function drawItem(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
  * @param {{ shadow?: boolean }} [opts]
  */
 function drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
-  const targetH = bead.bodyHeightPx || bead.radiusPx * 8
+  // size_mm × high_mm — anisotropic stretch to catalog max extents.
+  const drawW = bead.bodyWidthPx || bead.radiusPx * 2
+  const drawH = bead.bodyHeightPx || bead.radiusPx * 8
   // Map local +Y (down in image) onto outward radial (cos θ, sin θ).
   const outwardRot = (bead.angle ?? -Math.PI / 2) - Math.PI / 2
 
   const img = bead.image ? getProductImage(bead.image, onImageLoad) : null
-  let drawW = bead.bodyWidthPx || targetH * 0.75
-  let drawH = targetH
   /** @type {{ x: number, y: number, w: number, h: number } | null} */
   let src = null
   if (img) {
     const box = getContentBBox(img)
     src = { x: box.x, y: box.y, w: box.w, h: box.h }
-    // Longer content side maps to targetH; keep aspect (uniform scale only).
-    const scale = targetH / Math.max(box.w, box.h)
-    drawW = box.w * scale
-    drawH = box.h * scale
   }
 
   ctx.save()
@@ -206,7 +202,7 @@ function drawPendant(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   }
 
   if (img && src) {
-    // Shift slightly toward cord so the bail sits on the string; size stays uniform.
+    // Bail sits on the cord; stretch opaque content to size_mm × high_mm.
     const hookInset = drawH * 0.08
     ctx.drawImage(
       img,
@@ -274,12 +270,25 @@ function drawPendantShadow(ctx, w, h) {
  * @param {() => void} [onImageLoad]
  * @param {{ shadow?: boolean }} [opts]
  */
+/**
+ * On-cord item (bead or accessory).
+ * Accessories: anisotropic stretch of opaque content to size_mm × high_mm
+ * (tangent × radial max). Beads: uniform scale into a circle.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {import('./layout.js').LayoutBead} bead
+ * @param {number} x
+ * @param {number} y
+ * @param {number} alpha
+ * @param {() => void} [onImageLoad]
+ * @param {{ shadow?: boolean }} [opts]
+ */
 function drawBead(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   const boxW = bead.trackWidthPx > 0 ? bead.trackWidthPx : bead.radiusPx * 2
   const boxH = bead.faceHeightPx > 0 ? bead.faceHeightPx : bead.radiusPx * 2
   const halfW = boxW / 2
   const halfH = boxH / 2
   const shadowR = Math.max(halfW, halfH)
+  const accessory = Boolean(bead.accessory)
 
   ctx.save()
   ctx.globalAlpha = alpha
@@ -296,46 +305,62 @@ function drawBead(ctx, bead, x, y, alpha, onImageLoad, opts = {}) {
   ctx.translate(x, y)
   ctx.rotate(tangentRot)
 
-  const round = Math.abs(boxW - boxH) < 0.75
-  ctx.beginPath()
-  if (round) {
-    ctx.arc(0, 0, halfW, 0, Math.PI * 2)
-  } else {
-    // Elongated spacers / charms: size_mm along tangent × high_mm radially.
-    ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2)
+  if (accessory) {
+    // Fill the full size_mm × high_mm rect (max extents). No uniform-only scale.
+    if (img) {
+      const box = getContentBBox(img)
+      ctx.drawImage(
+        img,
+        box.x,
+        box.y,
+        box.w,
+        box.h,
+        -halfW,
+        -halfH,
+        boxW,
+        boxH,
+      )
+    } else {
+      const color = bead.color || '#d6d3d1'
+      const grd = ctx.createRadialGradient(
+        -shadowR * 0.35,
+        -shadowR * 0.35,
+        shadowR * 0.1,
+        0,
+        0,
+        shadowR,
+      )
+      grd.addColorStop(0, lighten(color, 0.35))
+      grd.addColorStop(0.55, color)
+      grd.addColorStop(1, darken(color, 0.25))
+      ctx.beginPath()
+      ctx.rect(-halfW, -halfH, boxW, boxH)
+      ctx.fillStyle = grd
+      ctx.fill()
+    }
+    ctx.restore()
+    return
   }
+
+  // Beads: circular clip + uniform content zoom (preserve aspect).
+  ctx.beginPath()
+  ctx.arc(0, 0, halfW, 0, Math.PI * 2)
   ctx.closePath()
   ctx.clip()
 
   if (img) {
-    const box = getContentBBox(img)
-    // Contain: never crop product art. Cord spacing still uses size_mm; if
-    // catalog aspect ≠ image aspect, empty arc is preferable to clipped tips.
-    const scale =
-      Math.min(boxW / box.w, boxH / box.h) * TARGET_CONTENT_FILL
-    const drawW = box.w * scale
-    const drawH = box.h * scale
-    ctx.drawImage(
-      img,
-      box.x,
-      box.y,
-      box.w,
-      box.h,
-      -drawW / 2,
-      -drawH / 2,
-      drawW,
-      drawH,
-    )
+    const zoom = contentZoom(img)
+    const drawR = halfW * zoom
+    ctx.drawImage(img, -drawR, -drawR, drawR * 2, drawR * 2)
   } else {
     const color = bead.color || '#d6d3d1'
-    const r = shadowR
+    const r = halfW
     const grd = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r)
     grd.addColorStop(0, lighten(color, 0.35))
     grd.addColorStop(0.55, color)
     grd.addColorStop(1, darken(color, 0.25))
     ctx.beginPath()
-    if (round) ctx.arc(0, 0, halfW, 0, Math.PI * 2)
-    else ctx.ellipse(0, 0, halfW, halfH, 0, 0, Math.PI * 2)
+    ctx.arc(0, 0, r, 0, Math.PI * 2)
     ctx.fillStyle = grd
     ctx.fill()
   }

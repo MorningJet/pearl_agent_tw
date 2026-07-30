@@ -11,10 +11,10 @@ alwaysApply: false
 - Layout consumes resolved beads `{ instanceId, product }`; never fetch Shopify here
 - Bead visual size uses `size_mm` (tangent / cord) × `high_mm` (radial / face) via `mmToPx`; path radius is constant
 - Cord occupancy always uses `diameterMm` (`size_mm`)
-- **Pendants (`category` 吊墜)**: track arc uses `diameterMm` (hook, typically 2mm); body hangs radially outward using catalog `highMm` — see `drawPendant` / `isPendant`
+- **Pendants (`category` 吊墜)**: track arc uses `diameterMm` (hook); body hangs outward and **stretches** PNG to `size_mm` × `high_mm`
 - Pendant hit box width stays narrow (hook-scale); hit-test picks the **closest** candidate so tall bodies do not steal neighbor taps
-- **Spacers / charms**: draw into a `diameterMm` × `highMm` ellipse with **contain** (never crop art). Catalog aspect should match the PNG; elongated SKUs like 藏銀十字架 use e.g. 13×8
-- Round beads (`highMm === diameterMm`) still draw as circles
+- **Accessories (隔珠 / 字母 / 數字 / 星座 / …)**: anisotropic stretch of opaque content to exact `size_mm` (along cord, max length) × `high_mm` (radial, max height — not average). Aspect ratio may change. Placement still connects by `size_mm`
+- Round **beads** (`type: bead`): uniform scale into a circle (`highMm === diameterMm`)
 - Track *represents* `max(sum(diameterMm), 130mm)` — ≤13cm locks to 13cm; above uses actual wrist
 - Always scale placement angles to span a full `2π` so beads spread evenly (drawn size still uses true mm)
 - Pointer events only (`pointerdown/move/up`); support touch on mobile

@@ -203,14 +203,16 @@ export function createCanvasApp(canvas) {
         }
       } else {
         const halfW = Math.max(
-          MIN_HIT_RADIUS_PX,
+          MIN_HIT_RADIUS_PX * (b.accessory ? 0.55 : 1),
           (b.trackWidthPx > 0 ? b.trackWidthPx : b.radiusPx * 2) / 2,
         )
         const halfH = Math.max(
-          MIN_HIT_RADIUS_PX,
+          MIN_HIT_RADIUS_PX * (b.accessory ? 0.55 : 1),
           (b.faceHeightPx > 0 ? b.faceHeightPx : b.radiusPx * 2) / 2,
         )
-        hit = hitTestOval(b, x, y, halfW, halfH)
+        hit = b.accessory
+          ? hitTestRect(b, x, y, halfW, halfH)
+          : hitTestOval(b, x, y, halfW, halfH)
         if (hit) dist = Math.hypot(x - b.x, y - b.y)
       }
       if (!hit) continue
@@ -220,6 +222,25 @@ export function createCanvasApp(canvas) {
       }
     }
     return best
+  }
+
+  /**
+   * Axis-aligned rect in local tangent/radial coords (accessories).
+   * @param {import('./layout.js').LayoutBead} b
+   * @param {number} x
+   * @param {number} y
+   * @param {number} halfW
+   * @param {number} halfH
+   */
+  function hitTestRect(b, x, y, halfW, halfH) {
+    const dx = x - b.x
+    const dy = y - b.y
+    const rot = (b.angle ?? -Math.PI / 2) + Math.PI / 2
+    const cos = Math.cos(-rot)
+    const sin = Math.sin(-rot)
+    const lx = dx * cos - dy * sin
+    const ly = dx * sin + dy * cos
+    return Math.abs(lx) <= halfW * 1.08 && Math.abs(ly) <= halfH * 1.08
   }
 
   /**

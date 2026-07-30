@@ -5,13 +5,13 @@
  * Angles always span a full 2π so beads spread evenly; bead *drawn* size stays true to mm.
  *
  * Size model (Excel → runtime):
- * - `size_mm` / `diameterMm`: occupancy along the bracelet cord
- * - `high_mm` / `highMm`: vertical / face size (bracelet width)
+ * - `size_mm` / `diameterMm`: max extent along the bracelet cord (track occupancy)
+ * - `high_mm` / `highMm`: max extent perpendicular to the cord (radial / face)
  *
- * Beads are spherical (`highMm === diameterMm`). Spacers / letters / numbers /
- * zodiac sit on the cord like beads: draw box = size_mm (tangent) × high_mm (radial).
- * Pendants (吊墜): only the hook occupies `diameterMm` on the cord (~2mm); the
- * body hangs radially outward using `highMm`.
+ * Beads are spherical (`highMm === diameterMm`) and keep uniform circular draw.
+ * Accessories stretch their PNG to size_mm (tangent) × high_mm (radial) — aspect
+ * may change. Pendants (吊墜): hook occupies size_mm on the cord; body hangs
+ * outward and stretches to size_mm × high_mm.
  */
 
 import {
@@ -38,10 +38,11 @@ import {
  * @property {number} radiusPx draw radius (round beads: face/2; pendants: hook/2)
  * @property {boolean} pendant
  * @property {boolean} spacer
- * @property {number} [trackWidthPx] non-pendant cord-axis draw width (size_mm)
- * @property {number} [faceHeightPx] non-pendant radial draw height (high_mm)
+ * @property {boolean} accessory stretch PNG to size_mm × high_mm (non-uniform)
+ * @property {number} [trackWidthPx] cord-axis draw width (size_mm)
+ * @property {number} [faceHeightPx] radial draw height (high_mm)
  * @property {number} [bodyHeightPx] pendant body length along outward radial
- * @property {number} [bodyWidthPx] pendant draw width
+ * @property {number} [bodyWidthPx] pendant draw width (= size_mm)
  */
 
 /**
@@ -95,21 +96,18 @@ export function layoutBeads(resolved, geo) {
     angle += halfLeft
     const pendant = isPendant(b.product)
     const spacer = isSpacer(b.product)
-    // Pendants: hook radius from size_mm; body height from high_mm.
-    // Hit/draw width stays narrower than height so tall pendants do not steal
-    // taps from neighboring beads along the cord.
-    // Beads / spacers / charms: draw box = size_mm (tangent) × high_mm (radial).
-    // Round beads have equal sides; elongated spacers (e.g. 13×5 cross) fill the
-    // reserved cord slot instead of shrinking to a high_mm circle.
+    const accessory = b.product.type === 'accessory'
+    // Cord occupancy always size_mm. Draw extents:
+    // - Accessories: stretch art to size_mm (tangent) × high_mm (radial max)
+    // - Pendants: hook on cord = size_mm; body stretches to size_mm × high_mm outward
+    // - Beads: circular face from diameter (= high_mm)
     const trackWidthPx = track * safeMmToPx
     const faceHeightPx = face * safeMmToPx
     const radiusPx = pendant
       ? trackWidthPx / 2
       : Math.max(trackWidthPx, faceHeightPx) / 2
     const bodyHeightPx = pendant ? faceHeightPx : 0
-    const bodyWidthPx = pendant
-      ? Math.max(track, face * 0.45) * safeMmToPx
-      : 0
+    const bodyWidthPx = pendant ? trackWidthPx : 0
     out.push({
       instanceId: b.instanceId,
       productId: b.productId,
@@ -126,6 +124,7 @@ export function layoutBeads(resolved, geo) {
       radiusPx,
       pendant,
       spacer,
+      accessory,
       trackWidthPx: pendant ? 0 : trackWidthPx,
       faceHeightPx: pendant ? 0 : faceHeightPx,
       bodyHeightPx,
