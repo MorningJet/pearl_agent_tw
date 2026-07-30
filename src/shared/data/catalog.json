@@ -55,7 +55,7 @@
       "name": "雪花幽靈",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 89,
+      "price": 79,
       "image": "/products/雪花幽灵.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -67,7 +67,7 @@
       "name": "雪花幽靈",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 139,
+      "price": 109,
       "image": "/products/雪花幽灵.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -79,7 +79,7 @@
       "name": "白幽靈",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/白幽灵.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -91,7 +91,7 @@
       "name": "淡水珍珠",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 99,
+      "price": 89,
       "image": "/products/淡水珍珠.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -103,7 +103,7 @@
       "name": "淡水珍珠",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 169,
+      "price": 129,
       "image": "/products/淡水珍珠.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -115,7 +115,7 @@
       "name": "淡水珍珠",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 199,
+      "price": 169,
       "image": "/products/淡水珍珠.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -127,7 +127,7 @@
       "name": "奶白晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 49,
       "image": "/products/奶白晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -139,7 +139,7 @@
       "name": "奶白晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/奶白晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -174,7 +174,7 @@
       "category": "吊墜",
       "name": "滿鑲星星",
       "diameterMm": 2,
-      "highMm": 20,
+      "highMm": 13,
       "price": 69,
       "image": "/products/满镶星星.png",
       "color": "#d6d3d1",
@@ -186,7 +186,7 @@
       "category": "吊墜",
       "name": "霹靂",
       "diameterMm": 5,
-      "highMm": 20,
+      "highMm": 13,
       "price": 49,
       "image": "/products/霹雳.png",
       "color": "#d6d3d1",
@@ -198,7 +198,7 @@
       "category": "吊墜",
       "name": "愛心曲別針",
       "diameterMm": 2,
-      "highMm": 30,
+      "highMm": 15,
       "price": 59,
       "image": "/products/爱心曲别针.png",
       "color": "#d6d3d1",
@@ -223,7 +223,7 @@
       "name": "星光粉晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/星光粉晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -283,7 +283,7 @@
       "name": "紫鋰輝",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 89,
+      "price": 59,
       "image": "/products/紫锂辉.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -295,7 +295,7 @@
       "name": "紫鋰輝",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 129,
+      "price": 89,
       "image": "/products/紫锂辉.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -307,7 +307,7 @@
       "name": "紫鋰輝",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 169,
+      "price": 139,
       "image": "/products/紫锂辉.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -319,7 +319,7 @@
       "name": "菱格立方",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/菱格立方.png",
       "color": "#d6d3d1",
       "supply": "廣州市荔灣區金嶠旭"
@@ -355,7 +355,7 @@
       "name": "粉水晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/粉水晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -379,7 +379,7 @@
       "name": "鏤空金福",
       "diameterMm": 2,
       "highMm": 14,
-      "price": 599,
+      "price": 399,
       "image": "/products/镂空金福.png",
       "color": "#d6d3d1",
       "supply": "廣州市荔灣區嘉明銀飾"
@@ -391,7 +391,7 @@
       "name": "白阿塞",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 49,
       "image": "/products/白阿塞.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -415,7 +415,7 @@
       "name": "奶油海藍寶",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/奶油海蓝宝.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -427,7 +427,7 @@
       "name": "奶油海藍寶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/奶油海蓝宝.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -439,7 +439,7 @@
       "name": "奶油海藍寶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 139,
+      "price": 129,
       "image": "/products/奶油海蓝宝.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -475,7 +475,7 @@
       "name": "海紋石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/海纹石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -487,7 +487,7 @@
       "name": "海紋石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/海纹石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -499,7 +499,7 @@
       "name": "海紋石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 169,
+      "price": 139,
       "image": "/products/海纹石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -523,7 +523,7 @@
       "name": "金髮晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/金发晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -535,7 +535,7 @@
       "name": "金髮晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/金发晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -547,7 +547,7 @@
       "name": "白水魚尾",
       "diameterMm": 2,
       "highMm": 14,
-      "price": 699,
+      "price": 499,
       "image": "/products/白水鱼尾.png",
       "color": "#d6d3d1",
       "supply": "廣州市荔灣區嘉明"
@@ -559,7 +559,7 @@
       "name": "轉運柄",
       "diameterMm": 6,
       "highMm": 10,
-      "price": 399,
+      "price": 299,
       "image": "/products/转运柄.png",
       "color": "#d6d3d1",
       "supply": "莆田市秀嶼區東嶠寶鑫格"
@@ -607,7 +607,7 @@
       "name": "薰衣草",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 49,
       "image": "/products/薰衣草.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -629,9 +629,9 @@
       "type": "accessory",
       "category": "隔珠",
       "name": "粉櫻花",
-      "diameterMm": 12,
-      "highMm": 12,
-      "price": 69,
+      "diameterMm": 11,
+      "highMm": 11,
+      "price": 59,
       "image": "/products/粉樱花.png",
       "color": "#d6d3d1",
       "supply": "義烏市聚飾優"
@@ -643,7 +643,7 @@
       "name": "鋯石花形鑽",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/锆石花形钻.png",
       "color": "#d6d3d1",
       "supply": "義烏市闊乘"
@@ -679,7 +679,7 @@
       "name": "黃水晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/黄水晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -691,7 +691,7 @@
       "name": "黃水晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/黄水晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -727,7 +727,7 @@
       "name": "鈦鋼4",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢4.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -763,7 +763,7 @@
       "name": "鈦鋼9",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢9.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -775,7 +775,7 @@
       "name": "桂花",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/桂花.png",
       "color": "#d6d3d1",
       "supply": "廣州嘉鈺"
@@ -823,7 +823,7 @@
       "name": "蜜蠟",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/蜜蜡.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -835,7 +835,7 @@
       "name": "蜜蠟",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/蜜蜡.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -847,7 +847,7 @@
       "name": "銀飾R",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰R.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -871,7 +871,7 @@
       "name": "鈦鋼7",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢7.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -907,7 +907,7 @@
       "name": "鈦鋼0",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢0.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -931,7 +931,7 @@
       "name": "銀飾J",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰J.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -943,7 +943,7 @@
       "name": "鈦鋼6",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢6.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -979,7 +979,7 @@
       "name": "銀飾I",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰I.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -991,7 +991,7 @@
       "name": "銀飾U",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰U.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1003,7 +1003,7 @@
       "name": "鈦鋼3",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢3.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -1015,7 +1015,7 @@
       "name": "鈦鋼2",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢2.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -1027,7 +1027,7 @@
       "name": "鈦鋼8",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢8.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -1039,7 +1039,7 @@
       "name": "鈦鋼5",
       "diameterMm": 7,
       "highMm": 7,
-      "price": 59,
+      "price": 49,
       "image": "/products/钛钢5.png",
       "color": "#d6d3d1",
       "supply": "東莞晞亞"
@@ -1063,7 +1063,7 @@
       "name": "銀飾P",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰P.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1087,7 +1087,7 @@
       "name": "綠髮晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/绿发晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1111,7 +1111,7 @@
       "name": "銀飾C",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰C.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1123,7 +1123,7 @@
       "name": "銀飾B",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰B.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1147,7 +1147,7 @@
       "name": "銀飾O",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰O.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1159,7 +1159,7 @@
       "name": "銀飾W",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰W.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1170,7 +1170,7 @@
       "category": "吊墜",
       "name": "珠遇蝶",
       "diameterMm": 2,
-      "highMm": 20,
+      "highMm": 14,
       "price": 59,
       "image": "/products/珠遇蝶.png",
       "color": "#d6d3d1",
@@ -1195,7 +1195,7 @@
       "name": "銀飾Q",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰Q.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1207,7 +1207,7 @@
       "name": "羽毛螢石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 139,
+      "price": 129,
       "image": "/products/羽毛萤石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1231,7 +1231,7 @@
       "name": "銀飾F",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰F.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1254,7 +1254,7 @@
       "category": "吊墜",
       "name": "葫蘆成雙",
       "diameterMm": 3,
-      "highMm": 40,
+      "highMm": 18,
       "price": 299,
       "image": "/products/葫芦成双.png",
       "color": "#d6d3d1",
@@ -1279,7 +1279,7 @@
       "name": "銀飾N",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰N.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1291,7 +1291,7 @@
       "name": "銀飾M",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰M.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1303,7 +1303,7 @@
       "name": "銀飾H",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰H.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1327,7 +1327,7 @@
       "name": "銀飾G",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰G.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1351,7 +1351,7 @@
       "name": "銀飾T",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰T.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1363,7 +1363,7 @@
       "name": "銀飾E",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰E.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1375,7 +1375,7 @@
       "name": "銀飾K",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰K.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1399,7 +1399,7 @@
       "name": "銀飾V",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰V.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1423,7 +1423,7 @@
       "name": "銀飾L",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰L.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1435,7 +1435,7 @@
       "name": "銀飾A",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰A.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1459,7 +1459,7 @@
       "name": "銀飾Y",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰Y.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1507,7 +1507,7 @@
       "name": "銀飾X",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰X.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1543,7 +1543,7 @@
       "name": "琥珀石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 199,
+      "price": 169,
       "image": "/products/琥珀石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1579,7 +1579,7 @@
       "name": "銀飾Z",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰Z.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1627,7 +1627,7 @@
       "name": "銀飾D",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰D.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1663,7 +1663,7 @@
       "name": "海藍寶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 169,
+      "price": 139,
       "image": "/products/海蓝宝.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1675,7 +1675,7 @@
       "name": "銀飾S",
       "diameterMm": 4,
       "highMm": 10,
-      "price": 399,
+      "price": 369,
       "image": "/products/银饰S.png",
       "color": "#d6d3d1",
       "supply": "廣州市德潤"
@@ -1711,7 +1711,7 @@
       "name": "黃塔晶",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 49,
+      "price": 39,
       "image": "/products/黄塔晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1723,7 +1723,7 @@
       "name": "黃塔晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 59,
+      "price": 49,
       "image": "/products/黄塔晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1735,7 +1735,7 @@
       "name": "黃塔晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 69,
       "image": "/products/黄塔晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1771,7 +1771,7 @@
       "name": "黑髮晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/黑发晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1795,7 +1795,7 @@
       "name": "天珠",
       "diameterMm": 19,
       "highMm": 7,
-      "price": 69,
+      "price": 59,
       "image": "/products/天珠.png",
       "color": "#d6d3d1",
       "supply": "義烏市楊航"
@@ -1807,7 +1807,7 @@
       "name": "銀色小珠",
       "diameterMm": 4,
       "highMm": 4,
-      "price": 69,
+      "price": 59,
       "image": "/products/银色小珠.png",
       "color": "#d6d3d1",
       "supply": "義烏市硯鈺"
@@ -1950,8 +1950,8 @@
       "category": "吊墜",
       "name": "藏銀羽毛",
       "diameterMm": 2,
-      "highMm": 24,
-      "price": 599,
+      "highMm": 12,
+      "price": 399,
       "image": "/products/藏银羽毛.png",
       "color": "#d6d3d1",
       "supply": "廣州市無風帶"
@@ -1963,7 +1963,7 @@
       "name": "綠螢石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/绿萤石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1975,7 +1975,7 @@
       "name": "綠螢石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/绿萤石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -1999,7 +1999,7 @@
       "name": "薔薇石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/蔷薇石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2011,7 +2011,7 @@
       "name": "薔薇石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/蔷薇石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2023,7 +2023,7 @@
       "name": "金色小珠",
       "diameterMm": 4,
       "highMm": 4,
-      "price": 69,
+      "price": 59,
       "image": "/products/金色小珠.png",
       "color": "#d6d3d1",
       "supply": "義烏市硯鈺"
@@ -2059,7 +2059,7 @@
       "name": "鋯石鑽閃雙層",
       "diameterMm": 5,
       "highMm": 7,
-      "price": 159,
+      "price": 139,
       "image": "/products/锆石钻闪双层.png",
       "color": "#d6d3d1",
       "supply": "義烏市硯鈺"
@@ -2107,7 +2107,7 @@
       "name": "月光石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/月光石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2155,7 +2155,7 @@
       "name": "太陽石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/太阳石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2167,7 +2167,7 @@
       "name": "太陽石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 169,
+      "price": 129,
       "image": "/products/太阳石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2191,7 +2191,7 @@
       "name": "聖海藍寶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 699,
+      "price": 599,
       "image": "/products/圣海蓝宝.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2251,7 +2251,7 @@
       "name": "紫水晶",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/紫水晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2275,7 +2275,7 @@
       "name": "紫水晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/紫水晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2286,8 +2286,8 @@
       "category": "吊墜",
       "name": "國王之淚",
       "diameterMm": 2,
-      "highMm": 20,
-      "price": 99,
+      "highMm": 10,
+      "price": 89,
       "image": "/products/国王之泪.png",
       "color": "#d6d3d1",
       "supply": "廣州市嘉鈺"
@@ -2347,7 +2347,7 @@
       "name": "紫粉晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/紫粉晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2359,7 +2359,7 @@
       "name": "紫粉晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/紫粉晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2395,7 +2395,7 @@
       "name": "草莓晶",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 39,
+      "price": 49,
       "image": "/products/草莓晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2407,7 +2407,7 @@
       "name": "草莓晶",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/草莓晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2419,7 +2419,7 @@
       "name": "草莓晶",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/草莓晶.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2442,8 +2442,8 @@
       "category": "吊墜",
       "name": "藏銀蝴蝶流蘇",
       "diameterMm": 2,
-      "highMm": 58,
-      "price": 99,
+      "highMm": 15,
+      "price": 89,
       "image": "/products/藏银蝴蝶流苏.png",
       "color": "#d6d3d1",
       "supply": "中山市凱髮飾品"
@@ -2467,7 +2467,7 @@
       "name": "藏銀十字",
       "diameterMm": 2,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/藏银十字.png",
       "color": "#d6d3d1",
       "supply": "汕頭市澄海區漁米"
@@ -2491,7 +2491,7 @@
       "name": "景泰藍",
       "diameterMm": 11,
       "highMm": 11,
-      "price": 99,
+      "price": 89,
       "image": "/products/景泰蓝.png",
       "color": "#d6d3d1",
       "supply": "義烏市璇霽"
@@ -2515,7 +2515,7 @@
       "name": "黑金超",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/黑金超.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2527,7 +2527,7 @@
       "name": "黑金超",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/黑金超.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2659,7 +2659,7 @@
       "name": "銀曜石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/银曜石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2671,7 +2671,7 @@
       "name": "銀曜石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/银曜石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2682,7 +2682,7 @@
       "category": "吊墜",
       "name": "捕夢網",
       "diameterMm": 2,
-      "highMm": 30,
+      "highMm": 18,
       "price": 69,
       "image": "/products/捕梦网.png",
       "color": "#d6d3d1",
@@ -2695,7 +2695,7 @@
       "name": "硃砂",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 99,
+      "price": 59,
       "image": "/products/朱砂.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2707,7 +2707,7 @@
       "name": "藍晶石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 99,
+      "price": 89,
       "image": "/products/蓝晶石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2731,7 +2731,7 @@
       "name": "藍晶石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 199,
+      "price": 169,
       "image": "/products/蓝晶石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2815,7 +2815,7 @@
       "name": "孔雀石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/孔雀石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2839,7 +2839,7 @@
       "name": "孔雀石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 199,
+      "price": 169,
       "image": "/products/孔雀石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2851,7 +2851,7 @@
       "name": "青金石",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/青金石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2887,7 +2887,7 @@
       "name": "烏拉圭",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/乌拉圭.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2899,7 +2899,7 @@
       "name": "烏拉圭",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/乌拉圭.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2911,7 +2911,7 @@
       "name": "烏拉圭",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 169,
+      "price": 159,
       "image": "/products/乌拉圭.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2923,7 +2923,7 @@
       "name": "紫幽靈",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 39,
+      "price": 49,
       "image": "/products/紫幽灵.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2983,7 +2983,7 @@
       "name": "紫金砂",
       "diameterMm": 6,
       "highMm": 6,
-      "price": 69,
+      "price": 59,
       "image": "/products/紫金砂.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -2995,7 +2995,7 @@
       "name": "紫金砂",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 99,
+      "price": 89,
       "image": "/products/紫金砂.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -3007,7 +3007,7 @@
       "name": "紫金砂",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 129,
+      "price": 99,
       "image": "/products/紫金砂.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -3031,7 +3031,7 @@
       "name": "金曜石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/金曜石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -3043,7 +3043,7 @@
       "name": "金曜石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/金曜石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -3067,7 +3067,7 @@
       "name": "黑曜石",
       "diameterMm": 8,
       "highMm": 8,
-      "price": 69,
+      "price": 59,
       "image": "/products/黑曜石.png",
       "color": "#d6d3d1",
       "supply": ""
@@ -3079,7 +3079,7 @@
       "name": "黑曜石",
       "diameterMm": 10,
       "highMm": 10,
-      "price": 99,
+      "price": 89,
       "image": "/products/黑曜石.png",
       "color": "#d6d3d1",
       "supply": ""
