@@ -342,6 +342,15 @@ function renderPublishedRail() {
     empty.classList.add('hidden')
     rail.classList.remove('hidden')
     rail.innerHTML = published.map(publishedCardHtml).join('')
+    // Broken remote preview URLs used to leave a blank square — show placeholder.
+    rail.querySelectorAll('[data-publish-thumb]').forEach((img) => {
+      if (!(img instanceof HTMLImageElement)) return
+      img.addEventListener('error', () => {
+        const wrap = img.parentElement
+        if (!wrap) return
+        wrap.innerHTML = testPhotoTile()
+      })
+    })
   }
 }
 
@@ -387,7 +396,7 @@ function savedCardHtml(d) {
 function publishedCardHtml(p) {
   const imageUrl = resolvePlazaPreviewUrl(p)
   const media = imageUrl
-    ? `<img src="${escapeAttr(imageUrl)}" alt="" draggable="false" class="pointer-events-none h-full w-full select-none object-cover" />`
+    ? `<img data-publish-thumb src="${escapeAttr(imageUrl)}" alt="" draggable="false" class="pointer-events-none h-full w-full select-none object-cover" />`
     : testPhotoTile()
 
   return `

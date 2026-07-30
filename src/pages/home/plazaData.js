@@ -60,19 +60,56 @@ export function getMasterPlazaImagePath(id) {
 }
 
 /**
- * Resolve preview for a publish: saved → publish snapshot → master table.
+ * Turn a stored plaza image ref into a browser-loadable URL.
+ * - data/blob/https: unchanged
+ * - `/api/h5/plaza/preview/...`: prefix `VITE_NEWEBPAY_API_BASE`
+ * - `/plaza/...`: GitHub Pages `withBase`
+ * @param {string} raw
+ */
+export function normalizePlazaImageSrc(raw) {
+  const s = String(raw || '').trim()
+  if (!s) return ''
+  if (/^(https?:|data:|blob:)/i.test(s)) return s
+
+  const apiBase = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
+    .trim()
+    .replace(/\/$/, '')
+
+  // Worker preview path (relative) — must not go through Pages `withBase`.
+  if (s.includes('/api/h5/plaza/preview/') || /^\/api\/h5\//.test(s)) {
+    const path = s.startsWith('/') ? s : `/${s}`
+    if (!apiBase) return path
+    if (/^https?:\/\//i.test(apiBase)) return `${apiBase}${path}`
+    // Vite proxy prefix e.g. `/newebpay-api`
+    return `${apiBase}${path}`
+  }
+
+  return withBase(s)
+}
+
+/**
+ * Resolve preview for a publish: saved data-URL → publish snapshot → master table.
+ * Prefer local `data:` thumbs over remote preview URLs (remote can 404 after KV miss
+ * and must not blank「我的發佈」cards).
  * @param {{ id: string, sourceDesignId?: string, imageDataUrl?: string }} p
  */
 export function resolvePlazaPreviewUrl(p) {
   const saved = p.sourceDesignId ? getSavedDesign(p.sourceDesignId) : null
-  const raw =
-    saved?.imageDataUrl ||
-    p.imageDataUrl ||
-    getMasterPlazaImagePath(p.id) ||
-    ''
-  // withBase once only (paths from master are root-relative `/plaza/...`)
-  if (/^(https?:|data:|blob:)/i.test(raw)) return raw
-  return withBase(raw)
+  const candidates = [
+    saved?.imageDataUrl,
+    p.imageDataUrl,
+    getMasterPlazaImagePath(p.id),
+  ].filter((u) => typeof u === 'string' && u.trim())
+
+  // Prefer any data-URL first (reliable local thumb).
+  const dataUrl = candidates.find((u) => u.startsWith('data:'))
+  if (dataUrl) return dataUrl
+
+  for (const raw of candidates) {
+    const src = normalizePlazaImageSrc(raw)
+    if (src) return src
+  }
+  return ''
 }
 export function getSeedPlazaDesignRow(id) {
   return (plazaMaster.designs || []).find((d) => d.id === id && d.status === 'published') || null

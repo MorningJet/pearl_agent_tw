@@ -859,19 +859,44 @@ function submitPlazaPublish() {
   })
   ownerRepublishPub = published
 
-  // Always sync with the full preview — localStorage may have dropped the data-URL for quota.
+  // Keep a local data-URL thumb when present. Replacing it with the Worker
+  // preview path blanks「我的發佈」if KV miss / wrong API base (404 img).
   void syncPlazaPublish({
     ...published,
     imageDataUrl: previewImage || published.imageDataUrl || '',
   }).then((result) => {
     const path = result?.row?.image_path || result?.design?.imageDataUrl
-    if (typeof path === 'string' && path) {
+    if (typeof path !== 'string' || !path) {
+      if (import.meta.env.DEV && !result?.ok) {
+        console.warn('[plaza] maintenance table sync failed (is vite dev server running?)')
+      }
+      return
+    }
+    const current = getPublishedPlazaDesign(published.id)?.imageDataUrl || ''
+    if (current.startsWith('data:')) return
+    if (previewImage?.startsWith('data:')) {
+      setPublishedPlazaImage(published.id, previewImage)
+      return
+    }
+    if (/^(https?:|data:|blob:)/i.test(path)) {
       setPublishedPlazaImage(published.id, path)
       refreshPlazaPage()
       refreshHomePlaza()
       refreshMyDesignsPage()
-    } else if (import.meta.env.DEV && !result?.ok) {
-      console.warn('[plaza] maintenance table sync failed (is vite dev server running?)')
+      return
+    }
+    // Relative Worker path — only store if we can resolve via API base.
+    const apiBase = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
+      .trim()
+      .replace(/\/$/, '')
+    if (apiBase && path.includes('/api/h5/plaza/preview/')) {
+      const abs = /^https?:/i.test(apiBase)
+        ? `${apiBase}${path.startsWith('/') ? path : `/${path}`}`
+        : `${apiBase}${path.startsWith('/') ? path : `/${path}`}`
+      setPublishedPlazaImage(published.id, abs)
+      refreshPlazaPage()
+      refreshHomePlaza()
+      refreshMyDesignsPage()
     }
   })
 

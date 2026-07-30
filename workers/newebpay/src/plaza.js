@@ -258,10 +258,17 @@ export async function handlePlazaPublish(request, env, cors) {
       ...row,
       published_at: prev.published_at || row.published_at,
       use_count: Number(body.useCount ?? prev.use_count) || 0,
-      image_path: parsed?.bytes?.length ? row.image_path : prev.image_path || row.image_path,
+      // Keep previous preview URL if this request had no image bytes.
+      image_path: parsed?.bytes?.length
+        ? row.image_path
+        : prev.image_path || (parsed?.bytes?.length ? row.image_path : ''),
     }
   } else {
-    list.unshift(row)
+    list.unshift({
+      ...row,
+      // Don't advertise a preview URL until bytes are in KV (avoids 404 thumbs).
+      image_path: parsed?.bytes?.length ? row.image_path : '',
+    })
   }
 
   await writeManifest(env, list)
