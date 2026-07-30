@@ -146,9 +146,7 @@ export function gapInsertIndex(layout, angle, dragIndex) {
   if (others.length === 1) {
     let delta = normalizeAngle(angle - others[0].angle)
     const insertBeforeOriginal = delta < 0 ? others[0].index : others[0].index + 1
-    let to = insertBeforeOriginal
-    if (dragIndex < insertBeforeOriginal) to -= 1
-    return clampIndex(to, n - 1)
+    return clampIndex(insertBeforeOriginal, n - 1)
   }
 
   let bestSlot = 0
@@ -168,10 +166,8 @@ export function gapInsertIndex(layout, angle, dragIndex) {
     }
   }
 
-  const insertBeforeOriginal = others[bestSlot].index
-  let to = insertBeforeOriginal
-  if (dragIndex < insertBeforeOriginal) to -= 1
-  return clampIndex(to, n - 1)
+  // `reorderBead(from, to)` expects `to` as the final index after the move.
+  return clampIndex(others[bestSlot].index, n - 1)
 }
 
 /** @param {LayoutBead[]} layout @param {number} angle */

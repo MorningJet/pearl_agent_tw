@@ -8,7 +8,9 @@ import {
 } from '../../../shared/state/designStore.js'
 import { totalCircumferenceMm, trackRepresentedMm } from '../../../shared/domain/sizing.js'
 
+/** Extra px beyond the ring before a drag-out counts as delete (reorder zone is wider). */
 const DELETE_EXTRA = 48
+const REORDER_SLACK = 88
 const FLY_MS = 420
 
 /**
@@ -262,15 +264,22 @@ export function createCanvasApp(canvas) {
     const { x, y } = eventPos(e)
     const p = pointerMeta(x, y)
 
-    if (p.dist > geo.pathRadius + DELETE_EXTRA) {
+    const deleteLimit = geo.pathRadius + DELETE_EXTRA + REORDER_SLACK
+    if (p.dist > deleteLimit) {
       removeBead(drag.id)
       drag = null
       return
     }
 
-    const target = gapInsertIndex(layout, p.angle, drag.index)
-    if (target !== drag.index) {
-      reorderBead(drag.index, target)
+    const layoutIndex = layout.findIndex((b) => b.instanceId === drag.id)
+    if (layoutIndex < 0) {
+      drag = null
+      return
+    }
+
+    const target = gapInsertIndex(layout, p.angle, layoutIndex)
+    if (target !== layoutIndex) {
+      reorderBead(layoutIndex, target)
     }
     drag = null
     refresh()
