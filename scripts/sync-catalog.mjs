@@ -388,7 +388,8 @@ function buildCatalogJson(rows) {
   }
 
   // Drop obsolete product images not referenced by the new catalog.
-  // Keep lifestyle photos (*1.*) used by long-press preview on the DIY shelf.
+  // Keep lifestyle photos (*1.*) used by long-press preview on the DIY shelf
+  // (including ones copied in this same batch before productLifestyle.json updates).
   const keep = new Set(products.map((p) => path.basename(p.image)).filter(Boolean))
   const lifestyleJson = path.join(root, 'src', 'shared', 'data', 'productLifestyle.json')
   if (fs.existsSync(lifestyleJson)) {
@@ -399,10 +400,11 @@ function buildCatalogJson(rows) {
       /* ignore */
     }
   }
+  const lifestyleFileRe = /^.+1\.(png|jpe?g|webp)$/i
   if (fs.existsSync(productsDir)) {
     for (const file of fs.readdirSync(productsDir)) {
       if (!isProductImage(file)) continue
-      if (keep.has(file)) continue
+      if (keep.has(file) || lifestyleFileRe.test(file)) continue
       fs.unlinkSync(path.join(productsDir, file))
       console.log(`removed obsolete product image: ${file}`)
     }

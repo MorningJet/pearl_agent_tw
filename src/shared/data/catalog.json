@@ -2809,6 +2809,18 @@
       "supply": ""
     },
     {
+      "id": "slft_ft_8",
+      "type": "accessory",
+      "category": "方糖",
+      "name": "聖藍方糖",
+      "diameterMm": 8,
+      "highMm": 8,
+      "price": 59,
+      "image": "/products/圣蓝方糖.png",
+      "color": "#d6d3d1",
+      "supply": "龍海市上全"
+    },
+    {
       "id": "kqs_stn_6",
       "type": "bead",
       "category": "礦石",
@@ -2915,6 +2927,18 @@
       "image": "/products/乌拉圭.png",
       "color": "#d6d3d1",
       "supply": ""
+    },
+    {
+      "id": "qjsph_ph_4",
+      "type": "accessory",
+      "category": "跑環",
+      "name": "青金石跑環",
+      "diameterMm": 4,
+      "highMm": 10,
+      "price": 99,
+      "image": "/products/青金石跑环.png",
+      "color": "#d6d3d1",
+      "supply": "義烏晶德"
     },
     {
       "id": "zyl_cysl_6",
