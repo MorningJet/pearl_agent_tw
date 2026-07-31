@@ -2,7 +2,7 @@
  * Pearl Pearl — NewebPay MPG + Shopify Admin order sync.
  *
  * Flow:
- *   立即付款 → create unpaid Shopify order + NewebPay MPG
+ *   立即付款 → await unpaid Shopify order (same email) + NewebPay MPG
  *   支付成功 → mark Shopify paid → H5 排單中 (pearl:scheduling)
  *   支付失敗 → Shopify 維持未付款
  *
@@ -496,6 +496,38 @@ async function runCheckout(env, body, ctx) {
 
   await putOrder(env, merchantOrderNo, record)
 
+  // Shopify unpaid order first (same email) — H5 / Admin must stay in sync.
+  // Do not redirect to NewebPay until Admin order exists.
+  /** @type {{ id: number, name: string, adminUrl: string }} */
+  let shopifyCreated
+  try {
+    shopifyCreated = await createUnpaidShopifyOrder(env, record, {
+      waitUntil: typeof ctx?.waitUntil === 'function' ? (p) => ctx.waitUntil(p) : undefined,
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[shopify] unpaid create failed at checkout', msg)
+    record.shopifyError = msg
+    await putOrder(env, merchantOrderNo, record)
+    return {
+      ok: false,
+      error: `無法建立 Shopify 訂單：${msg}`,
+      status: 502,
+    }
+  }
+
+  record.shopifyOrderId = shopifyCreated.id
+  record.shopifyOrderName = shopifyCreated.name
+  record.shopifyAdminUrl = shopifyCreated.adminUrl
+  record.shopifyError = null
+  record.h5Status = 'unpaid'
+  await putOrder(env, merchantOrderNo, record)
+  try {
+    await mirrorFromCheckoutRecord(env, record, 'checkout/unpaid')
+  } catch (e) {
+    console.warn('[shopify] mirror unpaid failed', e instanceof Error ? e.message : e)
+  }
+
   /** @type {string | null} */
   let paymentError = null
   /** @type {Record<string, unknown> | null} */
@@ -512,13 +544,6 @@ async function runCheckout(env, body, ctx) {
     console.warn('[newebpay] payment prepare failed', paymentError)
   }
 
-  const bgShopify = createUnpaidShopifyInBackground(env, merchantOrderNo)
-  if (typeof ctx?.waitUntil === 'function') {
-    ctx.waitUntil(bgShopify)
-  } else {
-    void bgShopify
-  }
-
   console.log('[newebpay] checkout', {
     merchantOrderNo,
     amt,
@@ -526,7 +551,8 @@ async function runCheckout(env, body, ctx) {
     designFee,
     shipping,
     paymentReady: Boolean(paymentPayload),
-    shopify: 'background',
+    shopifyOrderId: shopifyCreated.id,
+    shopifyOrderName: shopifyCreated.name,
   })
 
   return {
@@ -536,8 +562,8 @@ async function runCheckout(env, body, ctx) {
       merchantOrderNo,
       amountTwd: amt,
       breakdown: { beadsSubtotal, designFee, shipping },
-      shopifyOrderId: null,
-      shopifyOrderName: null,
+      shopifyOrderId: shopifyCreated.id,
+      shopifyOrderName: shopifyCreated.name,
       h5Status: 'unpaid',
       paymentReady: Boolean(paymentPayload),
       paymentError,
@@ -663,54 +689,6 @@ function escapeHtml(s) {
 /** @param {string} s */
 function escapeAttr(s) {
   return escapeHtml(s).replaceAll("'", '&#39;')
-}
-
-/**
- * Create Shopify unpaid order after responding to H5 (avoid blocking 藍新 redirect).
- * @param {any} env
- * @param {string} merchantOrderNo
- */
-async function createUnpaidShopifyInBackground(env, merchantOrderNo) {
-  try {
-    const record = await getOrder(env, merchantOrderNo)
-    if (!record) return
-    if (record.shopifyOrderId) return
-    if (record.status === 'paid' || record.status === 'shopify_synced') return
-    if (record.h5Status === 'scheduling') return
-
-    const created = await createUnpaidShopifyOrder(env, record, {})
-    const latest = await getOrder(env, merchantOrderNo)
-    if (!latest) return
-    // Payment may have already created/synced a paid order — don't overwrite.
-    if (latest.shopifyOrderId) return
-    if (latest.status === 'paid' || latest.status === 'shopify_synced') return
-    if (latest.h5Status === 'scheduling') return
-
-    latest.shopifyOrderId = created.id
-    latest.shopifyOrderName = created.name
-    latest.shopifyAdminUrl = created.adminUrl
-    latest.shopifyError = null
-    latest.h5Status = latest.h5Status || 'unpaid'
-    await putOrder(env, merchantOrderNo, latest)
-    try {
-      await mirrorFromCheckoutRecord(env, latest, 'checkout/unpaid-bg')
-    } catch (e) {
-      console.warn('[shopify] mirror unpaid-bg failed', e instanceof Error ? e.message : e)
-    }
-    console.log('[shopify] unpaid order created (background)', created)
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error('[shopify] background unpaid create failed', msg)
-    try {
-      const latest = await getOrder(env, merchantOrderNo)
-      if (latest && !latest.shopifyOrderId) {
-        latest.shopifyError = msg
-        await putOrder(env, merchantOrderNo, latest)
-      }
-    } catch {
-      /* ignore */
-    }
-  }
 }
 
 /**
@@ -959,7 +937,7 @@ async function syncShopifyFromRecord(env, record, pay) {
   }
 
   try {
-    // Background unpaid create may still be in flight — wait briefly before paid fallback.
+    // Legacy: older checkouts created Shopify async; brief wait then paid fallback.
     if (!record.shopifyOrderId) {
       for (let i = 0; i < 6 && !record.shopifyOrderId; i++) {
         await new Promise((r) => setTimeout(r, 400))

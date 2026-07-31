@@ -9,6 +9,7 @@ import {
   normalizeStatus,
   orderIdFromKeys,
   patchOrderFromRemote,
+  pruneOrdersMissingShopifyId,
   reconcileOrdersForEmail,
   upsertOrder,
 } from '../state/ordersStore.js'
@@ -80,7 +81,8 @@ function apiBase() {
 export function persistCheckoutOrder(result, meta, breakdown = {}) {
   const shopifyOrderId = result.shopifyOrderId != null ? String(result.shopifyOrderId) : ''
   const merchantOrderNo = String(result.merchantOrderNo || '').trim()
-  if (!shopifyOrderId && !merchantOrderNo) return null
+  // Shopify Admin is source of truth — never keep H5-only unpaid ghosts.
+  if (!shopifyOrderId || !merchantOrderNo) return null
 
   const addr = meta.shippingAddress && typeof meta.shippingAddress === 'object' ? meta.shippingAddress : {}
   const shipping =
@@ -155,6 +157,9 @@ function formatAddress(addr) {
 export async function syncOrdersFromServer() {
   const base = apiBase()
   if (!base) return { ok: false, count: 0, error: '未設定結帳服務' }
+
+  // Clear legacy H5-only unpaid rows (created before sync Shopify checkout).
+  pruneOrdersMissingShopifyId()
 
   const email = resolveMemberEmail()
   let remoteCount = 0

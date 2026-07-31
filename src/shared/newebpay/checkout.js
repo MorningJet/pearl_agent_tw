@@ -132,7 +132,7 @@ export async function createNewebpayCheckout(bom, meta) {
       h5Status: data.h5Status || 'unpaid',
     }
 
-    // Shopify 未付款單已建立；藍新參數齊全才導向付款頁。
+    // Shopify 未付款單已同步建立；藍新參數齊全才導向付款頁。
     if (
       data.paymentReady !== false &&
       data.gatewayUrl &&

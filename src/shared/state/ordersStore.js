@@ -451,6 +451,18 @@ export function reconcileOrdersForEmail(email, remoteKeys = {}) {
 }
 
 /**
+ * Drop local drafts that never got a Shopify Admin id (legacy async-create ghosts).
+ * @returns {number} removed count
+ */
+export function pruneOrdersMissingShopifyId() {
+  const list = readAll().slice()
+  const next = list.filter((o) => String(o.shopifyOrderId || '').trim())
+  const removed = list.length - next.length
+  if (removed) writeAll(next)
+  return removed
+}
+
+/**
  * @param {Order[]} list
  * @param {{ id: string, shopifyOrderId?: string | number | null, merchantOrderNo?: string | null }} keys
  */
