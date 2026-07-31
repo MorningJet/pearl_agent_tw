@@ -44,10 +44,6 @@ export const PRODUCTS = catalog.products.map((p) => ({
   image: p.image ? withBase(p.image) : p.image,
 }))
 
-/**
- * @param {MaterialType} type
- * @returns {string[]}
- */
 /** Shelf pseudo-category (not from Excel); inserted after「全部」. */
 export const RECENT_CATEGORY = '最近使用'
 
