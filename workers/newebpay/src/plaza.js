@@ -308,28 +308,71 @@ export async function handlePlazaUnpublish(request, env, cors) {
 }
 
 /**
+ * Atomically +1 use count (global). Creates a published stub if id is missing
+ * (official seed designs may live only in static JSON until first order click).
  * @param {Request} request
  * @param {any} env
  * @param {Record<string, string>} cors
  */
 export async function handlePlazaUseCount(request, env, cors) {
   const body = await request.json().catch(() => null)
-  const id = String(body?.id || '')
+  const id = String(body?.id || '').trim()
   if (!id) return json({ ok: false, error: 'Missing id' }, 400, cors)
 
-  const useCount = Number(body.useCount) || 0
   const list = await readManifest(env)
   const i = list.findIndex((d) => String(d.id) === id)
-  if (i < 0) return json({ ok: false, error: 'Not found' }, 404, cors)
+  const now = new Date().toISOString()
 
+  if (i < 0) {
+    const author = String(body?.author || body?.designer_name || 'designer').replace(/^@/, '')
+    const beads = Array.isArray(body?.beads) ? body.beads : []
+    const stub = {
+      id,
+      source_design_id: String(body?.sourceDesignId || ''),
+      title: String(body?.title || id),
+      designer_name: author,
+      designer_id: String(body?.designerId || ''),
+      blurb: String(body?.tags || ''),
+      use_price_twd: Number(body?.usePriceTwd) || 0,
+      use_count: 1,
+      useCount: 1,
+      status: 'published',
+      source: String(body?.source || 'seed'),
+      image_path: String(body?.imageDataUrl || body?.image_path || previewUrl(env, id)),
+      bead_product_ids: beads.map((b) => b.productId).filter(Boolean).join('|'),
+      published_at: now,
+      updated_at: now,
+      beads: beads.map((b) => ({
+        instanceId: String(b.instanceId || ''),
+        productId: String(b.productId || ''),
+      })),
+      author: author.startsWith('@') ? author : `@${author}`,
+      tags: String(body?.tags || ''),
+      usePriceTwd: Number(body?.usePriceTwd) || 0,
+      publishedAt: Date.now(),
+      sourceDesignId: String(body?.sourceDesignId || ''),
+      designerId: String(body?.designerId || ''),
+    }
+    list.unshift(stub)
+    await writeManifest(env, list)
+    return json({ ok: true, useCount: 1, design: rowToClientDesign(stub) }, 200, cors)
+  }
+
+  const prev = list[i]
+  const useCount = (Number(prev.use_count ?? prev.useCount) || 0) + 1
   list[i] = {
-    ...list[i],
+    ...prev,
     use_count: useCount,
     useCount,
-    updated_at: new Date().toISOString(),
+    status: String(prev.status || 'published') === 'unpublished' ? 'published' : prev.status || 'published',
+    updated_at: now,
   }
   await writeManifest(env, list)
-  return json({ ok: true, useCount }, 200, cors)
+  return json(
+    { ok: true, useCount, design: rowToClientDesign(list[i]) },
+    200,
+    cors,
+  )
 }
 
 /**

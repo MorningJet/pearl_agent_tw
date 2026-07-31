@@ -72,11 +72,28 @@ export function removeRemotePlazaDesign(id) {
 /**
  * @param {string} id
  * @param {number} useCount
+ * @param {Partial<PlazaPublishedDesign>} [seed] used when remote cache misses
  */
-export function patchRemotePlazaUseCount(id, useCount) {
+export function patchRemotePlazaUseCount(id, useCount, seed = {}) {
   const design = byId.get(id)
-  if (!design) return
-  byId.set(id, { ...design, useCount })
+  if (design) {
+    byId.set(id, { ...design, useCount })
+    return
+  }
+  if (!id) return
+  byId.set(id, {
+    id,
+    sourceDesignId: String(seed.sourceDesignId || ''),
+    title: String(seed.title || id),
+    author: String(seed.author || '@designer'),
+    designerId: String(seed.designerId || ''),
+    tags: String(seed.tags || ''),
+    usePriceTwd: Number(seed.usePriceTwd) || 0,
+    publishedAt: Number(seed.publishedAt) || Date.now(),
+    useCount: Number(useCount) || 0,
+    beads: Array.isArray(seed.beads) ? seed.beads : [],
+    imageDataUrl: String(seed.imageDataUrl || ''),
+  })
 }
 
 /**

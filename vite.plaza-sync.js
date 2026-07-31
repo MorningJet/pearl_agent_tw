@@ -7,7 +7,7 @@
  */
 import {
   unpublishUgcDesign,
-  updateUgcUseCount,
+  incrementUgcUseCount,
   upsertUgcFromPublish,
 } from './scripts/lib/plaza-table.mjs'
 
@@ -56,8 +56,8 @@ export function plazaSyncPlugin() {
               sendJson(res, 400, { ok: false, error: 'Missing id' })
               return
             }
-            const result = updateUgcUseCount(String(id), Number(body.useCount) || 0)
-            sendJson(res, 200, { ok: result.ok })
+            const result = incrementUgcUseCount(String(id), body || {})
+            sendJson(res, 200, { ok: result.ok, useCount: result.useCount })
             return
           }
 

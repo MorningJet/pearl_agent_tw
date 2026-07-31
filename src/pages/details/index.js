@@ -35,7 +35,7 @@ import detailsHtml from './page.html?raw'
 import {
   getPublishedBySourceDesignId,
   getPublishedPlazaDesign,
-  incrementPlazaUseCount,
+  setPlazaUseCount,
   setPublishedPlazaImage,
   upsertPublishedPlazaDesign,
 } from '../../shared/state/plazaPublishStore.js'
@@ -43,7 +43,10 @@ import { getMemberId } from '../../shared/state/userProfileStore.js'
 import { createEarningsOrder } from '../../shared/state/earningsStore.js'
 import { syncPlazaPublish, syncPlazaUseCount } from '../../shared/api/plazaSync.js'
 import { getPlazaDesignAsPublished, resolvePlazaPreviewUrl } from '../home/plazaData.js'
-import { patchRemotePlazaUseCount } from '../../shared/state/plazaRemoteStore.js'
+import {
+  patchRemotePlazaUseCount,
+  refreshPlazaRemote,
+} from '../../shared/state/plazaRemoteStore.js'
 import { refreshPlazaPage } from '../plaza/index.js'
 import { refreshHomePlaza } from '../home/index.js'
 import { refreshMyDesignsPage } from '../myDesigns/index.js'
@@ -540,24 +543,44 @@ function buyNow() {
 }
 
 /**
- * 「立即下單」：廣場設計使用次數 +1.
+ * 「立即下單」：廣場設計使用次數全域 +1（Worker KV 為準）.
  */
 function recordPlazaUseOnOrderClick() {
   const pub = plazaViewPub
   const id = String(pub?.id || getAppliedPlazaPublishId() || '').trim()
   if (!id) return
 
-  const fallback = pub?.useCount || 0
-  const next = incrementPlazaUseCount(id, fallback)
-  const useCount = next?.useCount ?? fallback + 1
-  if (pub?.id === id) {
-    plazaViewPub = { ...pub, useCount }
-  }
-  void syncPlazaUseCount(id, useCount)
-  patchRemotePlazaUseCount(id, useCount)
-  renderDetails()
-  refreshPlazaPage()
-  refreshHomePlaza()
+  void (async () => {
+    const data = await syncPlazaUseCount(id, {
+      title: pub?.title,
+      author: pub?.author,
+      designerId: pub?.designerId,
+      tags: pub?.tags,
+      usePriceTwd: pub?.usePriceTwd,
+      sourceDesignId: pub?.sourceDesignId,
+      beads: pub?.beads,
+      imageDataUrl: pub?.imageDataUrl,
+      source: pub?.sourceDesignId ? 'user' : 'seed',
+    })
+    const useCount =
+      data?.ok && data.useCount != null
+        ? Number(data.useCount) || 0
+        : (pub?.useCount || 0) + 1
+
+    setPlazaUseCount(id, useCount)
+    if (pub?.id === id) {
+      plazaViewPub = { ...pub, useCount }
+    }
+    patchRemotePlazaUseCount(id, useCount)
+    try {
+      await refreshPlazaRemote({ force: true })
+    } catch {
+      /* ignore */
+    }
+    renderDetails()
+    refreshPlazaPage()
+    refreshHomePlaza()
+  })()
 }
 
 /**

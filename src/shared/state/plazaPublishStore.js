@@ -154,7 +154,26 @@ export function getPlazaUseCount(id, fallback = 0) {
 }
 
 /**
+ * Set absolute use count (after server atomic +1).
+ * @param {string} id
+ * @param {number} useCount
+ */
+export function setPlazaUseCount(id, useCount) {
+  const n = Math.max(0, Math.round(Number(useCount) || 0))
+  const list = readAll().slice()
+  const i = list.findIndex((d) => d.id === id)
+  if (i >= 0) {
+    list[i] = { ...list[i], useCount: n }
+    writeAll(list)
+  }
+  const overrides = readUseOverrides()
+  overrides[id] = n
+  writeUseOverrides(overrides)
+}
+
+/**
  * +1 use when visitor taps「立即下單」on plaza / plaza-edit details.
+ * Prefer `syncPlazaUseCount` (server atomic) in production; this is local fallback.
  * @param {string} id
  * @param {number} [fallback] seed/master count when not in publish store
  * @returns {{ id: string, useCount: number } | null}

@@ -7,6 +7,7 @@
 import {
   removeRemotePlazaDesign,
   upsertRemotePlazaDesign,
+  patchRemotePlazaUseCount,
 } from '../state/plazaRemoteStore.js'
 
 function apiBase() {
@@ -62,14 +63,31 @@ export async function syncPlazaUnpublish(id) {
 }
 
 /**
+ * Ask Worker to atomically +1 the shared use count.
  * @param {string} id
- * @param {number} useCount
- * @returns {Promise<boolean>}
+ * @param {object} [meta] seed/publish fields so Worker can upsert missing rows
+ * @returns {Promise<{ ok: boolean, useCount?: number, design?: import('../state/plazaPublishStore.js').PlazaPublishedDesign } | null>}
  */
-export async function syncPlazaUseCount(id, useCount) {
-  if (!id) return false
-  const data = await post(plazaEndpoint('use-count'), { id, useCount })
-  return Boolean(data?.ok)
+export async function syncPlazaUseCount(id, meta = {}) {
+  if (!id) return null
+  const data = await post(plazaEndpoint('use-count'), {
+    id,
+    title: meta.title,
+    author: meta.author,
+    designerId: meta.designerId,
+    tags: meta.tags,
+    usePriceTwd: meta.usePriceTwd,
+    sourceDesignId: meta.sourceDesignId,
+    beads: meta.beads,
+    imageDataUrl: meta.imageDataUrl,
+    source: meta.source,
+  })
+  if (data?.ok && data.design) {
+    upsertRemotePlazaDesign(data.design)
+  } else if (data?.ok && data.useCount != null) {
+    patchRemotePlazaUseCount(id, Number(data.useCount) || 0)
+  }
+  return data
 }
 
 /**

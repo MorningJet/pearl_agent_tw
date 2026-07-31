@@ -281,8 +281,53 @@ export function unpublishUgcDesign(id) {
 }
 
 /**
+ * Atomically +1 use_count for a UGC / seed row (dev Vite API).
+ * @param {string} id
+ * @param {object} [meta]
+ */
+export function incrementUgcUseCount(id, meta = {}) {
+  const list = readUgcDesigns().slice()
+  const i = list.findIndex((d) => String(d.id) === String(id))
+  const now = new Date().toISOString()
+  if (i < 0) {
+    const author = String(meta.author || meta.designer_name || 'designer').replace(/^@/, '')
+    list.unshift(
+      normalizeRow({
+        id,
+        title: String(meta.title || id),
+        designer_name: author,
+        designer_id: String(meta.designerId || ''),
+        blurb: String(meta.tags || ''),
+        use_price_twd: Number(meta.usePriceTwd) || 0,
+        use_count: 1,
+        status: 'published',
+        source: String(meta.source || 'seed'),
+        source_design_id: String(meta.sourceDesignId || ''),
+        published_at: now,
+        updated_at: now,
+        bead_product_ids: Array.isArray(meta.beads)
+          ? meta.beads.map((b) => b.productId).filter(Boolean).join('|')
+          : '',
+        image_path: String(meta.imageDataUrl || ''),
+      }),
+    )
+    writeUgcDesigns(list)
+    return { ok: true, useCount: 1, designs: rebuildPlazaTable() }
+  }
+  const useCount = (Number(list[i].use_count) || 0) + 1
+  list[i] = {
+    ...list[i],
+    use_count: useCount,
+    updated_at: now,
+  }
+  writeUgcDesigns(list)
+  return { ok: true, useCount, designs: rebuildPlazaTable() }
+}
+
+/**
  * @param {string} id
  * @param {number} useCount
+ * @deprecated prefer incrementUgcUseCount for global +1
  */
 export function updateUgcUseCount(id, useCount) {
   const list = readUgcDesigns().slice()
@@ -294,7 +339,7 @@ export function updateUgcUseCount(id, useCount) {
     updated_at: new Date().toISOString(),
   }
   writeUgcDesigns(list)
-  return { ok: true, designs: rebuildPlazaTable() }
+  return { ok: true, useCount: Number(useCount) || 0, designs: rebuildPlazaTable() }
 }
 
 /** @param {Record<string, unknown>} row */
