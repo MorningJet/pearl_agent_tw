@@ -1,4 +1,5 @@
 import { getProduct } from '../data/products.js'
+import { recordRecentProduct } from './recentProductsStore.js'
 
 /**
  * @typedef {object} BeadInstance
@@ -140,6 +141,7 @@ export function addBead(productId) {
     productId,
   }
   state.beads.push(instance)
+  recordRecentProduct(productId)
   notify()
   return instance
 }

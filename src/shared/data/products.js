@@ -48,19 +48,36 @@ export const PRODUCTS = catalog.products.map((p) => ({
  * @param {MaterialType} type
  * @returns {string[]}
  */
+/** Shelf pseudo-category (not from Excel); inserted after「全部」. */
+export const RECENT_CATEGORY = '最近使用'
+
+/**
+ * @param {MaterialType} type
+ * @returns {string[]}
+ */
 export function categoriesForType(type) {
   const set = new Set(
     PRODUCTS.filter((p) => p.type === type).map((p) => p.category),
   )
-  return ['全部', ...set]
+  return ['全部', RECENT_CATEGORY, ...set]
 }
 
 /**
  * @param {MaterialType} type
  * @param {string} category
+ * @param {string[]} [recentIds] MRU product ids when category is「最近使用」
  * @returns {Product[]}
  */
-export function productsFor(type, category) {
+export function productsFor(type, category, recentIds = []) {
+  if (category === RECENT_CATEGORY) {
+    /** @type {Product[]} */
+    const out = []
+    for (const id of recentIds) {
+      const p = getProduct(id)
+      if (p && p.type === type) out.push(p)
+    }
+    return out
+  }
   const filtered = PRODUCTS.filter(
     (p) => p.type === type && (category === '全部' || p.category === category),
   )

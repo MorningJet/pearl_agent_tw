@@ -1,4 +1,4 @@
-import { categoriesForType, productsFor } from '../../../shared/data/products.js'
+import { categoriesForType, productsFor, RECENT_CATEGORY } from '../../../shared/data/products.js'
 import {
   addBead,
   getState,
@@ -6,6 +6,7 @@ import {
   setShelfType,
   subscribe,
 } from '../../../shared/state/designStore.js'
+import { listRecentProductIds } from '../../../shared/state/recentProductsStore.js'
 import { openLifestyleModal } from './shelfLifestyle.js'
 
 const LONG_PRESS_MS = 450
@@ -31,7 +32,10 @@ export function initShelf() {
   function render() {
     const { shelfType, shelfCategory } = getState()
     const categories = categoriesForType(shelfType)
-    const products = productsFor(shelfType, shelfCategory)
+    const products =
+      shelfCategory === RECENT_CATEGORY
+        ? productsFor(shelfType, RECENT_CATEGORY, listRecentProductIds())
+        : productsFor(shelfType, shelfCategory)
 
     tabs.forEach((tab) => {
       const active = tab.getAttribute('data-type') === shelfType
@@ -65,10 +69,14 @@ export function initShelf() {
     if (gridEl) {
       // Showcase thumbs are uniform size; diameter is shown as text only.
       // Bracelet canvas scales by diameterMm vs track circumference.
-      gridEl.innerHTML = products
-        .map((p) => {
-          const n = usageCount(p.id)
-          return `
+      if (!products.length && shelfCategory === RECENT_CATEGORY) {
+        gridEl.innerHTML =
+          '<p class="col-span-3 px-3 py-8 text-center text-sm text-stone-400">點選商品加入手鍊後，會顯示在這裡</p>'
+      } else {
+        gridEl.innerHTML = products
+          .map((p) => {
+            const n = usageCount(p.id)
+            return `
           <button type="button" data-id="${escapeAttr(p.id)}" class="shelf-product-card relative flex aspect-square select-none flex-col items-center rounded-xl bg-white px-2 pb-2 pt-2.5 text-center ring-1 ring-stone-200 transition active:scale-95 touch-manipulation">
             ${n ? `<span class="absolute right-1.5 top-1.5 rounded bg-stone-900/80 px-1.5 py-0.5 text-[0.65rem] leading-none text-white">x${n}</span>` : ''}
             <span class="flex aspect-square w-[52%] shrink-0 items-center justify-center overflow-hidden rounded-full">
@@ -84,17 +92,18 @@ export function initShelf() {
               <span>NT$${Math.round(p.price).toLocaleString('zh-TW')}</span>
             </span>
           </button>`
-        })
-        .join('')
+          })
+          .join('')
 
-      gridEl.querySelectorAll('button[data-id]').forEach((btn) => {
-        const id = btn.getAttribute('data-id')
-        if (!id) return
-        attachShelfLongPress(btn, id)
-        btn.addEventListener('click', () => {
-          addBead(id)
+        gridEl.querySelectorAll('button[data-id]').forEach((btn) => {
+          const id = btn.getAttribute('data-id')
+          if (!id) return
+          attachShelfLongPress(btn, id)
+          btn.addEventListener('click', () => {
+            addBead(id)
+          })
         })
-      })
+      }
     }
   }
 
