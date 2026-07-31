@@ -10,6 +10,7 @@ import {
   listOrders,
   normalizeStatus,
   orderStatusLabel,
+  pruneOrdersMissingShopifyId,
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
 import { resolveOrderThumbUrl } from '../../shared/orderImage.js'
@@ -69,6 +70,8 @@ export function initOrdersPage(host) {
 }
 
 export function refreshOrdersPage() {
+  // Drop H5-only ghosts immediately so UI matches Shopify before network sync.
+  pruneOrdersMissingShopifyId()
   syncFilterTabs()
   renderOrders()
   void refreshOrdersFromServer()

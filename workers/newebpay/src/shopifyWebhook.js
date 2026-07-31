@@ -263,7 +263,8 @@ export async function handleH5OrdersByEmail(url, env, cors) {
     if (!mirror && mno) mirror = await getShopifyOrderMirror(env, { merchantOrderNo: mno })
     if (!mirror && mno) {
       const record = await getOrder(env, mno)
-      if (record) {
+      // Checkout KV without Shopify id is not a real Admin order — skip.
+      if (record?.shopifyOrderId) {
         byId.set(mno, { ...publicFromCheckoutRecord(record), email })
       }
       continue

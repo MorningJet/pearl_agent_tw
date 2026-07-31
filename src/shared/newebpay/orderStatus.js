@@ -180,11 +180,12 @@ export async function syncOrdersFromServer() {
         emailListShopifyIds = []
         emailListMerchantNos = []
         for (const remote of data.orders) {
+          const sid = remote.shopifyOrderId != null ? String(remote.shopifyOrderId).trim() : ''
+          if (!sid) continue
           applyRemoteOrder(remote)
           remoteCount += 1
-          const sid = remote.shopifyOrderId != null ? String(remote.shopifyOrderId).trim() : ''
           const mno = remote.merchantOrderNo != null ? String(remote.merchantOrderNo).trim() : ''
-          if (sid) emailListShopifyIds.push(sid)
+          emailListShopifyIds.push(sid)
           if (mno) emailListMerchantNos.push(mno)
         }
         // Shopify (via Worker) is source of truth — drop local ghosts for this email.
@@ -197,6 +198,8 @@ export async function syncOrdersFromServer() {
       console.warn('[orders-sync] email list failed', e)
     }
   }
+
+  pruneOrdersMissingShopifyId()
 
   const local = listOrders()
   const shopifyOrderIds = local
@@ -273,15 +276,16 @@ function resolveMemberEmail() {
 /** @param {RemoteOrder} remote */
 function applyRemoteOrder(remote) {
   if (!remote || typeof remote !== 'object') return
-  const shopifyOrderId = remote.shopifyOrderId != null ? String(remote.shopifyOrderId) : ''
-  const merchantOrderNo = remote.merchantOrderNo != null ? String(remote.merchantOrderNo) : ''
-  if (!shopifyOrderId && !merchantOrderNo) return
+  const shopifyOrderId = remote.shopifyOrderId != null ? String(remote.shopifyOrderId).trim() : ''
+  const merchantOrderNo = remote.merchantOrderNo != null ? String(remote.merchantOrderNo).trim() : ''
+  // Shopify Admin is source of truth — ignore checkout-only KV ghosts.
+  if (!shopifyOrderId) return
 
   const id = orderIdFromKeys({ shopifyOrderId, merchantOrderNo })
   const existing = listOrders().find(
     (o) =>
       o.id === id ||
-      (shopifyOrderId && String(o.shopifyOrderId || '') === shopifyOrderId) ||
+      String(o.shopifyOrderId || '') === shopifyOrderId ||
       (merchantOrderNo && String(o.merchantOrderNo || '') === merchantOrderNo),
   )
 
