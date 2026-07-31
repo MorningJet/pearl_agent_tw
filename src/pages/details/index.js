@@ -450,7 +450,7 @@ function bindNameEdit() {
 
 function bindActions() {
   document.getElementById('details-submit')?.addEventListener('click', () => {
-    openPlazaPublish()
+    showToast('僅限有已完成訂單的用戶使用')
   })
   document.getElementById('details-cs')?.addEventListener('click', () => {
     showToast('客服：Instagram @pearl_diy_tw 或 d19950706@gmail.com')
