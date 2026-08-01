@@ -375,7 +375,9 @@ async function handleCheckoutBrowser(request, env, ctx) {
 
   const result = await runCheckout(env, body, ctx)
   if (!result.ok) {
-    return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), result.status || 400)
+    // App Proxy replaces non-2xx with "error in the third-party application".
+    // Always return 200 HTML so the buyer sees the real message.
+    return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), 200)
   }
 
   const b = result.body

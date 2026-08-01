@@ -86,4 +86,12 @@ while (pages < 40) {
 }
 
 writeFileSync(outPath, `${JSON.stringify(map, null, 2)}\n`)
+
+// Worker bundles a JS module copy (JSON import is unreliable in CF Workers builds).
+const workerJson = join(root, 'workers/newebpay/src/variantMap.json')
+const workerData = join(root, 'workers/newebpay/src/variantMap.data.js')
+writeFileSync(workerJson, `${JSON.stringify(map, null, 2)}\n`)
+writeFileSync(workerData, `export default ${JSON.stringify(map)}\n`)
+
 console.log(`Wrote ${Object.keys(map).length} SKUs → ${outPath}`)
+console.log(`Updated Worker bundle → ${workerData}`)
