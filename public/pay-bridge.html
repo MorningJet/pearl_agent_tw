@@ -96,24 +96,6 @@
           }
         }
 
-        function toBridgeUrl(action) {
-          try {
-            var u = new URL(action, location.href)
-            u.pathname = u.pathname.replace(
-              /\/api\/checkout-browser\/?$/,
-              '/api/checkout-bridge',
-            )
-            if (!/\/api\/checkout-bridge$/.test(u.pathname)) {
-              u.pathname = u.pathname.replace(/\/?$/, '') + '/api/checkout-bridge'
-            }
-            u.search = ''
-            u.hash = ''
-            return u.href
-          } catch (e) {
-            return ''
-          }
-        }
-
         function submitNewebpay(data) {
           var form = document.createElement('form')
           form.method = 'POST'
@@ -132,25 +114,28 @@
           form.submit()
         }
 
-        function handoffViaGetBridge(action, payload) {
-          var bridge = toBridgeUrl(action)
-          if (!bridge) {
-            showError('付款服務網址無效', String(action || ''))
-            return
-          }
-          try {
-            window.name = JSON.stringify({
-              type: 'pearl-checkout',
-              payload: payload,
-              ts: Date.now(),
-            })
-          } catch (e) {
-            showError('無法暫存訂單資料', String(e && e.message ? e.message : e))
+        /**
+         * Top-level form POST keeps the payload in the request body.
+         * Do NOT use window.name + cross-origin GET (Threads/IG clear window.name).
+         */
+        function handoffViaFormPost(action, payload) {
+          if (!action) {
+            showError('付款服務網址無效', '')
             return
           }
           title.textContent = '正在前往付款服務…'
           hint.textContent = '若出現人機驗證，請在本視窗完成後繼續'
-          location.replace(bridge)
+          var form = document.createElement('form')
+          form.method = 'POST'
+          form.action = String(action)
+          form.acceptCharset = 'UTF-8'
+          var input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = 'payload'
+          input.value = JSON.stringify(payload)
+          form.appendChild(input)
+          document.body.appendChild(form)
+          form.submit()
         }
 
         async function submitCheckout(action, payload) {
@@ -162,6 +147,17 @@
           title.textContent = '正在建立訂單…'
           hint.textContent = '請稍候，不要關閉此視窗'
           actions.style.display = 'none'
+
+          // Meta in-app browsers often break CORS fetch — go straight to form POST.
+          var ua = navigator.userAgent || ''
+          var metaWebView =
+            /MicroMessenger|Line\/|FBAN|FBAV|Instagram|Threads|Barcelona|BytedanceWebview|musical_ly|TikTok/i.test(
+              ua,
+            )
+          if (metaWebView) {
+            handoffViaFormPost(action, payload)
+            return
+          }
 
           var jsonUrl = toJsonCheckoutUrl(action)
           if (jsonUrl) {
@@ -193,7 +189,6 @@
                 )
                 return
               }
-              // Fall through to GET bridge (better for Cloudflare challenges).
               console.warn('[pay-bridge] json checkout failed', res.status, data)
             } catch (err) {
               clearTimeout(timer)
@@ -201,8 +196,7 @@
             }
           }
 
-          // Top-level GET into Worker so Cloudflare challenge UI can appear.
-          handoffViaGetBridge(action, payload)
+          handoffViaFormPost(action, payload)
         }
 
         function onPayload(data, source, origin) {

@@ -369,6 +369,18 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
   const handoffUrl = payBridgeUrl()
 
   if (needsCheckoutBreakout()) {
+    const ua = navigator.userAgent || ''
+    // Threads/IG in-app browsers: window.open + cross-origin handoff often shows
+    // Shopify「出现未知错误」. Prefer top-level form POST to App Proxy.
+    const metaWebView =
+      /MicroMessenger|Line\/|FBAN|FBAV|Instagram|Threads|Barcelona|BytedanceWebview|musical_ly|TikTok/i.test(
+        ua,
+      )
+    if (metaWebView) {
+      postCheckoutForm(checkoutAction, payload, '_top')
+      return { ok: true, mode: 'top', checkoutWindow: null }
+    }
+
     /** @type {Window | null} */
     let checkoutWindow = null
     try {

@@ -360,54 +360,60 @@ function checkoutBridgeHtml(env) {
  * @param {ExecutionContext} [ctx]
  */
 async function handleCheckoutBrowser(request, env, ctx) {
-  let body = null
+  // App Proxy replaces any non-2xx with a generic「出现未知错误」page.
+  // Every HTML response on this route must stay HTTP 200.
   try {
-    const ct = String(request.headers.get('content-type') || '')
-    if (ct.includes('application/json')) {
-      body = await request.json()
-    } else {
-      const form = await request.formData()
-      const raw = String(form.get('payload') || '')
-      body = JSON.parse(raw)
+    let body = null
+    try {
+      const ct = String(request.headers.get('content-type') || '')
+      if (ct.includes('application/json')) {
+        body = await request.json()
+      } else {
+        const form = await request.formData()
+        const raw = String(form.get('payload') || '')
+        body = JSON.parse(raw)
+      }
+    } catch {
+      return htmlPage('結帳失敗', '無法解析訂單資料，請返回重試。', 200)
     }
-  } catch {
-    return htmlPage('結帳失敗', '無法解析訂單資料，請返回重試。', 400)
-  }
 
-  const result = await runCheckout(env, body, ctx)
-  if (!result.ok) {
-    // App Proxy replaces non-2xx with "error in the third-party application".
-    // Always return 200 HTML so the buyer sees the real message.
-    return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), 200)
-  }
+    const result = await runCheckout(env, body, ctx)
+    if (!result.ok) {
+      return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), 200)
+    }
 
-  const b = result.body
-  if (
-    b.paymentReady &&
-    b.gatewayUrl &&
-    b.TradeInfo &&
-    b.TradeSha &&
-    b.MerchantID
-  ) {
-    return newebpayAutoSubmitHtml({
-      gatewayUrl: String(b.gatewayUrl),
-      MerchantID: String(b.MerchantID),
-      TradeInfo: String(b.TradeInfo),
-      TradeSha: String(b.TradeSha),
-      Version: String(b.Version || MPG_VERSION),
-      merchantOrderNo: String(b.merchantOrderNo || ''),
-    })
-  }
+    const b = result.body
+    if (
+      b.paymentReady &&
+      b.gatewayUrl &&
+      b.TradeInfo &&
+      b.TradeSha &&
+      b.MerchantID
+    ) {
+      return newebpayAutoSubmitHtml({
+        gatewayUrl: String(b.gatewayUrl),
+        MerchantID: String(b.MerchantID),
+        TradeInfo: String(b.TradeInfo),
+        TradeSha: String(b.TradeSha),
+        Version: String(b.Version || MPG_VERSION),
+        merchantOrderNo: String(b.merchantOrderNo || ''),
+      })
+    }
 
-  return htmlPage(
-    '付款尚未就緒',
-    escapeHtml(
-      `訂單 ${b.merchantOrderNo || ''} 已建立，但藍新付款參數尚未就緒。${
-        b.paymentError ? `（${b.paymentError}）` : ''
-      }`,
-    ),
-    200,
-  )
+    return htmlPage(
+      '付款尚未就緒',
+      escapeHtml(
+        `訂單 ${b.merchantOrderNo || ''} 已建立，但藍新付款參數尚未就緒。${
+          b.paymentError ? `（${b.paymentError}）` : ''
+        }`,
+      ),
+      200,
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[newebpay] checkout-browser failed', msg)
+    return htmlPage('結帳失敗', escapeHtml(msg || '未知錯誤'), 200)
+  }
 }
 
 /**
