@@ -80,7 +80,7 @@ export async function createNewebpayCheckout(bom, meta) {
 
   try {
     const controller = new AbortController()
-    const timeoutMs = 25000
+    const timeoutMs = 45000
     const timer = window.setTimeout(() => controller.abort(), timeoutMs)
     let res
     try {
@@ -170,16 +170,20 @@ export async function createNewebpayCheckout(bom, meta) {
 const CHECKOUT_WINDOW_NAME = 'pearl_newebpay_checkout'
 
 /**
- * DIY iframe / in-app browsers: Cloudflare challenges never finish inside the embed.
+ * DIY iframe / in-app browsers: Cloudflare challenges & cross-origin fetch
+ * often fail inside the embed (Safari reports "Load failed").
  */
-function needsCheckoutBreakout() {
+export function needsCheckoutBreakout() {
   try {
     if (window.self !== window.top) return true
   } catch {
     return true
   }
   const ua = navigator.userAgent || ''
-  return /MicroMessenger|Line\/|FBAN|FBAV|Instagram/i.test(ua)
+  // Threads / IG / FB / Line / WeChat / TikTok-style WebViews block or break CORS fetch.
+  return /MicroMessenger|Line\/|FBAN|FBAV|Instagram|Threads|Barcelona|BytedanceWebview|musical_ly|TikTok/i.test(
+    ua,
+  )
 }
 
 /**

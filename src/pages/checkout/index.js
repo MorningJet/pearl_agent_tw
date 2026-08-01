@@ -7,6 +7,8 @@ import { withBase } from '../../shared/assetUrl.js'
 import {
   createNewebpayCheckout,
   isNewebpayConfigured,
+  needsCheckoutBreakout,
+  startNewebpayCheckoutBrowser,
   submitNewebpayForm,
 } from '../../shared/newebpay/checkout.js'
 import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
@@ -452,8 +454,55 @@ async function submitCheckout() {
       shippingAddress: parsed.shippingAddress,
     }
 
+    // iframe / 內建瀏覽器（Threads 等）CORS fetch 常失敗 → 改走頂層 form 結帳。
+    if (needsCheckoutBreakout()) {
+      setMemberIdFromEmail(parsed.email)
+      refreshMePage()
+      const started = startNewebpayCheckoutBrowser(draft.bom, meta)
+      if (!started.ok) {
+        showToast(started.error)
+        resetSubmitButton()
+        return
+      }
+      if (started.mode === 'popup') {
+        showPayBreakoutOverlay({
+          title: '請在新分頁完成付款',
+          body: '若沒有自動開啟，請允許彈出式視窗，或改用 Safari / Chrome 開啟本頁後再試。',
+        })
+        submitRecoverTimer = window.setTimeout(() => {
+          resetSubmitButton()
+        }, 8000)
+      }
+      // mode top/self navigates away — leave button disabled.
+      return
+    }
+
     // Stay on this page: JSON create via App Proxy, then top-level POST to NewebPay.
-    const result = await createNewebpayCheckout(draft.bom, meta)
+    let result = await createNewebpayCheckout(draft.bom, meta)
+
+    // Safari / WebView 偶發「Load failed」：改走 form 結帳兜底。
+    if (
+      !result.ok &&
+      /無法連接結帳服務|Load failed|Failed to fetch|NetworkError/i.test(
+        String(result.error || ''),
+      )
+    ) {
+      setMemberIdFromEmail(parsed.email)
+      refreshMePage()
+      const started = startNewebpayCheckoutBrowser(draft.bom, meta)
+      if (started.ok) {
+        if (started.mode === 'popup') {
+          showPayBreakoutOverlay({
+            title: '請在新分頁完成付款',
+            body: '連線不穩，已改開新分頁前往付款。若沒有開啟，請允許彈出式視窗。',
+          })
+          submitRecoverTimer = window.setTimeout(() => {
+            resetSubmitButton()
+          }, 8000)
+        }
+        return
+      }
+    }
 
     if (!result.ok) {
       showToast(result.error)
