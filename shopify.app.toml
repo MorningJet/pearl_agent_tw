@@ -9,8 +9,8 @@ application_url = "https://morningjet.github.io/pearl_agent_tw/"
 embedded = false
 
 [access_scopes]
-# Keep aligned with the currently installed token; expanding scopes needs re-auth.
-scopes = "write_orders"
+# order_update app — must match the released Dev Dashboard version + store install.
+scopes = "write_orders,read_orders,read_products,write_products"
 
 [auth]
 redirect_urls = [
