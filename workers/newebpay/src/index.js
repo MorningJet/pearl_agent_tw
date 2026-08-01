@@ -694,6 +694,19 @@ function escapeAttr(s) {
 }
 
 /**
+ * NewebPay MPG enable flags: '1' / '0'. Default when unset = `fallback`.
+ * @param {unknown} value
+ * @param {boolean} fallback
+ */
+function envFlag(value, fallback) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (!raw) return fallback ? '1' : '0'
+  if (['1', 'true', 'yes', 'y', 'on'].includes(raw)) return '1'
+  if (['0', 'false', 'no', 'n', 'off'].includes(raw)) return '0'
+  return fallback ? '1' : '0'
+}
+
+/**
  * Build NewebPay MPG fields (independent of Shopify order id).
  * @param {any} env
  * @param {{ merchantOrderNo: string, amt: number, designName: string, email: string }} input
@@ -717,10 +730,12 @@ async function prepareNewebpayPayload(env, input) {
     ReturnURL: `${publicBase}/api/return`,
     NotifyURL: `${publicBase}/api/notify`,
     ClientBackURL: String(env.H5_RETURN_URL || publicBase),
-    CREDIT: '1',
-    VACC: '1',
-    CVS: '1',
-    LINEPAY: '1',
+    // Only enable methods the merchant has activated in NewebPay.
+    // LINE Pay / others can be turned on via NEWEBPAY_ENABLE_* secrets/vars.
+    CREDIT: envFlag(env.NEWEBPAY_ENABLE_CREDIT, true),
+    VACC: envFlag(env.NEWEBPAY_ENABLE_VACC, true),
+    CVS: envFlag(env.NEWEBPAY_ENABLE_CVS, true),
+    LINEPAY: envFlag(env.NEWEBPAY_ENABLE_LINEPAY, false),
   }
 
   const tradeInfo = await encryptTradeInfo(tradePlain, env)
