@@ -3,12 +3,12 @@
  *
  * H5 → Shopify field mapping (Admin 訂單列表):
  *   備註 note     → 藍新訂單號、手圍、商品編碼（順時針編號，每顆一行）
- *   客戶          → email = 會員信箱；姓名 = 收貨姓氏／名字（與收貨地址一致）
+ *   客戶          → email = 會員信箱；Admin「客户」列顯示信箱（避免重名）
  *   總計          → 與藍新一致（BOM 珠款 + 設計費 + 運費）
  *   商品 line_items → H5 BOM 對應後台產品（SKU=productId → variant_id）；另含設計費/運費
  *   支付狀態      → pending（待付款）→ 藍新成功後 paid
  *   發貨狀態      → 未發貨（預設）；後台上傳物流單號後變更
- *   標記 tags     → H5「我的訂單」狀態中文（起初「未付款」）
+ *   標記 tags     → H5「我的訂單」狀態中文；測試信箱另加「測試」
  *   收貨地址姓名  → 姓氏／名字（物流用）
  *
  * Variant IDs come from bundled variantMap.json (Storefront sync). Admin
@@ -25,7 +25,8 @@ let cachedToken = null
 /** @type {Map<string, string> | null} */
 let staticSkuMap = null
 
-/** H5 status → Shopify tag（與「我的訂單」文案一致） */
+/** Shopify 不接受空 last_name；用零宽空格占位，Admin 姓+名 ≈ 仅信箱 */
+const CUSTOMER_LAST_NAME_PLACEHOLDER = '\u200B'
 const H5_STATUS_TAG = {
   unpaid: '未付款',
   scheduling: '排單中',
@@ -35,6 +36,8 @@ const H5_STATUS_TAG = {
   done: '已完成',
   closed: '已關閉',
 }
+
+const TEST_ACCOUNT_TAG = '測試'
 
 /** @returns {Map<string, string>} */
 function getStaticSkuMap() {
@@ -62,7 +65,7 @@ function getStaticSkuMap() {
 }
 
 /**
- * Create an unpaid Shopify order at「立即付款」(before NewebPay redirect).
+ * Create an unpaid Shopify order (may run in background while buyer is on NewebPay).
  * @param {any} env
  * @param {object} record — pending order from KV
  * @param {{ waitUntil?: (p: Promise<unknown>) => void }} [opts]
@@ -75,6 +78,43 @@ export async function createUnpaidShopifyOrder(env, record, opts = {}) {
     pay: null,
     waitUntil: opts.waitUntil,
   })
+}
+
+/**
+ * Soft-cancel an orphan unpaid order (e.g. race with paid-create fallback).
+ * @param {any} env
+ * @param {number|string} shopifyOrderId
+ */
+export async function cancelShopifyOrder(env, shopifyOrderId) {
+  const domain = shopDomain(env)
+  const version = String(env.SHOPIFY_API_VERSION || '2025-01').trim()
+  const id = String(shopifyOrderId || '').trim()
+  if (!domain || !id) return
+  try {
+    const token = await getAdminAccessToken(env)
+    const url = `https://${domain}/admin/api/${version}/orders/${id}/cancel.json`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: adminHeaders(token),
+      body: JSON.stringify({
+        reason: 'other',
+        email: false,
+        restock: true,
+      }),
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      console.warn('[shopify] cancel orphan failed', id, res.status, clip(text, 200))
+      return
+    }
+    console.log('[shopify] cancelled orphan unpaid order', id)
+  } catch (e) {
+    console.warn(
+      '[shopify] cancel orphan error',
+      id,
+      e instanceof Error ? e.message : e,
+    )
+  }
 }
 
 /**
@@ -149,7 +189,7 @@ export async function markShopifyOrderPaid(env, shopifyOrderId, record, pay = {}
     body: JSON.stringify({
       order: {
         id: Number(id) || id,
-        tags: buildTags('scheduling'),
+        tags: buildTags('scheduling', record.email, env),
         note,
         note_attributes: noteAttributes,
       },
@@ -219,27 +259,20 @@ async function createShopifyOrder(env, record, opts) {
     send_fulfillment_receipt: false,
     taxes_included: true,
     inventory_behaviour: 'bypass',
-    tags: buildTags(opts.h5Status),
+    tags: buildTags(opts.h5Status, record.email, env),
     note,
     note_attributes: noteAttributes,
     line_items: lineItems,
   }
 
-  // Customer row: email for identity; display name = 收貨姓氏／名字 (not email).
-  // Shopify Admin rejects blank last_name (422), so never send "".
+  // Customer row: email for identity; Admin「客户」列 = 信箱（收貨姓名在 shipping_address）。
   const memberEmail = String(record.email || '').trim().toLowerCase()
-  const ship =
-    record.shippingAddress && typeof record.shippingAddress === 'object'
-      ? /** @type {Record<string, unknown>} */ (record.shippingAddress)
-      : {}
-  const shipLast = clip(String(ship.last_name || ''), 40)
-  const shipFirst = clip(String(ship.first_name || ''), 40)
   if (memberEmail) {
     order.email = memberEmail
     order.customer = {
       email: memberEmail,
-      first_name: shipFirst || '顧客',
-      last_name: shipLast || '-',
+      first_name: clip(memberEmail, 255),
+      last_name: CUSTOMER_LAST_NAME_PLACEHOLDER,
     }
   }
 
@@ -294,17 +327,15 @@ async function createShopifyOrder(env, record, opts) {
   const created = json?.order
   if (!created?.id) throw new Error('Shopify 未回傳 order.id')
 
-  // Align existing customer profile name with this order's shipping name when possible.
-  if (memberEmail && (shipFirst || shipLast)) {
-    const task = ensureCustomerShippingName(
+  // Align existing customer profile display name with member email (Admin「客户」列).
+  if (memberEmail) {
+    const task = ensureCustomerEmailDisplayName(
       env,
       token,
       domain,
       version,
       created,
       memberEmail,
-      shipFirst,
-      shipLast,
     )
     if (typeof opts.waitUntil === 'function') {
       opts.waitUntil(task)
@@ -321,30 +352,26 @@ async function createShopifyOrder(env, record, opts) {
 }
 
 /**
- * Keep Admin「客户」display name = 收貨姓名 (not email). Soft-fail without write_customers.
+ * Keep Admin「客户」display name = 會員信箱. Soft-fail without write_customers.
  * @param {any} env
  * @param {string} token
  * @param {string} domain
  * @param {string} version
  * @param {any} order
  * @param {string} email
- * @param {string} firstName
- * @param {string} lastName
  */
-async function ensureCustomerShippingName(
+async function ensureCustomerEmailDisplayName(
   env,
   token,
   domain,
   version,
   order,
   email,
-  firstName,
-  lastName,
 ) {
   const customerId = order?.customer?.id || order?.customer_id
   if (!customerId || !email) return
-  const first_name = clip(firstName || '顧客', 40)
-  const last_name = clip(lastName || '-', 40)
+  const first_name = clip(email, 255)
+  const last_name = CUSTOMER_LAST_NAME_PLACEHOLDER
   try {
     const res = await fetch(
       `https://${domain}/admin/api/${version}/customers/${customerId}.json`,
@@ -364,14 +391,14 @@ async function ensureCustomerShippingName(
     if (!res.ok) {
       const text = await res.text()
       console.warn(
-        '[shopify] customer shipping-name update failed',
+        '[shopify] customer email display-name update failed',
         res.status,
         clip(text, 200),
       )
     }
   } catch (e) {
     console.warn(
-      '[shopify] customer shipping-name update error',
+      '[shopify] customer email display-name update error',
       e instanceof Error ? e.message : e,
     )
   }
@@ -912,10 +939,39 @@ function formatProductCodeLines(record) {
 }
 
 /**
- * @param {string} h5Status
+ * @param {any} env
+ * @returns {Set<string>}
  */
-function buildTags(h5Status) {
+function parseTestAccountEmails(env) {
+  const raw = String(env.TEST_ACCOUNT_EMAILS || '511895572@qq.com').trim()
+  return new Set(
+    raw
+      .split(/[,;\s]+/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.includes('@')),
+  )
+}
+
+/**
+ * @param {any} env
+ * @param {string} [email]
+ */
+function isTestAccountEmail(env, email) {
+  const normalized = String(email || '').trim().toLowerCase()
+  if (!normalized) return false
+  return parseTestAccountEmails(env).has(normalized)
+}
+
+/**
+ * @param {string} h5Status
+ * @param {string} [email]
+ * @param {any} [env]
+ */
+function buildTags(h5Status, email, env) {
   const label = H5_STATUS_TAG[h5Status] || H5_STATUS_TAG.unpaid
+  if (env && isTestAccountEmail(env, email)) {
+    return `${label}, ${TEST_ACCOUNT_TAG}`
+  }
   return label
 }
 
