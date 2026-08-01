@@ -30,7 +30,7 @@
  *   POST /api/h5/plaza/publish|unpublish|use-count
  */
 
-import { getOrder, putOrder, getDesignerCount, incrementDesignerCount, putOrderPreview, getOrderPreview, orderPreviewPath } from './store.js'
+import { getOrder, putOrder, getDesignerCount, incrementDesignerCount, putOrderPreview, getOrderPreview, orderPreviewPath, getShopifyOrderMirror } from './store.js'
 import {
   handlePlazaDesignGet,
   handlePlazaDesignsList,
@@ -169,6 +169,10 @@ export default {
         return await handleCheckout(request, env, cors, ctx)
       }
 
+      if (url.pathname === '/api/repay' && request.method === 'POST') {
+        return await handleRepay(request, env, cors)
+      }
+
       // Top-level GET bridge: CF challenge can render here, then postMessage payload → checkout.
       if (url.pathname === '/api/checkout-bridge' && request.method === 'GET') {
         return checkoutBridgeHtml(env)
@@ -177,6 +181,10 @@ export default {
       // Browser form POST from H5 (breaks out of Shopify iframe — CF challenges hang in iframes).
       if (url.pathname === '/api/checkout-browser' && request.method === 'POST') {
         return await handleCheckoutBrowser(request, env, ctx)
+      }
+
+      if (url.pathname === '/api/repay-browser' && request.method === 'POST') {
+        return await handleRepayBrowser(request, env)
       }
 
       if (url.pathname === '/api/notify' && request.method === 'POST') {
@@ -383,41 +391,204 @@ async function handleCheckoutBrowser(request, env, ctx) {
     }
 
     const result = await runCheckout(env, body, ctx)
-    if (!result.ok) {
-      return htmlPage('結帳失敗', escapeHtml(result.error || '未知錯誤'), 200)
-    }
-
-    const b = result.body
-    if (
-      b.paymentReady &&
-      b.gatewayUrl &&
-      b.TradeInfo &&
-      b.TradeSha &&
-      b.MerchantID
-    ) {
-      return newebpayAutoSubmitHtml({
-        gatewayUrl: String(b.gatewayUrl),
-        MerchantID: String(b.MerchantID),
-        TradeInfo: String(b.TradeInfo),
-        TradeSha: String(b.TradeSha),
-        Version: String(b.Version || MPG_VERSION),
-        merchantOrderNo: String(b.merchantOrderNo || ''),
-      })
-    }
-
-    return htmlPage(
-      '付款尚未就緒',
-      escapeHtml(
-        `訂單 ${b.merchantOrderNo || ''} 已建立，但藍新付款參數尚未就緒。${
-          b.paymentError ? `（${b.paymentError}）` : ''
-        }`,
-      ),
-      200,
-    )
+    return paymentResultToBrowserHtml(result)
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[newebpay] checkout-browser failed', msg)
     return htmlPage('結帳失敗', escapeHtml(msg || '未知錯誤'), 200)
+  }
+}
+
+/**
+ * Resume NewebPay for an existing unpaid order (JSON).
+ * @param {Request} request
+ * @param {any} env
+ * @param {Record<string, string>} cors
+ */
+async function handleRepay(request, env, cors) {
+  /** @type {any} */
+  const body = await request.json().catch(() => null)
+  const result = await runRepay(env, body || {})
+  if (!result.ok) {
+    return json({ ok: false, error: result.error }, result.status || 400, cors)
+  }
+  return json(result.body, 200, cors)
+}
+
+/**
+ * Resume NewebPay via top-level form POST (Threads / iframe breakout).
+ * @param {Request} request
+ * @param {any} env
+ */
+async function handleRepayBrowser(request, env) {
+  try {
+    let body = null
+    try {
+      const ct = String(request.headers.get('content-type') || '')
+      if (ct.includes('application/json')) {
+        body = await request.json()
+      } else {
+        const form = await request.formData()
+        const raw = String(form.get('payload') || '')
+        body = JSON.parse(raw)
+      }
+    } catch {
+      return htmlPage('付款失敗', '無法解析訂單資料，請返回重試。', 200)
+    }
+    const result = await runRepay(env, body || {})
+    return paymentResultToBrowserHtml(result, '付款失敗')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[newebpay] repay-browser failed', msg)
+    return htmlPage('付款失敗', escapeHtml(msg || '未知錯誤'), 200)
+  }
+}
+
+/**
+ * @param {{ ok: false, error: string, status?: number } | { ok: true, body: Record<string, unknown> }} result
+ * @param {string} [failTitle]
+ */
+function paymentResultToBrowserHtml(result, failTitle = '結帳失敗') {
+  if (!result.ok) {
+    return htmlPage(failTitle, escapeHtml(result.error || '未知錯誤'), 200)
+  }
+  const b = result.body
+  if (
+    b.paymentReady &&
+    b.gatewayUrl &&
+    b.TradeInfo &&
+    b.TradeSha &&
+    b.MerchantID
+  ) {
+    return newebpayAutoSubmitHtml({
+      gatewayUrl: String(b.gatewayUrl),
+      MerchantID: String(b.MerchantID),
+      TradeInfo: String(b.TradeInfo),
+      TradeSha: String(b.TradeSha),
+      Version: String(b.Version || MPG_VERSION),
+      merchantOrderNo: String(b.merchantOrderNo || ''),
+    })
+  }
+  return htmlPage(
+    '付款尚未就緒',
+    escapeHtml(
+      `訂單 ${b.merchantOrderNo || ''} 無法前往藍新。${
+        b.paymentError ? `（${b.paymentError}）` : ''
+      }`,
+    ),
+    200,
+  )
+}
+
+/**
+ * Rebuild NewebPay MPG for an existing unpaid KV / Shopify order.
+ * @param {any} env
+ * @param {any} body
+ * @returns {Promise<
+ *   | { ok: false, error: string, status?: number }
+ *   | { ok: true, body: Record<string, unknown> }
+ * >}
+ */
+async function runRepay(env, body) {
+  const merchantOrderNo = clip(String(body?.merchantOrderNo || ''), 64)
+  const shopifyOrderId = clip(String(body?.shopifyOrderId || ''), 64)
+  if (!merchantOrderNo && !shopifyOrderId) {
+    return { ok: false, error: '缺少訂單編號', status: 400 }
+  }
+
+  /** @type {object | null} */
+  let record = merchantOrderNo ? await getOrder(env, merchantOrderNo) : null
+  if (!record && shopifyOrderId) {
+    const mirror = await getShopifyOrderMirror(env, { shopifyOrderId })
+    const mno = String(mirror?.merchantOrderNo || '').trim()
+    if (mno) record = await getOrder(env, mno)
+    if (!record && mirror) {
+      // Mirror-only row (webhook) — synthesize enough for MPG if amount present.
+      record = {
+        merchantOrderNo: mno || null,
+        shopifyOrderId: mirror.shopifyOrderId || shopifyOrderId,
+        shopifyOrderName: mirror.shopifyOrderName || null,
+        amountTwd: Number(mirror.amountTwd) || 0,
+        designName: String(mirror.title || '手鍊設計'),
+        email: String(mirror.email || body?.email || ''),
+        status: 'pending',
+        h5Status: String(mirror.h5Status || 'unpaid'),
+      }
+    }
+  }
+
+  if (!record) {
+    return { ok: false, error: '找不到訂單，請重新整理後再試', status: 404 }
+  }
+
+  const h5 = String(record.h5Status || '').trim()
+  const st = String(record.status || '').trim()
+  if (
+    st === 'paid' ||
+    st === 'shopify_synced' ||
+    h5 === 'scheduling' ||
+    h5 === 'designing' ||
+    h5 === 'shipping' ||
+    h5 === 'pickup' ||
+    h5 === 'done'
+  ) {
+    return { ok: false, error: '此訂單已付款或無法再付款', status: 409 }
+  }
+  if (h5 && h5 !== 'unpaid') {
+    return { ok: false, error: '此訂單狀態無法繼續付款', status: 409 }
+  }
+
+  const amt = Math.max(0, Math.round(Number(record.amountTwd) || 0))
+  if (amt < 1) {
+    return { ok: false, error: '訂單金額無效', status: 400 }
+  }
+
+  const orderNo = String(record.merchantOrderNo || merchantOrderNo || '').trim()
+  if (!orderNo) {
+    return { ok: false, error: '訂單缺少藍新單號，無法繼續付款', status: 400 }
+  }
+
+  const designName = clip(String(record.designName || record.title || '手鍊設計'), 40)
+  const email =
+    clip(String(body?.email || record.email || env.NEWEBPAY_DEFAULT_EMAIL || ''), 50) ||
+    'buyer@pearl-diy.local'
+
+  /** @type {string | null} */
+  let paymentError = null
+  /** @type {Record<string, unknown> | null} */
+  let paymentPayload = null
+  try {
+    paymentPayload = await prepareNewebpayPayload(env, {
+      merchantOrderNo: orderNo,
+      amt,
+      designName,
+      email,
+    })
+  } catch (e) {
+    paymentError = e instanceof Error ? e.message : String(e)
+    console.warn('[newebpay] repay prepare failed', paymentError)
+  }
+
+  console.log('[newebpay] repay', {
+    merchantOrderNo: orderNo,
+    amt,
+    shopifyOrderId: record.shopifyOrderId || shopifyOrderId || null,
+    paymentReady: Boolean(paymentPayload),
+  })
+
+  return {
+    ok: true,
+    body: {
+      ok: true,
+      merchantOrderNo: orderNo,
+      amountTwd: amt,
+      shopifyOrderId: record.shopifyOrderId || shopifyOrderId || null,
+      shopifyOrderName: record.shopifyOrderName || null,
+      h5Status: 'unpaid',
+      paymentReady: Boolean(paymentPayload),
+      paymentError,
+      ...(paymentPayload || {}),
+    },
   }
 }
 

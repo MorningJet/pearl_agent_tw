@@ -424,6 +424,143 @@ export function startNewebpayCheckoutBrowser(bom, meta) {
 }
 
 /**
+ * Resume NewebPay MPG for an existing unpaid order (繼續付款).
+ * @param {{
+ *   merchantOrderNo?: string,
+ *   shopifyOrderId?: string | number | null,
+ *   email?: string,
+ *   status?: string,
+ * }} order
+ * @returns {Promise<
+ *   | { ok: true, mode: 'redirect' | 'popup' | 'top' | 'self' }
+ *   | { ok: false, error: string }
+ * >}
+ */
+export async function resumeNewebpayPayment(order) {
+  const merchantOrderNo = String(order?.merchantOrderNo || '').trim()
+  const shopifyOrderId =
+    order?.shopifyOrderId != null ? String(order.shopifyOrderId).trim() : ''
+  if (!merchantOrderNo && !shopifyOrderId) {
+    return { ok: false, error: '訂單缺少編號，無法繼續付款' }
+  }
+  if (order?.status && normalizeLocalStatus(order.status) !== 'unpaid') {
+    return { ok: false, error: '此訂單狀態無法繼續付款' }
+  }
+
+  const base = newebpayApiBase()
+  if (!base) {
+    return { ok: false, error: '尚未設定結帳服務（VITE_NEWEBPAY_API_BASE）' }
+  }
+
+  const payload = {
+    merchantOrderNo,
+    shopifyOrderId: shopifyOrderId || undefined,
+    email: String(order?.email || '').trim(),
+  }
+  const repayAction = `${base}/api/repay-browser`
+
+  if (needsCheckoutBreakout()) {
+    const ua = navigator.userAgent || ''
+    const metaWebView =
+      /MicroMessenger|Line\/|FBAN|FBAV|Instagram|Threads|Barcelona|BytedanceWebview|musical_ly|TikTok/i.test(
+        ua,
+      )
+    if (metaWebView) {
+      postCheckoutForm(repayAction, payload, '_top')
+      return { ok: true, mode: 'top' }
+    }
+
+    /** @type {Window | null} */
+    let win = null
+    try {
+      win = window.open(payBridgeUrl(), CHECKOUT_WINDOW_NAME)
+    } catch {
+      win = null
+    }
+    if (win && !win.closed) {
+      try {
+        if (!win.location.href || win.location.href === 'about:blank') {
+          win.location.href = payBridgeUrl()
+        }
+      } catch {
+        /* ignore */
+      }
+      beginSameOriginHandoff(win, repayAction, payload)
+      try {
+        win.focus()
+      } catch {
+        /* ignore */
+      }
+      return { ok: true, mode: 'popup' }
+    }
+    postCheckoutForm(repayAction, payload, '_top')
+    return { ok: true, mode: 'top' }
+  }
+
+  try {
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), 30000)
+    let res
+    try {
+      res = await fetch(`${base}/api/repay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+    } finally {
+      window.clearTimeout(timer)
+    }
+    /** @type {any} */
+    const data = await res.json().catch(() => null)
+    if (!res.ok || !data?.ok) {
+      return {
+        ok: false,
+        error: data?.error || `無法繼續付款（${res.status}）`,
+      }
+    }
+    if (
+      data.paymentReady &&
+      data.gatewayUrl &&
+      data.TradeInfo &&
+      data.TradeSha &&
+      data.MerchantID
+    ) {
+      submitNewebpayForm(data)
+      return { ok: true, mode: 'redirect' }
+    }
+    return {
+      ok: false,
+      error: data.paymentError || '藍新付款尚未就緒',
+    }
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { ok: false, error: '繼續付款逾時，請稍後再試' }
+    }
+    // CORS / WebView fetch fail → form breakout
+    if (
+      /Load failed|Failed to fetch|NetworkError/i.test(
+        String(e instanceof Error ? e.message : e),
+      )
+    ) {
+      postCheckoutForm(repayAction, payload, '_top')
+      return { ok: true, mode: 'top' }
+    }
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : '無法連接付款服務',
+    }
+  }
+}
+
+/** @param {string} status */
+function normalizeLocalStatus(status) {
+  return String(status || '')
+    .trim()
+    .toLowerCase()
+}
+
+/**
  * POST hidden form to NewebPay MPG (top-level, breaks out of Shopify iframe).
  * @param {{
  *   gatewayUrl: string,

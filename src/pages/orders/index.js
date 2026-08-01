@@ -7,6 +7,7 @@ import {
   CUSTOM_GOODS_NOTE,
   canContinuePayment,
   canRequestRefund,
+  getOrder,
   listOrders,
   normalizeStatus,
   orderStatusLabel,
@@ -15,6 +16,7 @@ import {
 } from '../../shared/state/ordersStore.js'
 import { resolveOrderThumbUrl } from '../../shared/orderImage.js'
 import { syncOrdersFromServer } from '../../shared/newebpay/orderStatus.js'
+import { resumeNewebpayPayment } from '../../shared/newebpay/checkout.js'
 import { openOrderDetail } from '../orderDetail/index.js'
 
 /** @type {'all' | import('../../shared/state/ordersStore.js').OrderStatus} */
@@ -22,6 +24,9 @@ let filter = 'all'
 
 /** @type {boolean} */
 let syncInFlight = false
+
+/** @type {boolean} */
+let payInFlight = false
 
 /**
  * @param {HTMLElement} host
@@ -49,7 +54,8 @@ export function initOrdersPage(host) {
     if (payBtn instanceof HTMLElement) {
       e.preventDefault()
       e.stopPropagation()
-      showToast('請完成付款後開始排單製作')
+      const id = payBtn.dataset.payId
+      if (id) void continuePayForOrder(id)
       return
     }
     const refundBtn =
@@ -67,6 +73,33 @@ export function initOrdersPage(host) {
     openOrderDetail(id)
     showOrderDetailPage()
   })
+}
+
+/**
+ * @param {string} orderId
+ */
+async function continuePayForOrder(orderId) {
+  if (payInFlight) return
+  const order = getOrder(orderId)
+  if (!order) {
+    showToast('找不到訂單')
+    return
+  }
+  payInFlight = true
+  showToast('正在前往付款…')
+  try {
+    const result = await resumeNewebpayPayment(order)
+    if (!result.ok) {
+      showToast(result.error)
+      return
+    }
+    // popup / top / redirect — leave UI as-is; page may navigate away.
+  } catch (err) {
+    console.error('[orders] continue pay failed', err)
+    showToast(err instanceof Error ? err.message : '繼續付款失敗')
+  } finally {
+    payInFlight = false
+  }
 }
 
 export function refreshOrdersPage() {

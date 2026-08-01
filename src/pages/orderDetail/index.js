@@ -14,9 +14,13 @@ import {
   showsCustomGoodsNote,
 } from '../../shared/state/ordersStore.js'
 import { syncOneOrderFromServer } from '../../shared/newebpay/orderStatus.js'
+import { resumeNewebpayPayment } from '../../shared/newebpay/checkout.js'
 
 /** @type {string} */
 let currentOrderId = ''
+
+/** @type {boolean} */
+let payInFlight = false
 
 /**
  * @param {HTMLElement} host
@@ -31,7 +35,9 @@ export function initOrderDetailPage(host) {
     const payBtn =
       e.target instanceof Element ? e.target.closest('[data-pay-order]') : null
     if (payBtn instanceof HTMLElement) {
-      showToast('請完成付款後開始排單製作')
+      e.preventDefault()
+      const id = payBtn.dataset.payOrder || currentOrderId
+      if (id) void continuePayForOrder(id)
       return
     }
     const refundBtn =
@@ -48,6 +54,29 @@ export function initOrderDetailPage(host) {
       .then(() => showToast('已複製物流單號'))
       .catch(() => showToast('複製失敗'))
   })
+}
+
+/**
+ * @param {string} orderId
+ */
+async function continuePayForOrder(orderId) {
+  if (payInFlight) return
+  const order = getOrder(orderId)
+  if (!order) {
+    showToast('找不到訂單')
+    return
+  }
+  payInFlight = true
+  showToast('正在前往付款…')
+  try {
+    const result = await resumeNewebpayPayment(order)
+    if (!result.ok) showToast(result.error)
+  } catch (err) {
+    console.error('[order-detail] continue pay failed', err)
+    showToast(err instanceof Error ? err.message : '繼續付款失敗')
+  } finally {
+    payInFlight = false
+  }
 }
 
 /** @param {string} orderId */

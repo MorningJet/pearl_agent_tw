@@ -86,8 +86,13 @@
         function toJsonCheckoutUrl(action) {
           try {
             var u = new URL(action, location.href)
-            u.pathname = u.pathname.replace(/\/api\/checkout-browser\/?$/, '/api/checkout')
-            if (!/\/api\/checkout$/.test(u.pathname)) {
+            u.pathname = u.pathname
+              .replace(/\/api\/checkout-browser\/?$/, '/api/checkout')
+              .replace(/\/api\/repay-browser\/?$/, '/api/repay')
+            if (
+              !/\/api\/checkout$/.test(u.pathname) &&
+              !/\/api\/repay$/.test(u.pathname)
+            ) {
               u.pathname = u.pathname.replace(/\/?$/, '') + '/api/checkout'
             }
             return u.href
