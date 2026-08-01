@@ -103,7 +103,12 @@ export function persistCheckoutOrder(result, meta, breakdown = {}) {
     title: String(meta.designName || '手鍊設計'),
     status: normalizeStatus(result.h5Status || 'unpaid'),
     amountTwd: Number(result.amountTwd) || 0,
-    imageUrl: String(meta.designImageUrl || ''),
+    imageUrl: canonicalOrderImageUrl(
+      String(result.designImageUrl || '').trim() ||
+        (/^https?:\/\//i.test(String(meta.designImageUrl || ''))
+          ? String(meta.designImageUrl)
+          : ''),
+    ),
     wristCm:
       meta.wristCmNum != null && Number.isFinite(Number(meta.wristCmNum))
         ? Number(meta.wristCmNum)

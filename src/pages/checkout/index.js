@@ -11,6 +11,7 @@ import {
   startNewebpayCheckoutBrowser,
   submitNewebpayForm,
 } from '../../shared/newebpay/checkout.js'
+import { compressDesignThumb } from '../../shared/newebpay/designThumb.js'
 import { persistCheckoutOrder } from '../../shared/newebpay/orderStatus.js'
 import {
   getMemberId,
@@ -438,6 +439,7 @@ async function submitCheckout() {
       refreshMyDesignsPage()
     })
 
+    const imageDataUrl = await compressDesignThumb(draft.designImageUrl || '')
     const meta = {
       designName: draft.designName,
       wristCm: draft.wristCm,
@@ -449,6 +451,7 @@ async function submitCheckout() {
       designerId: draft.designerId || '',
       designFeeTwd: draft.designFeeTwd || 0,
       designImageUrl: draft.designImageUrl || '',
+      imageDataUrl,
       beadsSubtotalTwd: draft.beadsSubtotalTwd,
       email: parsed.email,
       shippingAddress: parsed.shippingAddress,

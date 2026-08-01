@@ -30,7 +30,7 @@
  *   POST /api/h5/plaza/publish|unpublish|use-count
  */
 
-import { getOrder, putOrder, getDesignerCount, incrementDesignerCount } from './store.js'
+import { getOrder, putOrder, getDesignerCount, incrementDesignerCount, putOrderPreview, getOrderPreview, orderPreviewPath } from './store.js'
 import {
   handlePlazaDesignGet,
   handlePlazaDesignsList,
@@ -146,6 +146,11 @@ export default {
       const plazaPreviewMatch = url.pathname.match(/^\/api\/h5\/plaza\/preview\/([^/]+)\/?$/)
       if (plazaPreviewMatch && request.method === 'GET') {
         return await handlePlazaPreview(decodeURIComponent(plazaPreviewMatch[1]), env)
+      }
+
+      const orderPreviewMatch = url.pathname.match(/^\/api\/h5\/order-preview\/([^/]+)\/?$/)
+      if (orderPreviewMatch && request.method === 'GET') {
+        return await handleOrderPreview(decodeURIComponent(orderPreviewMatch[1]), env)
       }
 
       if (url.pathname === '/api/h5/plaza/publish' && request.method === 'POST') {
@@ -475,7 +480,7 @@ async function runCheckout(env, body, ctx) {
     designId: clip(String(body?.designId || ''), 64),
     plazaPublishId: clip(String(body?.plazaPublishId || ''), 64),
     designerId: clip(String(body?.designerId || ''), 64),
-    designImageUrl: clip(String(body?.designImageUrl || ''), 500),
+    designImageUrl: await resolveCheckoutDesignImageUrl(env, merchantOrderNo, body),
     recipe,
     email,
     bom: bom.map((row) => ({
@@ -555,6 +560,7 @@ async function runCheckout(env, body, ctx) {
       h5Status: 'unpaid',
       paymentReady: Boolean(paymentPayload),
       paymentError,
+      designImageUrl: record.designImageUrl || null,
       ...(paymentPayload || {}),
     },
   }
@@ -662,6 +668,70 @@ async function createUnpaidShopifyInBackground(env, merchantOrderNo, ctx) {
       /* ignore */
     }
   }
+}
+
+/**
+ * Persist compressed checkout thumb → KV; return stable /api path for H5.
+ * @param {any} env
+ * @param {string} merchantOrderNo
+ * @param {any} body
+ */
+async function resolveCheckoutDesignImageUrl(env, merchantOrderNo, body) {
+  const httpUrl = clip(String(body?.designImageUrl || ''), 500)
+  const dataUrl = String(body?.imageDataUrl || body?.designImageUrl || '')
+  const parsed = parseCheckoutImageDataUrl(dataUrl)
+  if (parsed?.bytes?.length) {
+    try {
+      await putOrderPreview(env, merchantOrderNo, parsed.bytes, parsed.contentType)
+      return orderPreviewPath(merchantOrderNo)
+    } catch (e) {
+      console.warn(
+        '[newebpay] order preview store failed',
+        e instanceof Error ? e.message : e,
+      )
+    }
+  }
+  if (httpUrl && !/^data:/i.test(httpUrl)) return httpUrl
+  return ''
+}
+
+/**
+ * @param {string} dataUrl
+ * @returns {{ bytes: Uint8Array, contentType: string } | null}
+ */
+function parseCheckoutImageDataUrl(dataUrl) {
+  if (!dataUrl || typeof dataUrl !== 'string') return null
+  const m = /^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/s.exec(dataUrl)
+  if (!m) return null
+  const contentType = m[1].toLowerCase()
+  if (!contentType.startsWith('image/')) return null
+  try {
+    const binary = atob(m[2])
+    if (binary.length > 220_000) return null
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return { bytes, contentType }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * @param {string} merchantOrderNo
+ * @param {any} env
+ */
+async function handleOrderPreview(merchantOrderNo, env) {
+  const id = String(merchantOrderNo || '').trim()
+  if (!id) return new Response('Not found', { status: 404 })
+  const preview = await getOrderPreview(env, id)
+  if (!preview?.bytes) return new Response('Not found', { status: 404 })
+  return new Response(preview.bytes, {
+    status: 200,
+    headers: {
+      'Content-Type': preview.contentType || 'image/jpeg',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  })
 }
 
 /**

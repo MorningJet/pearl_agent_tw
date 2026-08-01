@@ -26,6 +26,93 @@ function shopifyMerchantKey(merchantOrderNo) {
   return `shopify-by-merchant:${merchantOrderNo}`
 }
 
+/** @param {string} merchantOrderNo */
+function orderPreviewKey(merchantOrderNo) {
+  return `order-preview:${merchantOrderNo}`
+}
+
+/** @param {string} merchantOrderNo */
+function orderPreviewMetaKey(merchantOrderNo) {
+  return `order-preview-meta:${merchantOrderNo}`
+}
+
+/**
+ * Stable path stored on order records (H5 resolves via App Proxy base).
+ * @param {string} merchantOrderNo
+ */
+export function orderPreviewPath(merchantOrderNo) {
+  return `/api/h5/order-preview/${encodeURIComponent(String(merchantOrderNo || '').trim())}`
+}
+
+/**
+ * @param {any} env
+ * @param {string} merchantOrderNo
+ * @param {ArrayBuffer | Uint8Array} bytes
+ * @param {string} [contentType]
+ */
+export async function putOrderPreview(env, merchantOrderNo, bytes, contentType = 'image/jpeg') {
+  const id = String(merchantOrderNo || '').trim()
+  if (!id || !bytes) return
+  const ttl = 60 * 60 * 24 * 180
+  const body =
+    bytes instanceof Uint8Array
+      ? bytes
+      : bytes instanceof ArrayBuffer
+        ? new Uint8Array(bytes)
+        : null
+  if (!body?.byteLength) return
+  if (env.ORDERS) {
+    await env.ORDERS.put(orderPreviewKey(id), body, { expirationTtl: ttl })
+    await env.ORDERS.put(
+      orderPreviewMetaKey(id),
+      JSON.stringify({ contentType: String(contentType || 'image/jpeg') }),
+      { expirationTtl: ttl },
+    )
+  } else {
+    memory.set(orderPreviewKey(id), body)
+    memory.set(
+      orderPreviewMetaKey(id),
+      JSON.stringify({ contentType: String(contentType || 'image/jpeg') }),
+    )
+  }
+}
+
+/**
+ * @param {any} env
+ * @param {string} merchantOrderNo
+ * @returns {Promise<{ bytes: ArrayBuffer, contentType: string } | null>}
+ */
+export async function getOrderPreview(env, merchantOrderNo) {
+  const id = String(merchantOrderNo || '').trim()
+  if (!id) return null
+  /** @type {ArrayBuffer | null} */
+  let bytes = null
+  if (env.ORDERS) {
+    bytes = await env.ORDERS.get(orderPreviewKey(id), 'arrayBuffer')
+  } else {
+    const raw = memory.get(orderPreviewKey(id))
+    if (raw instanceof Uint8Array) {
+      bytes = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength)
+    } else if (raw instanceof ArrayBuffer) {
+      bytes = raw
+    }
+  }
+  if (!bytes || !bytes.byteLength) return null
+  let contentType = 'image/jpeg'
+  try {
+    const metaRaw = env.ORDERS
+      ? await env.ORDERS.get(orderPreviewMetaKey(id))
+      : memory.get(orderPreviewMetaKey(id))
+    if (typeof metaRaw === 'string' && metaRaw) {
+      const meta = JSON.parse(metaRaw)
+      if (meta?.contentType) contentType = String(meta.contentType)
+    }
+  } catch {
+    /* default jpeg */
+  }
+  return { bytes, contentType }
+}
+
 /**
  * @param {any} env
  * @param {string} key

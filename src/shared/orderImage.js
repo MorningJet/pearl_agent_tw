@@ -20,7 +20,7 @@ export function resolveOrderThumbUrl(order) {
   })
   if (plaza) return plaza
 
-  return normalizeAssetUrl(order?.imageUrl || '')
+  return absoluteOrderImageUrl(order?.imageUrl || '')
 }
 
 /**
@@ -28,9 +28,44 @@ export function resolveOrderThumbUrl(order) {
  * @param {string} [url]
  */
 export function canonicalOrderImageUrl(url) {
-  const rel = toSiteRelativeAssetPath(url || '')
+  const raw = String(url || '').trim()
+  // Worker-stored order previews — keep API path so App Proxy can resolve later.
+  if (/^\/api\/h5\/order-preview\//i.test(raw)) return raw
+  if (/\/api\/h5\/order-preview\//i.test(raw)) {
+    try {
+      const u = new URL(raw)
+      return `${u.pathname}${u.search}`
+    } catch {
+      /* fall through */
+    }
+  }
+  const rel = toSiteRelativeAssetPath(raw)
   if (rel && !/^(data:|blob:)/i.test(rel)) return rel
-  return String(url || '').trim()
+  return raw
+}
+
+/**
+ * Turn stored order image paths into a browser-loadable URL.
+ * @param {string} [url]
+ */
+export function absoluteOrderImageUrl(url) {
+  const raw = String(url || '').trim()
+  if (!raw || /^(data:|blob:)/i.test(raw)) return normalizeAssetUrl(raw)
+
+  if (/^\/api\//i.test(raw)) {
+    const base = String(import.meta.env.VITE_NEWEBPAY_API_BASE || '')
+      .trim()
+      .replace(/\/$/, '')
+    if (base) {
+      try {
+        return new URL(raw.replace(/^\//, ''), `${base}/`).href
+      } catch {
+        return `${base}${raw}`
+      }
+    }
+  }
+
+  return normalizeAssetUrl(raw)
 }
 
 /**
